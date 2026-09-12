@@ -1,0 +1,10 @@
+fastapi[standard]
+pydantic
+ortools
+pytest
+requests
+scikit-learn
+scipy
+joblib
+skl2onnx
+onnxruntime

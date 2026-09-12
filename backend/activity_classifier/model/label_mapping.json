@@ -1,0 +1,8 @@
+{
+  "laying": "free",
+  "sitting": "free",
+  "standing": "free",
+  "walking": "busy",
+  "walking_downstairs": "busy",
+  "walking_upstairs": "busy"
+}
