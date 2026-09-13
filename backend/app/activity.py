@@ -56,6 +56,8 @@ def classify_activity(request: ClassifyRequest):
     if not request.readings:
         raise HTTPException(status_code=400, detail="No readings provided")
         
+    print(f"\n[Activity Tracker] Received {len(request.readings)} sensor events for a {request.window_duration_sec}s window.")
+    
     # Convert readings to a numpy array (N, 6)
     # Ensure order matches training: accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
     data = []
@@ -105,6 +107,8 @@ def classify_activity(request: ClassifyRequest):
         
         # Determine if busy based on mapping
         busy = mapping.get(str(prediction), "free") == "busy"
+        
+        print(f" -> Predicted Activity: {prediction} | Confidence: {confidence:.2f} | Busy: {busy}")
         
         return ClassifyResponse(
             activity=str(prediction),

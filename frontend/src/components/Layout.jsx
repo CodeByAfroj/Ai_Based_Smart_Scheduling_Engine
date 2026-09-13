@@ -1,0 +1,327 @@
+import { useState, useEffect } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutGrid, CheckSquare, Calendar, User, Search, Bell, BarChart2, Link, Settings, Zap, LogOut, ChevronDown, Check } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+
+export default function Layout() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, logout, readinessScore, token, API_BASE } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    
+    // Connect to SSE for Web Push Notifications
+    const eventSource = new EventSource(`${API_BASE}/notifications/stream?token=${token}`);
+    
+    eventSource.addEventListener('notification', (event) => {
+      try {
+        const raw = event.data.replace(/'/g, '"');
+        const data = JSON.parse(raw);
+        setNotifications(prev => [{ id: Date.now(), ...data, read: false }, ...prev].slice(0, 10)); // keep last 10
+        setHasUnread(true);
+        triggerAudioAlert(data.title, data.message);
+      } catch(e) {
+        setNotifications(prev => [{ id: Date.now(), title: "Alert", message: event.data, read: false }, ...prev].slice(0, 10));
+        setHasUnread(true);
+        triggerAudioAlert("Alert", event.data);
+      }
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, [token, API_BASE, profile?.notification_preference]);
+
+  const triggerAudioAlert = (title, message) => {
+    const pref = profile?.notification_preference || 'text_and_sound';
+    if (pref === 'voice') {
+      const utterance = new SpeechSynthesisUtterance(`${title}. ${message}`);
+      window.speechSynthesis.speak(utterance);
+    } else if (pref === 'sound' || pref === 'text_and_sound') {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+      } catch(e) {
+        console.log("Audio play blocked", e);
+      }
+    }
+  };
+
+  const markAllRead = () => {
+    setNotifications(prev => prev.map(n => ({...n, read: true})));
+    setHasUnread(false);
+  };
+
+  const hideNav = location.pathname === '/login' || location.pathname === '/profile-setup';
+
+  const workspaceNav = [
+    { path: '/', label: 'Dashboard', icon: LayoutGrid },
+    { path: '/schedule', label: 'Schedule & Timeline', icon: Calendar },
+    { path: '/tasks', label: 'Tasks & Projects', icon: CheckSquare },
+    { path: '/analytics', label: 'Analytics', icon: BarChart2 },
+  ];
+
+  const systemNav = [
+    { path: '/integrations', label: 'Integrations', icon: Link },
+    { path: '/profile', label: 'Settings / Profile', icon: Settings },
+  ];
+
+  // Mobile Bottom Nav items
+  const mobileNavItems = [
+    { path: '/', label: 'Dashboard', icon: LayoutGrid },
+    { path: '/tasks', label: 'Tasks', icon: CheckSquare },
+    { path: '/schedule', label: 'Schedule', icon: Calendar },
+    { path: '/profile', label: 'Profile', icon: User },
+  ];
+
+  if (hideNav) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)]">
+        <Outlet />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex">
+      
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <aside className="hidden lg:flex w-64 flex-col bg-[var(--bg-app)] border-r border-[var(--border-subtle)] h-screen sticky top-0 shrink-0">
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[var(--accent-base)] flex items-center justify-center text-white shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+          </div>
+          <span className="font-bold text-lg leading-tight text-[var(--text-main)]">TaskPulse</span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-8">
+          <div>
+            <h3 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2">Workspace</h3>
+            <div className="flex flex-col gap-1">
+              {workspaceNav.map((item) => {
+                const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+                const Icon = item.icon;
+                return (
+                  <button 
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive ? 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'}`}
+                  >
+                    <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
+                    <span className="text-sm">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2">System</h3>
+            <div className="flex flex-col gap-1">
+              {systemNav.map((item) => {
+                const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+                const Icon = item.icon;
+                return (
+                  <button 
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive ? 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'}`}
+                  >
+                    <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
+                    <span className="text-sm">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-[var(--border-subtle)]">
+          <div className="bg-indigo-50/50 p-4 rounded-xl flex items-start gap-3 border border-indigo-100">
+            <Zap className="text-[var(--success-text)] shrink-0 mt-0.5" size={16} />
+            <div>
+              <h4 className="text-xs font-semibold text-[var(--text-main)] mb-1">Automation Engine</h4>
+              <p className="text-[10px] text-[var(--text-muted)] leading-snug">All background schedules active with 99.8% precision.</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+        
+        {/* Desktop Header */}
+        <header className="hidden lg:flex h-16 border-b border-[var(--border-subtle)] bg-white px-8 items-center justify-between sticky top-0 z-40">
+          <div className="flex-1 max-w-xl">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
+              <input type="text" placeholder="Search tasks, schedules, automations..." className="w-full bg-[var(--bg-hover)] border-none rounded-lg py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-[var(--accent-base)] focus:outline-none" />
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-5 pl-4">
+            <button className="btn-primary py-2 px-4 shadow-sm text-sm" onClick={() => navigate('/tasks')}>
+              + New Task
+            </button>
+            <div className="relative">
+              <button className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors relative" onClick={() => setShowNotifMenu(!showNotifMenu)}>
+                <Bell size={20} />
+                {(hasUnread || readinessScore < 100) && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--priority-critical)] rounded-full border-2 border-white"></span>
+                )}
+              </button>
+              {showNotifMenu && (
+                <div className="absolute right-0 top-12 w-80 bg-white border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 py-2">
+                  <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                    <p className="font-bold text-sm text-[var(--text-main)]">Notifications</p>
+                    {notifications.length > 0 && <button onClick={markAllRead} className="text-xs text-[var(--accent-base)] font-bold">Mark all read</button>}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {readinessScore < 100 && (
+                      <div onClick={() => { setShowNotifMenu(false); navigate('/profile-setup'); }} className="px-4 py-3 border-b border-[var(--border-subtle)] bg-amber-50 cursor-pointer hover:bg-amber-100 transition-colors">
+                        <p className="text-sm font-bold text-amber-800">Setup Incomplete</p>
+                        <p className="text-xs text-amber-700 mt-0.5">Click here to complete your profile and preferences.</p>
+                      </div>
+                    )}
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-[var(--text-muted)] text-sm">
+                        No recent notifications
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div key={n.id} className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 ${n.read ? 'opacity-60' : 'bg-blue-50/30'}`}>
+                          <p className="text-sm font-bold text-[var(--text-main)]">{n.title}</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5">{n.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* User Menu */}
+            <div className="relative">
+              <button onClick={() => setShowUserMenu(!showUserMenu)} className="flex items-center gap-2 cursor-pointer hover:bg-[var(--bg-hover)] rounded-lg px-2 py-1 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-[var(--border-subtle)]">
+                  {profile?.picture ? (
+                    <img src={profile.picture} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500">
+                      {profile?.name?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                </div>
+                <ChevronDown size={14} className="text-[var(--text-muted)]" />
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-12 w-56 bg-white border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 py-2">
+                  <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
+                    <p className="font-bold text-sm text-[var(--text-main)] truncate">{profile?.name || 'User'}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{profile?.email || ''}</p>
+                  </div>
+                  <button onClick={() => { setShowUserMenu(false); navigate('/profile'); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors">
+                    <User size={15} className="text-[var(--text-muted)]" /> View Profile
+                  </button>
+                  <button onClick={() => { setShowUserMenu(false); navigate('/profile-setup'); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors">
+                    <Settings size={15} className="text-[var(--text-muted)]" /> Settings
+                  </button>
+                  <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
+                    <button onClick={() => { logout(); navigate('/login'); setShowUserMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                      <LogOut size={15} /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Mobile Header (hidden on desktop) */}
+        <header className="lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[var(--accent-base)] flex items-center justify-center text-white shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-sm leading-tight text-[var(--text-main)]">TaskPulse</span>
+              <span className="text-[10px] text-[var(--text-muted)] leading-tight capitalize">{location.pathname.slice(1) || 'Dashboard'}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/profile-setup')} className="text-[var(--text-main)] hover:text-[var(--accent-base)] transition-colors relative">
+              <Bell size={20} />
+              {readinessScore < 100 && <span className="absolute top-0 right-0 w-2 h-2 bg-[var(--priority-critical)] rounded-full border-2 border-white"></span>}
+            </button>
+            <div className="relative">
+              <button onClick={() => setShowUserMenu(!showUserMenu)} className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-[var(--border-subtle)]">
+                {profile?.picture ? (
+                  <img src={profile.picture} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500">
+                    {profile?.name?.charAt(0) || 'U'}
+                  </div>
+                )}
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-11 w-56 bg-white border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 py-2">
+                  <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
+                    <p className="font-bold text-sm text-[var(--text-main)] truncate">{profile?.name || 'User'}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{profile?.email || ''}</p>
+                  </div>
+                  <button onClick={() => { setShowUserMenu(false); navigate('/profile'); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)]">
+                    <User size={15} className="text-[var(--text-muted)]" /> View Profile
+                  </button>
+                  <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
+                    <button onClick={() => { logout(); navigate('/login'); setShowUserMenu(false); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50">
+                      <LogOut size={15} /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 relative">
+          <Outlet />
+        </main>
+
+        {/* Mobile Bottom Navigation (hidden on desktop) */}
+        <nav className="lg:hidden fixed bottom-0 w-full bg-white border-t border-[var(--border-subtle)] px-6 py-3 flex justify-between items-center z-50">
+          {mobileNavItems.map((item) => {
+            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+            const Icon = item.icon;
+            return (
+              <button 
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`flex flex-col items-center gap-1 ${isActive ? 'text-[var(--accent-base)]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+              >
+                <Icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
+  );
+}

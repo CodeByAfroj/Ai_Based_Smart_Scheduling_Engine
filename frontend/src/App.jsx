@@ -1,160 +1,127 @@
-import { useState, useCallback, useEffect } from 'react'
-import Header from './components/Header'
-import TaskForm from './components/TaskForm'
-import TaskList from './components/TaskList'
-import FixedEventForm from './components/FixedEventForm'
-import Timeline from './components/Timeline'
-import ScheduleControls from './components/ScheduleControls'
-import StatusBar from './components/StatusBar'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TaskProvider } from './contexts/TaskContext';
+import Login from './pages/Login';
+import ProfileSetup from './pages/ProfileSetup';
+import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
+import Tasks from './pages/Tasks';
+import Schedule from './pages/Schedule';
+import Analytics from './pages/Analytics';
+import Integrations from './pages/Integrations';
+import Layout from './components/Layout';
+import ActivityTracker from './components/ActivityTracker';
 
-const API_BASE = 'http://localhost:8000'
-
-function App() {
-  const loadState = (key, defaultVal) => {
-    try {
-      const stored = localStorage.getItem(key)
-      return stored ? JSON.parse(stored) : defaultVal
-    } catch { return defaultVal }
-  }
-
-  const [tasks, setTasks] = useState(() => loadState('scheduler_tasks', []))
-  const [fixedEvents, setFixedEvents] = useState(() => loadState('scheduler_fixedEvents', []))
-  const [workingHours, setWorkingHours] = useState(() => loadState('scheduler_workingHours', { start_hour: 8, end_hour: 22 }))
-  const [scheduledTasks, setScheduledTasks] = useState(() => loadState('scheduler_scheduledTasks', []))
-
-  useEffect(() => { localStorage.setItem('scheduler_tasks', JSON.stringify(tasks)) }, [tasks])
-  useEffect(() => { localStorage.setItem('scheduler_fixedEvents', JSON.stringify(fixedEvents)) }, [fixedEvents])
-  useEffect(() => { localStorage.setItem('scheduler_workingHours', JSON.stringify(workingHours)) }, [workingHours])
-  useEffect(() => { localStorage.setItem('scheduler_scheduledTasks', JSON.stringify(scheduledTasks)) }, [scheduledTasks])
-
-  const [solverStatus, setSolverStatus] = useState(null)
-  const [solveTime, setSolveTime] = useState(null)
-  const [solverMessage, setSolverMessage] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const handleAddTask = useCallback((task) => {
-    setTasks(prev => [...prev, task])
-    setError(null)
-  }, [])
-
-  const handleRemoveTask = useCallback((taskId) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId))
-    setScheduledTasks(prev => prev.filter(st => st.task_id !== taskId))
-  }, [])
-
-  const handleAddEvent = useCallback((event) => {
-    setFixedEvents(prev => [...prev, event])
-    setError(null)
-  }, [])
-
-  const handleRemoveEvent = useCallback((eventId) => {
-    setFixedEvents(prev => prev.filter(e => e.id !== eventId))
-  }, [])
-
-  const buildRequest = () => {
-    if (tasks.length === 0) { setError('Please add at least one task to generate a schedule.'); return null }
-    const allStarts = tasks.map(t => new Date(t.earliest_start).getTime())
-    const referenceTime = new Date(Math.min(...allStarts)).toISOString()
-    return {
-      tasks: tasks.map(t => ({
-        id: t.id, name: t.name,
-        duration_minutes: t.duration_minutes,
-        earliest_start: t.earliest_start,
-        deadline: t.deadline,
-        priority: t.priority,
-        fixed: t.fixed,
-        preferred_start_after: t.preferred_start_after || null,
-        preferred_start_before: t.preferred_start_before || null,
-        resource_id: t.resource_id || 'default',
-        predecessors: t.predecessors || [],
-      })),
-      fixed_events: fixedEvents.map(e => ({ id: e.id, name: e.name, start: e.start, end: e.end })),
-      working_hours: workingHours,
-      reference_time: referenceTime,
-    }
-  }
-
-  const callApi = async (endpoint) => {
-    const request = buildRequest()
-    if (!request) return
-    setIsLoading(true); setError(null)
-    try {
-      const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-      })
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.detail || `Server error: ${response.status}`)
-      }
-      const data = await response.json()
-      setSolverStatus(data.status)
-      setSolveTime(data.solve_time_ms)
-      setSolverMessage(data.message)
-      setScheduledTasks(data.tasks || [])
-    } catch (err) {
-      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        setError('Cannot connect to the scheduling engine.')
-      } else {
-        setError(err.message)
-      }
-      setSolverStatus(null); setSolveTime(null); setSolverMessage(null); setScheduledTasks([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSchedule = () => callApi('/schedule')
-  const handleReschedule = () => callApi('/reschedule')
-
-  return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-app)]">
-      <Header />
-
-      {error && (
-        <div className="bg-red-500/10 text-red-400 px-4 py-3 flex items-center justify-between shrink-0">
-          <span className="text-sm font-medium">{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">×</button>
+function ProtectedRoute({ children }) {
+  const { token, loading } = useAuth();
+  if (loading) return (
+    <div className="min-h-screen bg-[var(--bg-app)] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-[var(--accent-base)] flex items-center justify-center text-white animate-pulse">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
         </div>
-      )}
-
-      <main className="flex-1 w-full p-4 md:p-5 flex gap-5 h-[calc(100vh-64px)] overflow-hidden">
-        
-        {/* Left Sidebar: Controls & Input */}
-        <aside className="w-72 shrink-0 flex flex-col gap-4 overflow-y-auto pr-1 pb-8">
-          <ScheduleControls
-            workingHours={workingHours}
-            onChangeWorkingHours={setWorkingHours}
-            onSchedule={handleSchedule}
-            onReschedule={handleReschedule}
-            isLoading={isLoading}
-            hasSchedule={scheduledTasks.length > 0}
-            taskCount={tasks.length}
-          />
-          
-          <TaskForm onAddTask={handleAddTask} />
-          <FixedEventForm onAddEvent={handleAddEvent} />
-          
-          <TaskList tasks={tasks} onRemoveTask={handleRemoveTask} scheduledTasks={scheduledTasks} />
-        </aside>
-
-        {/* Right Main Area: The Calendar */}
-        <section className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
-          <StatusBar status={solverStatus} solveTime={solveTime} message={solverMessage} isLoading={isLoading} />
-
-          <div className="flex-1" style={{ minHeight: 0 }}>
-             <Timeline
-                scheduledTasks={scheduledTasks}
-                fixedEvents={fixedEvents}
-                tasks={tasks}
-              />
-          </div>
-        </section>
-      </main>
+        <p className="text-[var(--text-muted)] text-sm font-medium">Loading TaskPulse...</p>
+      </div>
     </div>
-  )
+  );
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
 }
 
-export default App
+function ProfileRoute({ children }) {
+  const { token, loading } = useAuth();
+  if (loading) return (
+    <div className="min-h-screen bg-[var(--bg-app)] flex items-center justify-center">
+      <p className="text-[var(--text-muted)] text-sm">Loading...</p>
+    </div>
+  );
+  if (!token) return <Navigate to="/login" replace />;
+  return children;
+}
+
+// Simple placeholder page for routes not yet built
+function ComingSoon({ page }) {
+  return (
+    <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center justify-center gap-4">
+      <div className="text-6xl mb-2">🚧</div>
+      <h2 className="text-2xl font-bold text-[var(--text-main)]">{page}</h2>
+      <p className="text-[var(--text-muted)]">This section is coming soon.</p>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <TaskProvider>
+        <BrowserRouter>
+          <ActivityTracker />
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/profile-setup"
+                element={
+                  <ProfileRoute>
+                    <ProfileSetup />
+                  </ProfileRoute>
+                }
+              />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <ProtectedRoute>
+                    <Tasks />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/schedule"
+                element={
+                  <ProtectedRoute>
+                    <Schedule />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/integrations"
+                element={
+                  <ProtectedRoute>
+                    <Integrations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </TaskProvider>
+    </AuthProvider>
+  );
+}

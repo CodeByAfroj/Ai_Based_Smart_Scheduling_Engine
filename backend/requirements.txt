@@ -1,11 +1,24 @@
+# Web Framework & Server
 fastapi[standard]
 uvicorn[standard]
+
+# Data Validation & Configuration
 pydantic
-ortools
-pytest
-requests
+pydantic-settings
+
+# Machine Learning & Inference Runtime
+numpy
+pandas
 scikit-learn
+onnxruntime
+skl2onnx
+
+# Mathematical Optimization & Utilities
+ortools
 scipy
 joblib
-skl2onnx
-onnxruntime
+
+# Testing & HTTP Clients
+pytest
+requests
+httpx
