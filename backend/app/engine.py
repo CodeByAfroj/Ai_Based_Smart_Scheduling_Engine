@@ -1,8 +1,9 @@
 import collections
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
 from ortools.sat.python import cp_model
 from .models import ScheduleRequest, ScheduledTask, FixedEvent
+
 
 def apply_busy_signal(schedule_request: ScheduleRequest, busy: bool, busy_until: datetime):
     if busy:
@@ -14,27 +15,33 @@ def apply_busy_signal(schedule_request: ScheduleRequest, busy: bool, busy_until:
         )
         schedule_request.fixed_events.append(busy_event)
 
+
 class SchedulerEngine:
     def __init__(self, request: ScheduleRequest):
         self.request = request
         self.model = cp_model.CpModel()
         self.ref_time = request.reference_time
-        
+
         # We will use minutes as our time unit
-        self.task_vars = {} 
+        self.task_vars = {}
         self.fixed_intervals = []
-        
+
         self.horizon_end = 0
         self._calculate_horizon()
 
     def _datetime_to_mins(self, dt: datetime) -> int:
-        return int((dt - self.ref_time).total_seconds() // 60)
+        # Make both timezone-aware or both naive before subtracting
+        ref = self.ref_time
+        if ref.tzinfo is not None and dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ref.tzinfo)
+        elif ref.tzinfo is None and dt.tzinfo is not None:
+            dt = dt.replace(tzinfo=None)
+        return int((dt - ref).total_seconds() // 60)
 
     def _mins_to_datetime(self, mins: int) -> datetime:
         return self.ref_time + timedelta(minutes=mins)
-        
+
     def _calculate_horizon(self):
-        # Calculate a safe upper bound for the schedule
         max_end = 0
         for task in self.request.tasks:
             t_end = self._datetime_to_mins(task.deadline)
@@ -44,105 +51,160 @@ class SchedulerEngine:
             t_end = self._datetime_to_mins(event.end)
             if t_end > max_end:
                 max_end = t_end
-        # Adding some buffer
         self.horizon_end = max_end + 10000
 
+    def _working_window_for_day(self, day_offset_mins: int) -> Tuple[int, int]:
+        """
+        Given a day's offset from ref_time (in minutes), return the
+        [window_start_mins, window_end_mins] for the working hours on that day.
+        day_offset_mins is the number of minutes from ref_time to the START of that calendar day.
+        """
+        wh = self.request.working_hours
+        day_start = day_offset_mins + wh.start_hour * 60
+        day_end   = day_offset_mins + wh.end_hour   * 60
+        return day_start, day_end
+
+    def _get_day_offsets(self) -> List[int]:
+        """
+        Return the set of days (as minute offsets from ref_time to midnight of each day)
+        that fall within the scheduling horizon, so we can enforce working-hour windows.
+        """
+        # Determine which calendar day ref_time falls on
+        ref_day = self.ref_time.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_offsets = []
+        # Cover up to 30 days (well beyond any reasonable horizon)
+        horizon_days = min(30, self.horizon_end // (24 * 60) + 2)
+        for i in range(-1, horizon_days + 1):
+            day_dt = ref_day + timedelta(days=i)
+            offset_mins = int((day_dt - self.ref_time).total_seconds() // 60)
+            day_offsets.append(offset_mins)
+        return day_offsets
+
     def build_model(self):
-        intervals = []
-        
-        # 1. Create variables for each task
+        wh = self.request.working_hours
+        day_offsets = self._get_day_offsets()
+
+        # ── 1. Create variables for each task ──────────────────────────
+        all_intervals = []
+
         for task in self.request.tasks:
             duration = task.duration_minutes
-            
-            # Bounds
+
+            # Hard bounds from the task's own window
             min_start = max(0, self._datetime_to_mins(task.earliest_start))
-            max_end = min(self.horizon_end, self._datetime_to_mins(task.deadline))
-            
-            start_var = self.model.NewIntVar(min_start, max_end - duration, f'start_{task.id}')
-            end_var = self.model.NewIntVar(min_start + duration, max_end, f'end_{task.id}')
+            max_end   = min(self.horizon_end, self._datetime_to_mins(task.deadline))
+
+            # Make sure the window is wide enough
+            if max_end - min_start < duration:
+                # Widen slightly to allow feasibility check to fail gracefully
+                max_end = min_start + duration
+
+            start_var    = self.model.NewIntVar(min_start, max_end - duration, f'start_{task.id}')
+            end_var      = self.model.NewIntVar(min_start + duration, max_end,  f'end_{task.id}')
             interval_var = self.model.NewIntervalVar(start_var, duration, end_var, f'interval_{task.id}')
-            
+
             self.task_vars[task.id] = (start_var, end_var, interval_var)
-            intervals.append(interval_var)
-            
-        # 2. Add fixed events
+            all_intervals.append(interval_var)
+
+            # ── Working-hours constraint ────────────────────────────────
+            # For each calendar day, tasks must start and end within the
+            # working window if they fall on that day. We express this with
+            # a disjunction: either the task is entirely before this day's
+            # window ends OR entirely after its window starts (i.e. it fits
+            # inside the window on some day).
+            #
+            # Simpler & more robust approach: enumerate day windows and add
+            # a boolean "fits in this window" variable, then require that
+            # at least one is true.
+            window_bools = []
+            for day_off in day_offsets:
+                win_start, win_end = self._working_window_for_day(day_off)
+                if win_end <= 0 or win_start >= self.horizon_end:
+                    continue
+                if win_end - win_start < duration:
+                    continue   # task can't fit in this window anyway
+
+                fits = self.model.NewBoolVar(f'fits_{task.id}_day{day_off}')
+                # If fits==1: start_var >= win_start AND end_var <= win_end
+                self.model.Add(start_var >= win_start).OnlyEnforceIf(fits)
+                self.model.Add(end_var   <= win_end  ).OnlyEnforceIf(fits)
+                window_bools.append(fits)
+
+            if window_bools:
+                # Task MUST fit into at least one working window
+                self.model.AddBoolOr(window_bools)
+
+        # ── 2. Add fixed events (no working-hours restriction) ──────────
         for event in self.request.fixed_events:
             start_min = self._datetime_to_mins(event.start)
-            end_min = self._datetime_to_mins(event.end)
-            duration = end_min - start_min
-            if duration > 0:
-                interval_var = self.model.NewFixedSizeIntervalVar(start_min, duration, f'fixed_{event.id}')
-                self.fixed_intervals.append(interval_var)
-                intervals.append(interval_var)
-                
-        # 3. No overlap constraint per resource
+            end_min   = self._datetime_to_mins(event.end)
+            dur       = end_min - start_min
+            if dur > 0:
+                iv = self.model.NewFixedSizeIntervalVar(start_min, dur, f'fixed_{event.id}')
+                self.fixed_intervals.append(iv)
+                all_intervals.append(iv)
+
+        # ── 3. No-overlap per resource ──────────────────────────────────
         resource_intervals = collections.defaultdict(list)
         for task in self.request.tasks:
-            resource_id = getattr(task, 'resource_id', 'default')
-            _, _, interval_var = self.task_vars[task.id]
-            resource_intervals[resource_id].append(interval_var)
-            
-        for interval_var in self.fixed_intervals:
-            # Assume fixed events block the default resource unless specified
-            resource_intervals['default'].append(interval_var)
-            
-        for res_id, r_intervals in resource_intervals.items():
-            if len(r_intervals) > 1:
-                self.model.AddNoOverlap(r_intervals)
-                
-        # 3b. Precedence constraints (if task depends on others)
+            res = getattr(task, 'resource_id', 'default')
+            _, _, iv = self.task_vars[task.id]
+            resource_intervals[res].append(iv)
+
+        for iv in self.fixed_intervals:
+            resource_intervals['default'].append(iv)
+
+        for res_id, r_ivs in resource_intervals.items():
+            if len(r_ivs) > 1:
+                self.model.AddNoOverlap(r_ivs)
+
+        # ── 3b. Precedence constraints ──────────────────────────────────
         for task in self.request.tasks:
-            predecessors = getattr(task, 'predecessors', [])
-            for pred_id in predecessors:
+            for pred_id in (getattr(task, 'predecessors', []) or []):
                 if pred_id in self.task_vars:
                     _, pred_end, _ = self.task_vars[pred_id]
                     start_var, _, _ = self.task_vars[task.id]
                     self.model.Add(start_var >= pred_end)
 
-        # 4. Soft preferences (Objective function)
+        # ── 4. Objective ────────────────────────────────────────────────
         objective_terms = []
         for task in self.request.tasks:
-            start_var, _, _ = self.task_vars[task.id]
-            
+            start_var, end_var, _ = self.task_vars[task.id]
+
             if task.preferred_start_before:
                 pref_before = self._datetime_to_mins(task.preferred_start_before)
-                # penalty = max(0, start_var - pref_before)
-                penalty_var = self.model.NewIntVar(0, self.horizon_end, f'penalty_before_{task.id}')
+                penalty_var = self.model.NewIntVar(0, self.horizon_end, f'pb_{task.id}')
                 self.model.AddMaxEquality(penalty_var, [0, start_var - pref_before])
                 objective_terms.append(penalty_var * task.priority)
-                
+
             if task.preferred_start_after:
                 pref_after = self._datetime_to_mins(task.preferred_start_after)
-                # penalty = max(0, pref_after - start_var)
-                penalty_var = self.model.NewIntVar(0, self.horizon_end, f'penalty_after_{task.id}')
+                penalty_var = self.model.NewIntVar(0, self.horizon_end, f'pa_{task.id}')
                 self.model.AddMaxEquality(penalty_var, [0, pref_after - start_var])
                 objective_terms.append(penalty_var * task.priority)
-                
-        # Also penalize later completions slightly to push tasks as early as possible
-        for task in self.request.tasks:
-            _, end_var, _ = self.task_vars[task.id]
+
+            # Penalise later completions slightly (prefer earlier scheduling within window)
             objective_terms.append(end_var)
 
-        self.model.Minimize(sum(objective_terms))
+        if objective_terms:
+            self.model.Minimize(sum(objective_terms))
 
-    def solve(self, time_limit_sec: float = 2.0) -> Tuple[str, List[ScheduledTask], float]:
+    def solve(self, time_limit_sec: float = 5.0) -> Tuple[str, List[ScheduledTask], float]:
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = time_limit_sec
-        
+
         status = solver.Solve(self.model)
-        
-        if status == cp_model.OPTIMAL or status == cp_model.FEASIBLE:
+
+        if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             scheduled_tasks = []
             for task_id, (start_var, end_var, _) in self.task_vars.items():
                 start_val = solver.Value(start_var)
-                end_val = solver.Value(end_var)
-                
+                end_val   = solver.Value(end_var)
                 scheduled_tasks.append(ScheduledTask(
                     task_id=task_id,
                     start=self._mins_to_datetime(start_val),
-                    end=self._mins_to_datetime(end_val)
+                    end=self._mins_to_datetime(end_val),
                 ))
             return solver.StatusName(status), scheduled_tasks, solver.WallTime() * 1000
         else:
             return solver.StatusName(status), [], solver.WallTime() * 1000
-
