@@ -45,4 +45,4 @@ def test_classify_activity_empty():
         "readings": []
     }
     response = client.post("/classify-activity", json=payload)
-    assert response.status_code == 422 # Pydantic validation might catch it, or 400
+    assert response.status_code == 400

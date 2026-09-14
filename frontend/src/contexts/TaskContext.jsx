@@ -68,11 +68,27 @@ export function TaskProvider({ children }) {
       if (res.ok) {
         const data = await res.json();
         const savedTask = data.task;
+        
+        // Immediate UI update so user sees task created instantly
         setTasks(prev => {
-          const updated = [savedTask, ...prev];
+          const updated = [savedTask, ...prev.filter(t => t.id !== savedTask.id)];
           localStorage.setItem('taskpulse_tasks', JSON.stringify(updated));
           return updated;
         });
+
+        // Trigger scheduler asynchronously to assign time slot and refresh task state
+        const { nowIST } = await import('../utils/time');
+        fetch(`${API_BASE}/schedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: nowIST() })
+        }).then(schedRes => {
+          if (schedRes.ok) {
+            // Force fetch updated scheduled start/end times
+            fetchTasks(true);
+          }
+        }).catch(e => console.warn('Auto-schedule background warning:', e));
+
         return savedTask;
       }
     } catch (err) {

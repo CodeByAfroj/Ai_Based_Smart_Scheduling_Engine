@@ -19,10 +19,15 @@ export default function ProfileSetup() {
   const [profession, setProfession] = useState(profile?.profession || '');
   const [workStyle, setWorkStyle] = useState(profile?.work_style || '');
 
-  // Step 2: Work Hours
+  // Step 2: Work Hours & Biometrics
   const [timezone, setTimezone] = useState(profile?.timezone || 'UTC+05:30 (IST)');
   const [startTime, setStartTime] = useState(profile?.work_start || '09:30 AM');
   const [endTime, setEndTime] = useState(profile?.work_end || '06:30 PM');
+  const [chronotype, setChronotype] = useState(profile?.chronotype || 'morning');
+  const [wakeUpTime, setWakeUpTime] = useState(profile?.wake_up_time || '07:00 AM');
+  const [sleepTime, setSleepTime] = useState(profile?.sleep_time || '11:00 PM');
+  const [breakInterval, setBreakInterval] = useState(profile?.break_interval || 50);
+  const [weekendPref, setWeekendPref] = useState(profile?.weekend_preference || 'strict_rest');
   const [bufferEnabled, setBufferEnabled] = useState(profile?.buffer_enabled ?? true);
 
   // Step 3: Tags
@@ -34,7 +39,7 @@ export default function ProfileSetup() {
 
   const completedSteps = [
     !!(age && profession && workStyle),
-    !!(timezone && startTime && endTime),
+    !!(timezone && startTime && endTime && wakeUpTime && sleepTime),
     tags.length > 0,
     !!notificationPref
   ];
@@ -63,6 +68,11 @@ export default function ProfileSetup() {
           timezone,
           work_start: startTime,
           work_end: endTime,
+          chronotype,
+          wake_up_time: wakeUpTime,
+          sleep_time: sleepTime,
+          break_interval: parseInt(breakInterval) || 50,
+          weekend_preference: weekendPref,
           buffer_enabled: bufferEnabled,
           categories: tags,
           is_complete: true,
@@ -71,8 +81,6 @@ export default function ProfileSetup() {
           desktop_notifications: profile?.desktop_notifications ?? true,
           email_summary: profile?.email_summary ?? false,
           notification_preference: notificationPref,
-          quiet_hours_start: profile?.quiet_hours_start || '10:00 PM',
-          quiet_hours_end: profile?.quiet_hours_end || '07:30 AM',
         })
       });
       if (res.ok) {
@@ -248,12 +256,52 @@ export default function ProfileSetup() {
           <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-3 block">Core Working Window</label>
           <div className="grid grid-cols-2 gap-4 mb-5">
             <div>
-              <label className="text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1 block"><span className="text-amber-500">☀</span> Start</label>
+              <label className="text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1 block"><span className="text-amber-500">☀</span> Start Work</label>
               <input type="text" value={startTime} onChange={e => setStartTime(e.target.value)} placeholder="09:30 AM" className="input-field" />
             </div>
             <div>
-              <label className="text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1 block"><span className="text-blue-500">🌙</span> End</label>
+              <label className="text-xs text-[var(--text-muted)] mb-1 flex items-center gap-1 block"><span className="text-blue-500">🌙</span> End Work</label>
               <input type="text" value={endTime} onChange={e => setEndTime(e.target.value)} placeholder="06:30 PM" className="input-field" />
+            </div>
+          </div>
+
+          <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-3 block">Circadian Rhythm & Daily Biometrics</label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+            <div>
+              <label className="text-xs text-[var(--text-muted)] mb-1 block">Chronotype</label>
+              <div className="relative">
+                <select value={chronotype} onChange={e => setChronotype(e.target.value)} className="input-field appearance-none">
+                  <option value="morning">Morning Lark (Early Focus)</option>
+                  <option value="afternoon">Intermediate (Midday Focus)</option>
+                  <option value="night">Night Owl (Evening Focus)</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={16} />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-[var(--text-muted)] mb-1 block">Wake-up Time</label>
+              <input type="text" value={wakeUpTime} onChange={e => setWakeUpTime(e.target.value)} placeholder="07:00 AM" className="input-field" />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--text-muted)] mb-1 block">Sleep Time</label>
+              <input type="text" value={sleepTime} onChange={e => setSleepTime(e.target.value)} placeholder="11:00 PM" className="input-field" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+            <div>
+              <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1 block">Max Focus Block Before Break (Mins)</label>
+              <input type="number" value={breakInterval} onChange={e => setBreakInterval(e.target.value)} placeholder="50" min="20" max="180" className="input-field" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1 block">Weekend Mode</label>
+              <div className="relative">
+                <select value={weekendPref} onChange={e => setWeekendPref(e.target.value)} className="input-field appearance-none">
+                  <option value="strict_rest">Strict Rest (No weekend tasks)</option>
+                  <option value="flex_work">Flex Work (Allowed for high priority tasks)</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={16} />
+              </div>
             </div>
           </div>
 

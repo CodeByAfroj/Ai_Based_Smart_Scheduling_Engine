@@ -42,7 +42,6 @@ export default function Schedule() {
         body: JSON.stringify({
           tasks: tasksToSchedule,
           fixed_events: [],
-          working_hours: { start_hour: 9, end_hour: 18 },
           reference_time: nowIST()
         })
       });

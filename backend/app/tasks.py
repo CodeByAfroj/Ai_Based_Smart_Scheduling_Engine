@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import uuid
 
@@ -43,6 +43,16 @@ async def list_tasks(user_id: str = Depends(get_current_user_id)):
     tasks = await cursor.to_list(length=100)
     for t in tasks:
         t["id"] = t.pop("_id")
+        # Format naive UTC datetimes from MongoDB into IST ISO strings with +05:30 offset
+        for field in ["scheduled_start", "scheduled_end", "earliest_start", "deadline", "created_at"]:
+            val = t.get(field)
+            if isinstance(val, datetime):
+                # If naive (as Motor returns BSON Date), attach UTC then convert to IST
+                if val.tzinfo is None:
+                    val = val.replace(tzinfo=timezone.utc).astimezone(IST)
+                else:
+                    val = val.astimezone(IST)
+                t[field] = val.isoformat()
     return {"tasks": tasks}
 
 @router.post("/")

@@ -13,21 +13,25 @@ export default function Tasks() {
   // Form State
   const [name, setName] = useState('');
   const [duration, setDuration] = useState(60);
+  const [taskType, setTaskType] = useState('flexible'); // 'flexible' or 'fixed'
   const [earliestStart, setEarliestStart] = useState(() => defaultLocalValue(60000)); // 1 min from now
   const [deadline, setDeadline] = useState(() => defaultLocalValue(86400000 * 2));    // 2 days from now
   const [priority, setPriority] = useState(1);
 
   const createTask = async (e) => {
     e.preventDefault();
+    const isFixed = taskType === 'fixed';
     await addTask({
       name,
       duration_minutes: parseInt(duration),
       earliest_start: localInputToIST(earliestStart),
-      deadline: localInputToIST(deadline),
-      priority: parseInt(priority)
+      deadline: isFixed ? localInputToIST(earliestStart) : localInputToIST(deadline),
+      priority: parseInt(priority),
+      fixed: isFixed
     });
     setShowForm(false);
     setName('');
+    setTaskType('flexible');
     setEarliestStart(defaultLocalValue(60000));
     setDeadline(defaultLocalValue(86400000 * 2));
   };
@@ -57,14 +61,49 @@ export default function Tasks() {
           <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 mb-6 shadow-sm">
             <h2 className="font-bold text-[var(--text-main)] mb-4">Create New Task</h2>
             <form onSubmit={createTask} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* Task Mode / Type Selector */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-[var(--text-muted)] mb-2 uppercase">Task Mode</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTaskType('flexible')}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      taskType === 'flexible'
+                        ? 'border-[var(--accent-base)] bg-[var(--accent-light)]/40 ring-2 ring-[var(--accent-base)]/20'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-app)] text-[var(--text-muted)]'
+                    }`}
+                  >
+                    <p className="font-bold text-sm text-[var(--text-main)]">🤖 AI Flexible Task</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">AI automatically picks the best time slot before deadline</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTaskType('fixed')}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      taskType === 'fixed'
+                        ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-500/20'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-app)] text-[var(--text-muted)]'
+                    }`}
+                  >
+                    <p className="font-bold text-sm text-[var(--text-main)]">🔒 Fixed Event / Meeting</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">Locked to exact start time. AI schedules other tasks around it</p>
+                  </button>
+                </div>
+              </div>
+
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Task Name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors" placeholder="e.g., Draft Engineering Spec" />
+                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors" placeholder="e.g., Team Sync Meeting or Write Report" />
               </div>
+
               <div>
                 <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Duration (mins)</label>
                 <input type="number" value={duration} onChange={e => setDuration(e.target.value)} required min="15" step="15" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors" />
               </div>
+
               <div>
                 <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Priority</label>
                 <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors">
@@ -74,14 +113,16 @@ export default function Tasks() {
                   <option value="5">Critical</option>
                 </select>
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Earliest Start</label>
+                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">
+                  {taskType === 'fixed' ? 'Exact Event Start Time' : 'Earliest Start'}
+                </label>
                 <input
                   type="datetime-local"
                   value={earliestStart}
                   onChange={e => {
                     setEarliestStart(e.target.value);
-                    // Auto-push deadline if it becomes earlier than start
                     if (new Date(localInputToIST(e.target.value)) >= new Date(localInputToIST(deadline))) {
                       const earliestStartDate = new Date(localInputToIST(e.target.value));
                       const newTimestamp = earliestStartDate.getTime() + parseInt(duration) * 60000 + 3600000;
@@ -94,13 +135,19 @@ export default function Tasks() {
                   className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors"
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Deadline</label>
-                <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors" />
-              </div>
+
+              {taskType === 'flexible' && (
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Deadline</label>
+                  <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors" />
+                </div>
+              )}
+
               <div className="md:col-span-2 flex justify-end gap-3 mt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="btn-ghost py-2 px-4 text-sm">Cancel</button>
-                <button type="submit" className="btn-primary py-2 px-4 text-sm">Create Task</button>
+                <button type="submit" className="btn-primary py-2 px-4 text-sm">
+                  {taskType === 'fixed' ? '🔒 Save Fixed Event' : '🤖 Create Flexible Task'}
+                </button>
               </div>
             </form>
           </div>
@@ -126,8 +173,13 @@ export default function Tasks() {
                     <p className={`font-semibold text-[var(--text-main)] truncate ${task.status === 'completed' ? 'line-through' : ''}`}>{task.name}</p>
                     <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
                       <span className="flex items-center gap-1"><Clock size={12} /> {task.duration_minutes}m</span>
-                      <span className="flex items-center gap-1"><CalendarIcon size={12} /> Deadline: {formatDateIST(task.deadline)}</span>
-                      {task.status === 'scheduled' && task.scheduled_start && (
+                      {!task.fixed && <span className="flex items-center gap-1"><CalendarIcon size={12} /> Deadline: {formatDateIST(task.deadline)}</span>}
+                      {task.fixed && (
+                        <span className="bg-amber-100 text-amber-800 px-2 rounded-full font-bold">
+                          🔒 Fixed Event ({formatIST(task.scheduled_start || task.earliest_start)})
+                        </span>
+                      )}
+                      {!task.fixed && task.status === 'scheduled' && task.scheduled_start && (
                         <span className="bg-blue-100 text-blue-700 px-2 rounded-full font-bold">
                           📅 {formatIST(task.scheduled_start)} IST
                         </span>

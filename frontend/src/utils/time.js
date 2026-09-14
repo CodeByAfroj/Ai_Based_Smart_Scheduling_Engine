@@ -41,10 +41,18 @@ export function localInputToIST(datetimeLocalValue) {
  * Suitable for use as the default value of a <input type="datetime-local" />.
  */
 export function defaultLocalValue(offsetMs = 0) {
-  const now = new Date(Date.now() + offsetMs);
-  // Get IST wall clock time for now (since we assume user is in IST)
-  const istMs = now.getTime() + IST_OFFSET_MS;
-  return new Date(istMs).toISOString().slice(0, 16);
+  const targetDate = new Date(Date.now() + offsetMs);
+  // Extract IST components using locale Swedish (YYYY-MM-DD HH:mm) in Asia/Kolkata timezone
+  const istString = targetDate.toLocaleString('sv-SE', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).replace(' ', 'T');
+  return istString.slice(0, 16);
 }
 
 /**

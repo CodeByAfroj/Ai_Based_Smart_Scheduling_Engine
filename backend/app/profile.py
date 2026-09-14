@@ -29,15 +29,20 @@ class ProfileUpdate(BaseModel):
     profession: Optional[str] = ""
     work_style: Optional[str] = ""
     timezone: Optional[str] = "UTC+05:30 (IST)"
-    work_start: Optional[str] = "09:30 AM"
-    work_end: Optional[str] = "06:30 PM"
+    work_start: Optional[str] = "09:00 AM"
+    work_end: Optional[str] = "07:00 PM"
+    chronotype: Optional[str] = "morning" # morning, afternoon, night
+    peak_start: Optional[str] = "09:00 AM"
+    peak_end: Optional[str] = "01:00 PM"
+    wake_up_time: Optional[str] = "07:00 AM"
+    sleep_time: Optional[str] = "11:00 PM"
+    break_interval: Optional[int] = 50 # minutes continuous focus
+    weekend_preference: Optional[str] = "strict_rest" # strict_rest or flex_work
     buffer_enabled: Optional[bool] = True
     push_notifications: Optional[bool] = True
     desktop_notifications: Optional[bool] = True
     email_summary: Optional[bool] = False
     notification_preference: Optional[str] = "text_and_sound"
-    quiet_hours_start: Optional[str] = "10:00 PM"
-    quiet_hours_end: Optional[str] = "07:30 AM"
     categories: Optional[List[str]] = []
     is_complete: Optional[bool] = False
 
@@ -61,15 +66,22 @@ async def get_profile(user_id: str = Depends(get_current_user_id)):
         "profession": settings.get("profession", ""),
         "work_style": settings.get("work_style", ""),
         "timezone": settings.get("timezone", ""),
-        "work_start": settings.get("work_start", ""),
-        "work_end": settings.get("work_end", ""),
+        "work_start": settings.get("work_start", "09:00 AM"),
+        "work_end": settings.get("work_end", "07:00 PM"),
+        "chronotype": settings.get("chronotype", "morning"),
+        "peak_start": settings.get("peak_start", "09:00 AM"),
+        "peak_end": settings.get("peak_end", "01:00 PM"),
+        "quiet_hours_start": settings.get("work_end", "07:00 PM"),
+        "quiet_hours_end": settings.get("work_start", "09:00 AM"),
+        "wake_up_time": settings.get("wake_up_time", "07:00 AM"),
+        "sleep_time": settings.get("sleep_time", "11:00 PM"),
+        "break_interval": settings.get("break_interval", 50),
+        "weekend_preference": settings.get("weekend_preference", "strict_rest"),
         "buffer_enabled": settings.get("buffer_enabled", True),
         "push_notifications": settings.get("push_notifications", True),
         "desktop_notifications": settings.get("desktop_notifications", True),
         "email_summary": settings.get("email_summary", False),
         "notification_preference": settings.get("notification_preference", "text_and_sound"),
-        "quiet_hours_start": settings.get("quiet_hours_start", "10:00 PM"),
-        "quiet_hours_end": settings.get("quiet_hours_end", "07:30 AM"),
         "categories": settings.get("categories", []),
     }
 

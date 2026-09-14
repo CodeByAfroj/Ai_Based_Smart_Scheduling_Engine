@@ -20,10 +20,15 @@ class FixedEvent(BaseModel):
     name: str
     start: datetime
     end: datetime
+    resource_id: Optional[str] = "default"
 
 class WorkingHours(BaseModel):
-    start_hour: int = Field(8, ge=0, le=23)
-    end_hour: int = Field(22, ge=0, le=24)
+    start_hour: int = Field(9, ge=0, le=23)
+    end_hour: int = Field(21, ge=0, le=24)
+    peak_start_hour: int = Field(9, ge=0, le=23)
+    peak_end_hour: int = Field(13, ge=0, le=24)
+    quiet_start_hour: int = Field(23, ge=0, le=23)
+    quiet_end_hour: int = Field(7, ge=0, le=24)
 
 class ScheduleRequest(BaseModel):
     tasks: List[Task]

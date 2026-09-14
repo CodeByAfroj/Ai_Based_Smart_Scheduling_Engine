@@ -20,8 +20,9 @@ export default function Profile() {
   const timezone = profile?.timezone || 'Not set';
   const workStart = profile?.work_start || '09:30 AM';
   const workEnd = profile?.work_end || '06:30 PM';
-  const quietStart = profile?.quiet_hours_start || '10:00 PM';
-  const quietEnd = profile?.quiet_hours_end || '07:30 AM';
+  // Sleep / quiet hours are dynamically all non-active working hours
+  const sleepStart = workEnd;
+  const sleepEnd = workStart;
   const categories = profile?.categories || [];
   
   const pushNotif = profile?.push_notifications ?? true;
@@ -33,16 +34,25 @@ export default function Profile() {
     'text_and_sound': 'Web Push + Notification Sound'
   }[notifPref];
 
+  const chronotype = profile?.chronotype || 'morning';
+  const peakStart = profile?.peak_start || '09:00 AM';
+  const peakEnd = profile?.peak_end || '01:00 PM';
+  const wakeUpTime = profile?.wake_up_time || '07:00 AM';
+  const sleepTime = profile?.sleep_time || '11:00 PM';
+  const breakInterval = profile?.break_interval || 50;
+  const weekendPref = profile?.weekend_preference === 'flex_work' ? 'Flex Work Allowed' : 'Strict Rest Mode';
+
   const schedulingRules = [
-    { icon: Clock, label: 'Core Focus Hours', value: `${workStart} – ${workEnd}`, color: 'text-[var(--accent-base)]', desc: 'Calendar automatically declines external requests outside this band.' },
-    { icon: Calendar, label: 'Meeting Buffer Rule', value: profile?.buffer_enabled ? '15-Min Cool-Down' : 'Buffer Disabled', color: 'text-[var(--accent-base)]', desc: 'Guaranteed transition gap inserted automatically between contiguous syncs.' },
-    { icon: Calendar, label: 'Quiet Hours', value: `${quietStart} – ${quietEnd}`, color: 'text-[var(--text-main)]', desc: 'No notifications or task dispatches during this window.' },
-    { icon: Zap, label: 'Conflict Policy', value: 'Auto-Reschedule', color: 'text-[var(--accent-base)]', desc: 'Autonomous conflict arbitration shifts lower priority holds with notify.' },
+    { icon: Clock, label: 'Core Active Working Hours', value: `${workStart} – ${workEnd}`, color: 'text-[var(--accent-base)]', desc: 'Calendar automatically restricts tasks to your standard active work day.' },
+    { icon: Zap, label: `Peak Focus Window (${chronotype.toUpperCase()})`, value: `${peakStart} – ${peakEnd}`, color: 'text-amber-600', desc: 'High & Critical priority tasks are prioritized into this peak energy block.' },
+    { icon: UserIcon, label: 'Daily Rhythm & Biometrics', value: `Wake: ${wakeUpTime} | Sleep: ${sleepTime}`, color: 'text-purple-600', desc: 'Used by AI Recommendation engine to calculate focus scores & avoid fatigue.' },
+    { icon: Target, label: 'Break & Weekend Policy', value: `${breakInterval}m Focus Max | ${weekendPref}`, color: 'text-emerald-600', desc: 'Enforces micro-breaks and protects weekend rest days.' },
+    { icon: Calendar, label: 'Quiet / Sleep Hours (Non-Active)', value: `${sleepStart} – ${sleepEnd}`, color: 'text-slate-600', desc: 'All hours outside active working window are strictly reserved for sleep & rest.' },
   ];
 
   const alertChannels = [
     { icon: Bell, label: 'Notification Style', detail: prefLabel, status: 'Active', color: 'green' },
-    { icon: Clock, label: 'Quiet Hours / DND', detail: `${quietStart} – ${quietEnd} daily`, status: 'Scheduled', color: 'slate' },
+    { icon: Clock, label: 'Quiet / Sleep Hours DND', detail: `${sleepStart} – ${sleepEnd} daily`, status: 'Scheduled', color: 'slate' },
   ];
 
   return (

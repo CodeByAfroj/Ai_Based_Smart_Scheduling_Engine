@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
@@ -44,8 +44,23 @@ export default function Dashboard() {
     return { text: 'Low', cls: 'bg-slate-100 text-slate-600' };
   };
 
-const now = new Date();
-const dateStr = new Date(nowIST()).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' });
+  const [recommendation, setRecommendation] = useState(null);
+  const [loadingRec, setLoadingRec] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    setLoadingRec(true);
+    fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/recommendations/next-task`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => setRecommendation(data))
+      .catch(err => console.error('Rec error', err))
+      .finally(() => setLoadingRec(false));
+  }, [token, tasks]);
+
+  const recTask = recommendation?.recommended_next_task;
+  const dateStr = new Date(nowIST()).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' });
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)]">
@@ -80,6 +95,42 @@ const dateStr = new Date(nowIST()).toLocaleDateString('en-US', { weekday: 'short
         <div className="flex gap-6">
           {/* Main Content */}
           <div className="flex-1 min-w-0">
+
+            {/* AI Personalized Recommendation Card */}
+            {recommendation && recTask && (
+              <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 text-white rounded-2xl p-6 mb-6 shadow-md border border-indigo-700/50 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                  <Zap size={180} />
+                </div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                        <Zap size={12} /> Personalized Recommendation
+                      </span>
+                      <span className="bg-white/10 text-white/90 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-white/10">
+                        {recommendation.current_energy_level}
+                      </span>
+                    </div>
+                    <span className="text-xs text-indigo-200 font-mono">Score: {recTask.score} pts</span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white mb-1">{recTask.name}</h3>
+                  <p className="text-indigo-200 text-xs mb-4 leading-relaxed">{recTask.reason_detail}</p>
+
+                  <div className="flex items-center justify-between flex-wrap gap-3 bg-white/10 rounded-xl p-3.5 border border-white/10">
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="flex items-center gap-1.5 font-medium"><Clock size={14} className="text-amber-400"/> {recTask.duration_minutes} mins</span>
+                      <span className="bg-indigo-500/30 text-indigo-100 px-2 py-0.5 rounded font-medium">{recTask.reason_badge}</span>
+                      <span className="text-indigo-200">Recommended: <strong>{recTask.recommended_time_slot}</strong></span>
+                    </div>
+                    <button onClick={() => navigate('/schedule')} className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                      Start Task <Play size={12} fill="currentColor" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Profile Completion Banner */}
             {!notifDismissed && profileIncomplete && (
