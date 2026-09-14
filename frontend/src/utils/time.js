@@ -9,10 +9,17 @@ const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // +5:30 in milliseconds
  * Returns the current time as an IST-aware ISO string (e.g. "2026-09-14T10:35:00+05:30")
  */
 export function nowIST() {
-  const now = new Date();
-  const istMs = now.getTime() + IST_OFFSET_MS - now.getTimezoneOffset() * 60000;
-  const istDate = new Date(istMs);
-  return istDate.toISOString().replace('Z', '+05:30');
+  // Format current date/time in IST using locale that yields ISO-like format
+  return new Date().toLocaleString('sv-SE', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).replace(/(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/, '$1-$2-$3T$4:$5:$6') + '+05:30';
 }
 
 /**
@@ -22,7 +29,7 @@ export function nowIST() {
  */
 export function localInputToIST(datetimeLocalValue) {
   if (!datetimeLocalValue) return nowIST();
-  // datetimeLocalValue is already local time (IST on Indian systems).
+  // datetime-local value is assumed to be in IST (as per app timezone setting)
   // Just append the IST offset instead of converting to UTC.
   return datetimeLocalValue.length === 16
     ? `${datetimeLocalValue}:00+05:30`
@@ -35,8 +42,8 @@ export function localInputToIST(datetimeLocalValue) {
  */
 export function defaultLocalValue(offsetMs = 0) {
   const now = new Date(Date.now() + offsetMs);
-  // Get IST wall clock time
-  const istMs = now.getTime() + IST_OFFSET_MS - now.getTimezoneOffset() * 60000;
+  // Get IST wall clock time for now (since we assume user is in IST)
+  const istMs = now.getTime() + IST_OFFSET_MS;
   return new Date(istMs).toISOString().slice(0, 16);
 }
 

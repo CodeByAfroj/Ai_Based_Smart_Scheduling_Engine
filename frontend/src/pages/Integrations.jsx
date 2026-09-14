@@ -99,7 +99,7 @@ export default function Integrations() {
     <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
       <div className="max-w-4xl mx-auto">
 
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div className="flex  items-center justify-between mb-8 flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Integrations & Connections</h1>
             <p className="text-sm text-[var(--text-muted)]">Manage your connected services and notification channels</p>

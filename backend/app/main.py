@@ -13,6 +13,7 @@ from .tasks import router as tasks_router
 from .notifications import router as notifications_router
 from .engine import SchedulerEngine
 from .activity import router as activity_router
+from .nlp_routes import router as nlp_router
 from fastapi import Depends
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -38,6 +39,7 @@ app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(tasks_router)
 app.include_router(notifications_router)
+app.include_router(nlp_router)
 
 
 app.add_middleware(

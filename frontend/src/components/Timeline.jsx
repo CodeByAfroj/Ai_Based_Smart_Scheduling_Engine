@@ -1,13 +1,8 @@
 import { useMemo, useRef, useEffect, useState } from 'react'
+import { formatIST } from '../utils/time'
 
 function formatTime(date) {
   return date.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' })
-}
-
-function formatMonoTime(date) {
-  const h = date.getHours().toString().padStart(2, '0')
-  const m = date.getMinutes().toString().padStart(2, '0')
-  return `${h}:${m}`
 }
 
 function isSameDay(d1, d2) {
@@ -297,11 +292,11 @@ export default function Timeline({ scheduledTasks, fixedEvents, tasks }) {
                           onClick={() => setSelectedDate(new Date(day))}
                         >
                           <div className="px-2 py-1 h-full flex flex-col overflow-hidden">
-                            {bar.durationMins * PIXELS_PER_MINUTE > 20 && (
-                              <span className="font-mono text-[9px] text-[var(--text-muted)]">
-                                {formatMonoTime(bar.start)} – {formatMonoTime(bar.end)}
-                              </span>
-                            )}
+{bar.durationMins * PIXELS_PER_MINUTE > 20 && (
+  <span className="font-mono text-[9px] text-[var(--text-muted)]">
+    {formatIST(bar.start.toISOString())} – {formatIST(bar.end.toISOString())}
+  </span>
+)}
                             <span className="text-[11px] font-bold text-[var(--text-main)] truncate leading-tight">
                               {bar.name}
                             </span>
@@ -380,27 +375,27 @@ export default function Timeline({ scheduledTasks, fixedEvents, tasks }) {
                 >
                   <div className="p-3">
                     {/* Time & Status */}
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-mono text-xs font-bold text-[var(--text-main)]">
-                        {formatMonoTime(bar.start)} – {formatMonoTime(bar.end)}
-                      </span>
-                      <span className="font-mono text-[10px] text-[var(--text-muted)]">{bar.duration}m</span>
-                      {isNow && (
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${priorityColor}25`, color: priorityColor }}>
-                          In Progress
-                        </span>
-                      )}
-                      {isNext && !isNow && (
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-base)]/15 text-[var(--accent-base)]">
-                          Up Next
-                        </span>
-                      )}
-                      {isPast && (
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)]">
-                          Done
-                        </span>
-                      )}
-                    </div>
+<div className="flex items-center gap-2 mb-1.5">
+  <span className="font-mono text-xs font-bold text-[var(--text-main)]">
+    {formatIST(bar.start.toISOString())} – {formatIST(bar.end.toISOString())}
+  </span>
+  <span className="font-mono text-[10px] text-[var(--text-muted)]">{bar.duration}m</span>
+  {isNow && (
+    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: `${priorityColor}25`, color: priorityColor }}>
+      In Progress
+    </span>
+  )}
+  {isNext && !isNow && (
+    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--accent-base)]/15 text-[var(--accent-base)]">
+      Up Next
+    </span>
+  )}
+  {isPast && (
+    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)]">
+      Done
+    </span>
+  )}
+</div>
 
                     {/* Name */}
                     <h4 className="text-sm font-bold text-[var(--text-main)] leading-tight mb-1.5">{bar.name}</h4>

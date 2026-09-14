@@ -1,6 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import { BarChart3, Activity, Clock, CheckCircle2, TrendingUp, TrendingDown, ListTodo, Calendar } from 'lucide-react';
+import { nowIST, formatDateIST } from '../utils/time';
 
 export default function Analytics() {
   const { token } = useAuth();
@@ -22,19 +23,21 @@ export default function Analytics() {
   const highCompletionRate = highPriority.length > 0 ? Math.round((highCompleted.length / highPriority.length) * 100) : 0;
 
   // Per-day breakdown for the chart (last 7 days)
-  const dayLabels = [];
-  const dayData = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dayStr = d.toLocaleDateString('en-US', { weekday: 'short' });
-    dayLabels.push(dayStr);
-    const dayCompleted = completed.filter(t => {
-      const updated = t.updated_at ? new Date(t.updated_at) : new Date(t.created_at);
-      return updated.toDateString() === d.toDateString();
-    });
-    dayData.push(dayCompleted.length);
-  }
+const dayLabels = [];
+      const dayData = [];
+      for (let i = 6; i >= 0; i--) {
+        // Calculate date for this day in IST (midnight)
+        const istNow = new Date(nowIST());
+        istNow.setHours(0, 0, 0, 0);
+        istNow.setDate(istNow.getDate() - i);
+        const dayStr = istNow.toLocaleDateString('en-US', { weekday: 'short' });
+        dayLabels.push(dayStr);
+        const dayCompleted = completed.filter(t => {
+          const updatedStr = t.updated_at ? t.updated_at : t.created_at;
+          return formatDateIST(updatedStr) === formatDateIST(istNow.toISOString());
+        });
+        dayData.push(dayCompleted.length);
+      }
   const maxDay = Math.max(...dayData, 1);
 
   return (

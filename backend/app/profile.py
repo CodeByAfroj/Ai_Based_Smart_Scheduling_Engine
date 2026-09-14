@@ -74,7 +74,7 @@ async def get_profile(user_id: str = Depends(get_current_user_id)):
     }
 
     is_complete = bool(settings.get("is_complete", False))
-    return {"profile": merged, "is_complete": is_complete}
+    return {**merged, "is_complete": is_complete}
 
 
 @router.put("/update")

@@ -3,12 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import { Plus, Clock, Calendar as CalendarIcon, CheckCircle2, Circle, Trash2 } from 'lucide-react';
 import { localInputToIST, defaultLocalValue, formatIST, formatDateIST } from '../utils/time';
+import VoiceButton from '../ai/VoiceButton';
 
 export default function Tasks() {
   const { token } = useAuth();
   const { tasks, loadingTasks, addTask, updateTask, deleteTask } = useTasks();
   const [showForm, setShowForm] = useState(false);
-  
+
   // Form State
   const [name, setName] = useState('');
   const [duration, setDuration] = useState(60);
@@ -40,7 +41,7 @@ export default function Tasks() {
   return (
     <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
       <div className="max-w-5xl mx-auto">
-        
+
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Tasks & Projects</h1>
@@ -49,6 +50,7 @@ export default function Tasks() {
           <button onClick={() => setShowForm(!showForm)} className="btn-primary py-2.5 px-5 flex items-center gap-2 text-sm">
             <Plus size={16} /> New Task
           </button>
+          <VoiceButton />
         </div>
 
         {showForm && (
@@ -74,18 +76,22 @@ export default function Tasks() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-[var(--text-muted)] mb-1 uppercase">Earliest Start</label>
-                <input 
-                  type="datetime-local" 
-                  value={earliestStart} 
+                <input
+                  type="datetime-local"
+                  value={earliestStart}
                   onChange={e => {
                     setEarliestStart(e.target.value);
                     // Auto-push deadline if it becomes earlier than start
-                    if (new Date(e.target.value) >= new Date(deadline)) {
-                      setDeadline(new Date(new Date(e.target.value).getTime() + parseInt(duration) * 60000 + 3600000).toISOString().slice(0, 16));
+                    if (new Date(localInputToIST(e.target.value)) >= new Date(localInputToIST(deadline))) {
+                      const earliestStartDate = new Date(localInputToIST(e.target.value));
+                      const newTimestamp = earliestStartDate.getTime() + parseInt(duration) * 60000 + 3600000;
+                      const newDateISTISO = new Date(newTimestamp).toISOString();
+                      const newDeadlineLocal = newDateISTISO.slice(0, 16);
+                      setDeadline(newDeadlineLocal);
                     }
-                  }} 
-                  required 
-                  className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors" 
+                  }}
+                  required
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent-base)] transition-colors"
                 />
               </div>
               <div className="md:col-span-2">

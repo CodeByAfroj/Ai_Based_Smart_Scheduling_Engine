@@ -7,6 +7,7 @@ import {
   RefreshCcw, Zap, BarChart3, ChevronRight, AlarmClock,
   Circle, Trash2, Play
 } from 'lucide-react';
+import { formatIST, formatDateIST, nowIST } from '../utils/time'
 
 export default function Dashboard() {
   const { profile, readinessScore, token } = useAuth();
@@ -23,9 +24,7 @@ export default function Dashboard() {
   const scheduledTasks = tasks.filter(t => t.status === 'scheduled');
   const todayTasks = tasks.filter(t => {
     if (!t.scheduled_start) return false;
-    const d = new Date(t.scheduled_start);
-    const now = new Date();
-    return d.toDateString() === now.toDateString();
+    return formatDateIST(t.scheduled_start) === formatDateIST(nowIST());
   });
   const totalFocusMinutes = completedTasks.reduce((acc, t) => acc + (t.duration_minutes || 0), 0);
   const activeTasks = tasks.filter(t => t.status !== 'completed');
@@ -45,8 +44,8 @@ export default function Dashboard() {
     return { text: 'Low', cls: 'bg-slate-100 text-slate-600' };
   };
 
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+const now = new Date();
+const dateStr = new Date(nowIST()).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' });
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)]">
@@ -124,6 +123,7 @@ export default function Dashboard() {
             {/* Task List Header */}
             <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
               <h2 className="text-lg font-bold text-[var(--text-main)]">Your Tasks</h2>
+              
               <div className="flex items-center gap-3">
                 <span className="text-xs text-[var(--text-muted)] flex items-center gap-1"><Calendar size={14} /> {dateStr}</span>
                 <button onClick={() => navigate('/tasks')} className="btn-primary py-2 px-4 text-sm flex items-center gap-1.5">
@@ -170,15 +170,15 @@ export default function Dashboard() {
                         )}
                         <span className="ml-auto text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1">
                           <Clock size={10} /> {task.duration_minutes}m
-                          {task.scheduled_start && (
-                            <> • {new Date(task.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(task.scheduled_end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
-                          )}
+{task.scheduled_start && (
+    <> • {new Date(task.scheduled_start).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })} – {new Date(task.scheduled_end).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}</>
+  )}
                         </span>
                       </div>
 
                       <h3 className={`font-bold text-[var(--text-main)] text-base mb-2 leading-snug ${isComplete ? 'line-through' : ''}`}>{task.name}</h3>
                       <p className="text-sm text-[var(--text-muted)] leading-relaxed mb-4">
-                        Deadline: {new Date(task.deadline).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        Deadline: {new Date(task.deadline).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' })}
                       </p>
 
                       <div className="flex items-center gap-2 flex-wrap">
@@ -277,7 +277,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-[var(--text-muted)]">
-                            {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {start.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })} – {end.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                           </p>
                           <p className="text-sm font-semibold text-[var(--text-main)] truncate">{task.name}</p>
                         </div>

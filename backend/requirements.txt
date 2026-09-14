@@ -4,21 +4,32 @@ uvicorn[standard]
 
 # Data Validation & Configuration
 pydantic
-pydantic-settings
+
+# MongoDB Async Driver
+motor
+
+# Environment Variables
+python-dotenv
+
+# Authentication
+PyJWT
+httpx
 
 # Machine Learning & Inference Runtime
 numpy
-pandas
+scipy
+joblib
 scikit-learn
-onnxruntime
 skl2onnx
+
+# NLP & Text Processing
+spacy>=3.0.0
 
 # Mathematical Optimization & Utilities
 ortools
-scipy
-joblib
 
 # Testing & HTTP Clients
 pytest
 requests
-httpx
+pymongo
+sse-starlette

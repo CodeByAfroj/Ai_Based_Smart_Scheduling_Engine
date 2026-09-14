@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { localInputToIST } from '../utils/time'
 
 function getDefaultEventTimes() {
   const now = new Date()
@@ -30,8 +31,8 @@ export default function FixedEventForm({ onAddEvent }) {
 
   const handleChange = (field, value) => setEvent(prev => ({ ...prev, [field]: value }))
 
-  const isValid = event.name && event.start && event.end &&
-    new Date(event.end).getTime() > new Date(event.start).getTime()
+const isValid = event.name && event.start && event.end &&
+     new Date(localInputToIST(event.end)).getTime() > new Date(localInputToIST(event.start)).getTime();
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -40,8 +41,8 @@ export default function FixedEventForm({ onAddEvent }) {
     const newEvent = {
       id: `EVT_${Date.now().toString().slice(-6)}`,
       name: event.name,
-      start: new Date(event.start).toISOString(),
-      end: new Date(event.end).toISOString(),
+      start: localInputToIST(event.start),
+      end: localInputToIST(event.end),
     }
     onAddEvent(newEvent)
     setEvent(defaultEvent())

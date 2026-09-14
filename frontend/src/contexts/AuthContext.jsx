@@ -25,10 +25,11 @@ export function AuthProvider({ children }) {
       });
       if (res.ok) {
         const data = await res.json();
-        setProfile(data.profile);
-        setIsProfileComplete(data.is_complete);
-        localStorage.setItem('taskpulse_profile', JSON.stringify(data.profile));
-        localStorage.setItem('taskpulse_profile_complete', JSON.stringify(data.is_complete));
+        const { is_complete, ...profileData } = data;
+        setProfile(profileData);
+        setIsProfileComplete(is_complete);
+        localStorage.setItem('taskpulse_profile', JSON.stringify(profileData));
+        localStorage.setItem('taskpulse_profile_complete', JSON.stringify(is_complete));
       } else {
         // Token invalid / expired — log out
         logout();
@@ -66,13 +67,13 @@ export function AuthProvider({ children }) {
   const readinessScore = (() => {
     if (!profile) return 0;
     let score = 0;
-    
+
     // Step 1: Personal Info
     if (profile.age && profile.profession && profile.work_style) score += 33;
-    
+
     // Step 2: Work Hours
     if (profile.timezone && profile.work_start && profile.work_end) score += 33;
-    
+
     // Step 3: Tags
     if (profile.categories?.length > 0) score += 34;
 

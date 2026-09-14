@@ -1,6 +1,7 @@
 import collections
 from datetime import datetime, timedelta, timezone
 from typing import List, Tuple
+from zoneinfo import ZoneInfo
 from ortools.sat.python import cp_model
 from .models import ScheduleRequest, ScheduledTask, FixedEvent
 
@@ -30,16 +31,41 @@ class SchedulerEngine:
         self._calculate_horizon()
 
     def _datetime_to_mins(self, dt: datetime) -> int:
-        # Make both timezone-aware or both naive before subtracting
-        ref = self.ref_time
-        if ref.tzinfo is not None and dt.tzinfo is None:
-            dt = dt.replace(tzinfo=ref.tzinfo)
-        elif ref.tzinfo is None and dt.tzinfo is not None:
-            dt = dt.replace(tzinfo=None)
-        return int((dt - ref).total_seconds() // 60)
+        # Convert both times to IST for consistent calculation
+        IST = ZoneInfo("Asia/Kolkata")
+        
+        # Handle reference time
+        if self.ref_time.tzinfo is None:
+            # Ref is naive - assume it's UTC time
+            ref_ist = self.ref_time.replace(tzinfo=timezone.utc).astimezone(IST)
+        else:
+            # Ref is already timezone-aware - convert to IST
+            ref_ist = self.ref_time.astimezone(IST)
+        
+        # Handle input time
+        if dt.tzinfo is None:
+            # DT is naive - assume it's UTC time
+            dt_ist = dt.replace(tzinfo=timezone.utc).astimezone(IST)
+        else:
+            # DT is already timezone-aware - convert to IST
+            dt_ist = dt.astimezone(IST)
+        
+        # Calculate difference in IST
+        return int((dt_ist - ref_ist).total_seconds() // 60)
 
     def _mins_to_datetime(self, mins: int) -> datetime:
-        return self.ref_time + timedelta(minutes=mins)
+        # Result should be in IST
+        IST = ZoneInfo("Asia/Kolkata")
+        # Convert reference time to IST
+        if self.ref_time.tzinfo is None:
+            # Ref is naive - assume it's IST time
+            ref_ist = self.ref_time.replace(tzinfo=IST)
+        else:
+            # Ref is already timezone-aware - convert to IST
+            ref_ist = self.ref_time.astimezone(IST)
+        
+        # Add minutes and return in IST
+        return ref_ist + timedelta(minutes=mins)
 
     def _calculate_horizon(self):
         max_end = 0

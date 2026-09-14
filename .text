@@ -1,6 +1,0 @@
-start abckend
-
-
-cd /Users/afrojmulani/Scheduling/backend
-source ../.venv/bin/activate
-fastapi dev app/main.py

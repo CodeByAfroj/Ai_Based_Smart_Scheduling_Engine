@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { localInputToIST } from '../utils/time'
 
 function getDefaultDatetimes() {
   const now = new Date()
@@ -48,16 +49,16 @@ export default function TaskForm({ onAddTask }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!task.name || !task.earliest_start || !task.deadline) return
-    const startTime = new Date(task.earliest_start).getTime()
-    const deadlineTime = new Date(task.deadline).getTime()
+    const startTime = new Date(localInputToIST(task.earliest_start)).getTime()
+    const deadlineTime = new Date(localInputToIST(task.deadline)).getTime()
     if (deadlineTime <= startTime) return
 
     const newTask = {
       id: `T_${Date.now().toString().slice(-6)}`,
       name: task.name,
       duration_minutes: parseInt(task.duration_minutes),
-      earliest_start: new Date(task.earliest_start).toISOString(),
-      deadline: new Date(task.deadline).toISOString(),
+      earliest_start: localInputToIST(task.earliest_start),
+      deadline: localInputToIST(task.deadline),
       priority: parseInt(task.priority),
       fixed: false,
     }
