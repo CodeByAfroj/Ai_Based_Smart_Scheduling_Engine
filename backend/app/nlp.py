@@ -1,367 +1,384 @@
 """
-Natural Language Processing Module for TaskPulse Assistant
-Handles parsing of user commands and questions about tasks/schedule
+Natural Language Processing & Contextual AI Assistant Module for TaskPulse
+Features Multi-Tier Failover (Gemini -> Groq -> Ollama -> Fallback Engine)
+Handles Rate Limits (HTTP 429) automatically with instant model switching.
 """
 import re
+import os
+import json
 import datetime
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List
 from zoneinfo import ZoneInfo
+import httpx
 
-try:
-    import spacy
-    # Load the English model
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    # If model not found, we'll use a blank pipeline and rely on rule-based extraction
-    nlp = spacy.blank("en")
-    print("Warning: spaCy model not found. Using rule-based extraction only.")
+from dotenv import load_dotenv
+load_dotenv()
 
 IST = ZoneInfo("Asia/Kolkata")
 
+def now_ist():
+    return datetime.datetime.now(IST)
+
+def get_gemini_key():
+    return os.getenv("GEMINI_API_KEY", "").strip()
+
+def get_groq_key():
+    return os.getenv("GROQ_API_KEY", "").strip()
+
+def get_ollama_key():
+    return os.getenv("OLLAMA_API_KEY", "").strip()
+
+def get_ollama_model():
+    return os.getenv("OLLAMA_MODEL", "gemma4:31b")
+
+def get_ollama_base_url():
+    return os.getenv("OLLAMA_BASE_URL", "https://api.ollama.com").rstrip("/")
+
+import time
+
+_PROVIDER_COOLDOWN = {
+    "gemini_until": 0,
+    "groq_until": 0
+}
+
+def call_gemini_llm(messages: List[Dict[str, str]], timeout: float = 1.8) -> Optional[str]:
+    """
+    Tier 1: Google Gemini API (gemini-3.5-flash-lite)
+    Short-circuits immediately if rate limited (429) or timed out.
+    """
+    api_key = get_gemini_key()
+    if not api_key:
+        return None
+
+    # Skip if Gemini was recently rate-limited or timed out
+    if time.time() < _PROVIDER_COOLDOWN["gemini_until"]:
+        return None
+
+    # Try top fast models max
+    for model_name in ["gemini-3.5-flash-lite", "gemini-3.5-flash"]:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            
+            system_instruction = None
+            contents = []
+
+            for msg in messages:
+                role = msg.get("role")
+                content = msg.get("content", "")
+                if role == "system":
+                    system_instruction = {"parts": [{"text": content}]}
+                elif role == "assistant":
+                    contents.append({"role": "model", "parts": [{"text": content}]})
+                else:
+                    contents.append({"role": "user", "parts": [{"text": content}]})
+
+            payload = {"contents": contents}
+            if system_instruction:
+                payload["systemInstruction"] = system_instruction
+
+            headers = {"Content-Type": "application/json"}
+
+            with httpx.Client(timeout=timeout) as client:
+                resp = client.post(url, headers=headers, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            print(f"🤖 [AI Provider] Responded via Google Gemini API ({model_name}).")
+                            return parts[0].get("text", "")
+                elif resp.status_code in [429, 403, 400]:
+                    print(f"⚠️ [AI Fast Switch] Gemini HTTP {resp.status_code} ({model_name}). Cooldowning Gemini for 180s...")
+                    _PROVIDER_COOLDOWN["gemini_until"] = time.time() + 180
+                    break
+        except Exception as e:
+            print(f"⚠️ [AI Fast Switch] Gemini timeout/exception ({model_name}). Cooldowning Gemini for 180s...")
+            _PROVIDER_COOLDOWN["gemini_until"] = time.time() + 180
+            break
+
+    return None
+
+
+def call_groq_llm(messages: List[Dict[str, str]], timeout: float = 2.5) -> Optional[str]:
+    """
+    Tier 2: Groq Cloud API (openai/gpt-oss-120b, groq/compound)
+    Short-circuits immediately if rate-limited or timed out.
+    """
+    api_key = get_groq_key()
+    if not api_key:
+        return None
+
+    if time.time() < _PROVIDER_COOLDOWN["groq_until"]:
+        return None
+
+    for model_name in ["openai/gpt-oss-120b", "groq/compound", "openai/gpt-oss-20b"]:
+        try:
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": 0.3
+            }
+
+            with httpx.Client(timeout=timeout) as client:
+                resp = client.post(url, headers=headers, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        print(f"⚡ [AI Provider] Responded via Groq API ({model_name}).")
+                        return choices[0].get("message", {}).get("content", "")
+                elif resp.status_code in [401, 400, 429, 403]:
+                    print(f"⚠️ [AI Fast Switch] Groq HTTP {resp.status_code} ({model_name}). Cooldowning Groq for 180s...")
+                    _PROVIDER_COOLDOWN["groq_until"] = time.time() + 180
+                    break
+        except Exception as e:
+            print(f"⚠️ [AI Fast Switch] Groq timeout/exception ({model_name}). Cooldowning Groq for 180s...")
+            _PROVIDER_COOLDOWN["groq_until"] = time.time() + 180
+            break
+
+    return None
+
+
+def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 8.0) -> Optional[str]:
+    """
+    Tier 3: Ollama API
+    """
+    api_key = get_ollama_key()
+    if not api_key:
+        return None
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        url = f"{get_ollama_base_url()}/v1/chat/completions"
+        payload = {
+            "model": get_ollama_model(),
+            "messages": messages,
+            "temperature": 0.3
+        }
+        with httpx.Client(timeout=timeout) as client:
+            resp = client.post(url, headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                choices = data.get("choices", [])
+                if choices:
+                    print("🦙 [AI Provider] Responded via Ollama Cloud API.")
+                    return choices[0].get("message", {}).get("content", "")
+    except Exception as e:
+        print(f"Ollama error: {e}")
+
+    return None
+
+def call_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 5.0) -> Optional[str]:
+    """
+    Failover Chain: Gemini -> Groq -> Ollama
+    Automatically switches if rate limits (429) or errors occur.
+    """
+    # 1. Try Gemini
+    res = call_gemini_llm(messages, timeout=timeout)
+    if res:
+        return res
+
+    # 2. Try Groq
+    res = call_groq_llm(messages, timeout=timeout)
+    if res:
+        return res
+
+    # 3. Try Ollama
+    res = call_ollama_llm(messages, timeout=timeout)
+    if res:
+        return res
+
+    return None
+
+def answer_user_question_contextual(question: str, user_tasks: List[Dict], user_profile: Dict, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
+    """
+    Human-like contextual AI Assistant with multi-provider failover.
+    """
+    curr = now_ist()
+    curr_str = curr.strftime("%Y-%m-%d %I:%M %p %Z (%A)")
+
+    task_summaries = []
+    for t in user_tasks[:30]:
+        t_name = t.get("name", "Untitled")
+        t_dur = t.get("duration_minutes", 30)
+        t_status = t.get("status", "pending")
+        t_start = t.get("scheduled_start", "Unscheduled")
+        t_fixed = "Fixed Meeting" if t.get("fixed") else "Flexible Task"
+        t_pri = t.get("priority", 1)
+        task_summaries.append(f"- [{t_status.upper()}] '{t_name}' ({t_dur} mins, Priority {t_pri}, {t_fixed}, Start: {t_start})")
+
+    tasks_str = "\n".join(task_summaries) if task_summaries else "No active tasks currently."
+
+    profile_settings = user_profile.get("settings", {})
+    prof_str = (
+        f"Profession: {profile_settings.get('profession', 'General User')}, "
+        f"Chronotype: {profile_settings.get('chronotype', 'morning')}, "
+        f"Work Window: {profile_settings.get('work_start', '09:30 AM')} to {profile_settings.get('work_end', '06:30 PM')}, "
+        f"Peak Energy Window: {profile_settings.get('peak_start', '09:00 AM')} to {profile_settings.get('peak_end', '01:00 PM')}"
+    )
+
+    system_prompt = f"""You are TaskPulse AI, a versatile, warm, highly intelligent, and empathetic human-like personal AI companion.
+You sound completely natural, engaging, friendly, and helpful. You are open to conversing on ANY topic (general knowledge, coding, advice, daily motivation, ideas, or casual conversation) while staying aware of the user's schedule and energy context.
+
+Current Local Time (IST): {curr_str}
+
+User Biometric Profile:
+{prof_str}
+
+Current Workspace Tasks & Schedule:
+{tasks_str}
+
+RESPONSE INSTRUCTIONS:
+1. Speak naturally like a friendly, intelligent human companion. Use clear markdown formatting.
+2. CRITICAL TASK CREATION RULE:
+   - ONLY output a `create_task` JSON block if the user has specified an EXPLICIT task/meeting name in their message (e.g., "Schedule a 45 min team sync tomorrow at 10 AM with high priority").
+   - NEVER output a `create_task` JSON block for vague requests like "schedule a task for me", "add a task", or "make a meeting".
+   - If the request is vague or missing details, DO NOT create a task yet. Instead, ask the user warm clarification questions to gather:
+     • Task Name / Title
+     • Duration & Start Time / Date
+     • Priority (Low, Medium, High, Critical)
+     • Type: Fixed event at a specific time OR Flexible task
+3. If a task creation JSON block is included, place it at the VERY END inside triple backticks:
+```json
+{{
+  "action": "create_task",
+  "params": {{
+    "name": "Task Name",
+    "duration_minutes": 30,
+    "earliest_start": "YYYY-MM-DDTHH:MM:SS+05:30",
+    "deadline": "YYYY-MM-DDTHH:MM:SS+05:30",
+    "priority": 3,
+    "fixed": false
+  }}
+}}
+```
+4. Maintain a warm, encouraging, positive, and human tone at all times.
+"""
+
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    if history:
+        # Filter out trailing duplicate question if already present in history payload
+        filtered_history = [t for t in history if (t.get("content") or t.get("text", "")).strip() != question.strip()]
+        for turn in filtered_history[-8:]:
+            r = "assistant" if turn.get("role") in ["assistant", "ai"] else "user"
+            content = turn.get("content") or turn.get("text", "")
+            if content:
+                messages.append({"role": r, "content": content})
+
+    messages.append({"role": "user", "content": question})
+
+    llm_output = call_llm_with_failover(messages)
+
+    if llm_output:
+        # Check if json task action block is embedded in text
+        json_match = re.search(r"```json\s*(\{.*?\})\s*```", llm_output, re.DOTALL)
+        if json_match:
+            try:
+                action_data = json.loads(json_match.group(1))
+                clean_answer = re.sub(r"```json\s*\{.*?\}\s*```", "", llm_output, flags=re.DOTALL).strip()
+                action_data["answer"] = clean_answer
+                return action_data
+            except Exception:
+                pass
+
+        return {
+            "action": "answer",
+            "answer": llm_output.strip(),
+            "type": "text"
+        }
+
+    # Fallback to local rule engine if all APIs are unconfigured or fail
+    return answer_user_question_fallback(question, user_tasks, user_profile)
+
 def parse_task_from_text(text: str) -> Dict[str, Any]:
     """
-    Parse natural language text to extract task parameters.
-    
-    Args:
-        text: User input like "Schedule a team meeting tomorrow at 2pm for 1 hour"
-        
-    Returns:
-        Dictionary with task parameters: name, earliest_start, deadline, duration_minutes, priority
+    Parse natural language text to extract task parameters with failover.
     """
-    # Initialize default values
-    result = {
-        "name": "",
-        "earliest_start": None,
-        "deadline": None,
-        "duration_minutes": 30,  # default
-        "priority": 1,           # default low
-        "fixed": False
-    }
-    
-    # Convert to lowercase for easier matching
-    text_lower = text.lower().strip()
-    
-    # Extract task name - look for patterns like "task to do X", "schedule X", etc.
-    name_patterns = [
-        r"(?:schedule|add|create)\s+(?:a\s+|an\s+)?(?:task\s+)?(?:for\s+|to\s+)?([^,.!?]+?)(?:\s+at|\s+on|\s+in|\s+for|\s+$)",
-        r"(?:i\s+want\s+to\s+do\s+|i\s+need\s+to\s+)(.+?)(?:\s+at|\s+on|\s+for|\s+$)",
-        r"^(.+?)(?:\s+at|\s+on|\s+in|\s+for|\s+$)"
-    ]
-    
-    for pattern in name_patterns:
-        match = re.search(pattern, text_lower)
-        if match:
-            name = match.group(1).strip()
-            # Clean up common words
-            name = re.sub(r'^(a|an|the)\s+', '', name)
-            if name and len(name) > 1:
-                result["name"] = name
-                break
-    
-    # If no name found via patterns, use first meaningful chunk
-    if not result["name"]:
-        # Remove time/date indicators and take what's left
-        cleaned = re.sub(r'\b(?:at|on|in|for|tomorrow|today|next|last|am|pm)\b.*', '', text_lower)
-        cleaned = re.sub(r'\s+\d+[\:\-]\d+.*', '', cleaned)
-        cleaned = cleaned.strip()
-        if cleaned and len(cleaned) > 2:
-            result["name"] = cleaned.title()
-    
-    # Extract time patterns
-    time_patterns = [
-        r'(\d{1,2})\s*:\s*(\d{2})\s*(am|pm)',  # 2:30 pm
-        r'(\d{1,2})\s*(am|pm)',                 # 2pm
-        r'(\d{1,2})\s*:\s*(\d{2})',             # 14:30 (24-hour)
-    ]
-    
-    for pattern in time_patterns:
-        matches = re.findall(pattern, text_lower)
-        if matches:
-            # Take the first time mentioned
-            match = matches[0]
-            if len(match) == 3:  # HH:MM AM/PM
-                hour, minute, meridiem = match
-                hour = int(hour)
-                minute = int(minute)
-                if meridiem == 'pm' and hour != 12:
-                    hour += 12
-                elif meridiem == 'am' and hour == 12:
-                    hour = 0
-                result["time_specified"] = (hour, minute)
-            elif len(match) == 2:  # Either HH AM/PM or HH:MM
-                if match[1] in ['am', 'pm']:  # HH AM/PM
-                    hour = int(match[0])
-                    meridiem = match[1]
-                    if meridiem == 'pm' and hour != 12:
-                        hour += 12
-                    elif meridiem == 'am' and hour == 12:
-                        hour = 0
-                    result["time_specified"] = (hour, 0)
-                else:  # HH:MM 24-hour
-                    hour, minute = int(match[0]), int(match[1])
-                    result["time_specified"] = (hour, minute)
-            break
-    
-    # Extract date patterns
-    today = datetime.datetime.now(IST)
-    date_patterns = [
-        (r'\btomorrow\b', today + datetime.timedelta(days=1)),
-        (r'\btoday\b', today),
-        (r'\bnext\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b', 
-         lambda m: _get_next_weekday(m.group(1), today)),
-        (r'\blast\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b',
-         lambda m: _get_last_weekday(m.group(1), today)),
-        (r'\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b',  # MM/DD/YYYY or DD/MM/YYYY
-         lambda m: _parse_date_from_match(m, today)),
-    ]
-    
-    for pattern, date_value in date_patterns:
-        match = re.search(pattern, text_lower)
-        if match:
-            if callable(date_value):
-                try:
-                    result["date_specified"] = date_value(match)
-                except:
-                    pass
-            else:
-                result["date_specified"] = date_value
-            break
-    
-    # Extract duration patterns
-    duration_patterns = [
-        r'(\d+)\s*(?:hour|hr)s?',           # 2 hours
-        r'(\d+)\s*(?:minute|min)s?',        # 30 minutes
-        r'(\d+)\s*h',                       # 2h
-        r'(\d+)\s*m',                       # 30m
-    ]
-    
-    for pattern in duration_patterns:
-        match = re.search(pattern, text_lower)
-        if match:
-            value = int(match.group(1))
-            if 'hour' in pattern or 'h' in pattern:
-                result["duration_minutes"] = value * 60
-            else:
-                result["duration_minutes"] = value
-            break
-    
-    # Extract priority indicators
-    if any(word in text_lower for word in ['critical', 'high priority', 'urgent', 'important']):
-        result["priority"] = 4  # High
-    elif any(word in text_lower for word in ['medium', 'normal']):
-        result["priority"] = 2  # Medium
-    elif any(word in text_lower for word in ['low', 'low priority']):
-        result["priority"] = 1  # Low
-    
-    # Combine date and time if both specified
-    if result.get("date_specified") and result.get("time_specified"):
-        date_part = result["date_specified"]
-        time_part = result["time_specified"]
-        # Create datetime in IST
-        dt = datetime.datetime(
-            date_part.year, date_part.month, date_part.day,
-            time_part[0], time_part[1],
-            tzinfo=IST
-        )
-        result["earliest_start"] = dt
-        # Default deadline to start time + duration
-        result["deadline"] = dt + datetime.timedelta(minutes=result["duration_minutes"])
-    elif result.get("date_specified"):
-        # Only date specified - set to start of day
-        date_part = result["date_specified"]
-        dt = datetime.datetime(date_part.year, date_part.month, date_part.day, 9, 0, tzinfo=IST)  # Default 9 AM
-        result["earliest_start"] = dt
-        result["deadline"] = dt + datetime.timedelta(minutes=result["duration_minutes"])
-    elif result.get("time_specified"):
-        # Only time specified - assume today
-        time_part = result["time_specified"]
-        today_midnight = datetime.datetime(
-            today.year, today.month, today.day, 0, 0, tzinfo=IST
-        )
-        dt = today_midnight.replace(hour=time_part[0], minute=time_part[1])
-        # If time has passed, assume tomorrow
-        if dt < today:
-            dt += datetime.timedelta(days=1)
-        result["earliest_start"] = dt
-        result["deadline"] = dt + datetime.timedelta(minutes=result["duration_minutes"])
-    
-    # Clean up temporary fields
-    result.pop("time_specified", None)
-    result.pop("date_specified", None)
-    
-    return result
+    curr = now_ist()
+    curr_str = curr.strftime("%Y-%m-%d %I:%M %p %Z (%A)")
 
-def _get_next_weekday(weekday_name: str, today: datetime.datetime) -> datetime.datetime:
-    """Get the date of the next occurrence of a weekday"""
-    weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-    target_weekday = weekdays.index(weekday_name.lower())
-    current_weekday = today.weekday()  # Monday is 0
-    days_ahead = target_weekday - current_weekday
-    if days_ahead <= 0:  # Target day already happened this week
-        days_ahead += 7
-    return today + datetime.timedelta(days=days_ahead)
+    system_prompt = f"""You are a natural language task parser for TaskPulse.
+Current Local Time (IST): {curr_str}
 
-def _get_last_weekday(weekday_name: str, today: datetime.datetime) -> datetime.datetime:
-    """Get the date of the last occurrence of a weekday"""
-    weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-    target_weekday = weekdays.index(weekday_name.lower())
-    current_weekday = today.weekday()  # Monday is 0
-    days_behind = current_weekday - target_weekday
-    if days_behind <= 0:  # Target day hasn't happened yet this week
-        days_behind += 7
-    return today - datetime.timedelta(days=days_behind)
+Extract task parameters from user input. Return strictly valid JSON ONLY:
+{{
+  "name": "Task Title",
+  "duration_minutes": 30,
+  "earliest_start": "YYYY-MM-DDTHH:MM:SS+05:30",
+  "deadline": "YYYY-MM-DDTHH:MM:SS+05:30",
+  "priority": 2,
+  "fixed": false
+}}
 
-def _parse_date_from_match(match: re.Match, today: datetime.datetime) -> datetime.datetime:
-    """Parse date from regex match groups"""
-    # This is simplified - assumes MM/DD/YYYY format for now
-    # In production, you'd want to handle multiple formats and locales
-    try:
-        month, day, year = match.groups()
-        month, day, year = int(month), int(day), int(year)
-        if year < 100:
-            year += 2000 if year < 50 else 1900
-        return datetime.datetime(year, month, day, tzinfo=IST)
-    except ValueError:
-        # Fallback to tomorrow if parsing fails
-        return today + datetime.timedelta(days=1)
+Priority scale: 1=Low, 2=Medium, 3=High, 5=Critical.
+If fixed meeting/event is mentioned, set "fixed": true and deadline = earliest_start.
+If no start time mentioned, set earliest_start to current time. Default deadline to earliest_start + 2 days if not specified.
+"""
 
-def answer_user_question(question: str, user_tasks: List[Dict], user_profile: Dict) -> Dict[str, Any]:
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": text}
+    ]
+
+    llm_output = call_llm_with_failover(messages)
+
+    if llm_output:
+        try:
+            cleaned = llm_output.strip()
+            if cleaned.startswith("```"):
+                cleaned = re.sub(r"^```(?:json)?\n?", "", cleaned)
+                cleaned = re.sub(r"\n?```$", "", cleaned)
+            data = json.loads(cleaned.strip())
+            return data
+        except Exception as e:
+            print(f"Parse task LLM JSON error: {e}")
+
+    return parse_task_from_text_fallback(text)
+
+def answer_user_question_fallback(question: str, user_tasks: List[Dict], user_profile: Dict) -> Dict[str, Any]:
     """
-    Answer natural language questions about user's tasks and profile.
-    
-    Args:
-        question: User's question like "How many tasks do I have today?"
-        user_tasks: List of user's task dictionaries
-        user_profile: User's profile dictionary
-        
-    Returns:
-        Dictionary with answer and optional explanation
+    Fallback deterministic Q&A rule engine.
     """
     question_lower = question.lower().strip()
-    
-    # Get today's date in IST
-    today = datetime.datetime.now(IST)
-    today_start = datetime.datetime(today.year, today.month, today.day, 0, 0, 0, tzinfo=IST)
-    today_end = today_start + datetime.timedelta(days=1)
-    
-    # Question: How many tasks do I have today?
-    if any(phrase in question_lower for phrase in [
-        "how many tasks", "count tasks", "number of tasks"
-    ]) and any(phrase in question_lower for phrase in [
-        "today", "this day"
-    ]):
-        today_tasks = [
-            t for t in user_tasks 
-            if t.get("scheduled_start") and 
-            t["scheduled_start"] >= today_start and 
-            t["scheduled_start"] < today_end
-        ]
+    today = now_ist()
+
+    if any(p in question_lower for p in ["today", "schedule today", "tasks today"]):
+        today_tasks = [t for t in user_tasks if t.get("scheduled_start") and str(t["scheduled_start"]).startswith(today.strftime("%Y-%m-%d"))]
         return {
-            "answer": f"You have {len(today_tasks)} task(s) scheduled for today.",
+            "action": "answer",
+            "answer": f"You have **{len(today_tasks)} task(s)** scheduled for today.",
             "type": "count",
             "data": len(today_tasks)
         }
-    
-    # Question: How many critical/high priority tasks do I have?
-    if any(phrase in question_lower for phrase in [
-        "how many critical", "how many high priority", "count critical"
-    ]):
-        critical_tasks = [
-            t for t in user_tasks 
-            if t.get("priority", 1) >= 3  # High priority and above
-        ]
-        return {
-            "answer": f"You have {len(critical_tasks)} critical/high priority task(s).",
-            "type": "count",
-            "data": len(critical_tasks)
-        }
-    
-    # Question: How many tasks are pending/completed?
-    if any(phrase in question_lower for phrase in [
-        "how many pending", "count pending", "tasks left"
-    ]):
-        pending_tasks = [
-            t for t in user_tasks 
-            if t.get("status") == "pending"
-        ]
-        return {
-            "answer": f"You have {len(pending_tasks)} pending task(s).",
-            "type": "count",
-            "data": len(pending_tasks)
-        }
-    
-    if any(phrase in question_lower for phrase in [
-        "how many completed", "count completed", "tasks finished"
-    ]):
-        completed_tasks = [
-            t for t in user_tasks 
-            if t.get("status") == "completed"
-        ]
-        return {
-            "answer": f"You have {len(completed_tasks)} completed task(s).",
-            "type": "count",
-            "data": len(completed_tasks)
-        }
-    
-    # Question: Is my profile complete?
-    if any(phrase in question_lower for phrase in [
-        "is my profile complete", "profile complete", "profile status"
-    ]):
-        # Check if essential profile fields are filled
-        essential_fields = ["name", "profession", "work_style", "timezone", "work_start", "work_end"]
-        filled_count = sum(1 for field in essential_fields if user_profile.get(field))
-        total_fields = len(essential_fields)
-        percentage = int((filled_count / total_fields) * 100) if total_fields > 0 else 0
-        
-        if percentage >= 80:
-            status = "mostly complete"
-        elif percentage >= 50:
-            status = "partially complete"
-        else:
-            status = "incomplete"
-            
-        return {
-            "answer": f"Your profile is {percentage}% complete ({status}).",
-            "type": "profile_status",
-            "data": {"percentage": percentage, "status": status}
-        }
-    
-    # Question: What's on my schedule for today/tomorrow?
-    if any(phrase in question_lower for phrase in [
-        "what's on my schedule", "what do i have", "my schedule for"
-    ]) and any(phrase in question_lower for phrase in [
-        "today", "this day"
-    ]):
-        today_tasks = [
-            t for t in user_tasks 
-            if t.get("scheduled_start") and 
-            t["scheduled_start"] >= today_start and 
-            t["scheduled_start"] < today_end
-        ]
-        # Sort by start time
-        today_tasks.sort(key=lambda x: x.get("scheduled_start") or datetime.datetime.min.replace(tzinfo=IST))
-        
-        if not today_tasks:
-            return {
-                "answer": "You have no tasks scheduled for today.",
-                "type": "schedule",
-                "data": []
-            }
-        
-        task_list = []
-        for task in today_tasks:
-            start_time = task["scheduled_start"].strftime("%I:%M %p")
-            task_list.append(f"• {start_time} - {task['name']}")
-        
-        return {
-            "answer": f"Here's your schedule for today:\n" + "\n".join(task_list),
-            "type": "schedule",
-            "data": today_tasks
-        }
-    
-    # Default response for unrecognized questions
+
     return {
-        "answer": "I'm not sure how to answer that yet. Try asking about your task count, schedule, or profile status.",
-        "type": "unknown",
-        "data": None
+        "action": "answer",
+        "answer": f"I reviewed your workspace context. You currently have **{len(user_tasks)} active tasks** scheduled.",
+        "type": "summary"
+    }
+
+def parse_task_from_text_fallback(text: str) -> Dict[str, Any]:
+    """
+    Fallback deterministic task rule parser.
+    """
+    curr = now_ist()
+    return {
+        "name": text.title(),
+        "duration_minutes": 30,
+        "earliest_start": curr.isoformat(),
+        "deadline": (curr + datetime.timedelta(days=2)).isoformat(),
+        "priority": 2,
+        "fixed": "meeting" in text.lower() or "fixed" in text.lower()
     }

@@ -171,9 +171,12 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Task List Header */}
+            {/* Task List Header - Today's Focus Agenda */}
             <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-              <h2 className="text-lg font-bold text-[var(--text-main)]">Your Tasks</h2>
+              <div>
+                <h2 className="text-lg font-bold text-[var(--text-main)]">Today's Focus & Priority Actions</h2>
+                <p className="text-xs text-[var(--text-muted)]">Key time-blocked sessions and high priority focus items for today</p>
+              </div>
               
               <div className="flex items-center gap-3">
                 <span className="text-xs text-[var(--text-muted)] flex items-center gap-1"><Calendar size={14} /> {dateStr}</span>
@@ -183,7 +186,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Task List */}
+            {/* Task List - Filtered for Today & Key Priorities */}
             {loading ? (
               <div className="text-center py-10 text-[var(--text-muted)]">Loading tasks...</div>
             ) : tasks.length === 0 ? (
@@ -199,7 +202,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {tasks.map(task => {
+                {(todayTasks.length > 0 ? todayTasks : activeTasks.slice(0, 4)).map(task => {
                   const pri = getPriorityLabel(task.priority || 1);
                   const isComplete = task.status === 'completed';
                   const isScheduled = task.status === 'scheduled';
@@ -221,9 +224,9 @@ export default function Dashboard() {
                         )}
                         <span className="ml-auto text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1">
                           <Clock size={10} /> {task.duration_minutes}m
-{task.scheduled_start && (
-    <> • {new Date(task.scheduled_start).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })} – {new Date(task.scheduled_end).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}</>
-  )}
+                          {task.scheduled_start && (
+                            <> • {new Date(task.scheduled_start).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })} – {new Date(task.scheduled_end).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}</>
+                          )}
                         </span>
                       </div>
 
@@ -245,6 +248,14 @@ export default function Dashboard() {
                     </div>
                   );
                 })}
+
+                {/* Direct Link to Full Backlog */}
+                <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between text-xs">
+                  <span className="text-indigo-900 font-medium">Viewing today's active focus items. Manage full backlog & projects ({tasks.length} total)</span>
+                  <Link to="/tasks" className="text-[var(--accent-base)] font-bold flex items-center gap-1 hover:underline">
+                    Tasks Studio <ChevronRight size={14} />
+                  </Link>
+                </div>
               </div>
             )}
           </div>

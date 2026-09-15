@@ -9,12 +9,16 @@ IST = ZoneInfo("Asia/Kolkata")
 def now_ist():
     return datetime.now(IST)
 
-async def dispatch_notification_from_background(user_id: str, email: str, title: str, message: str):
+async def dispatch_notification_from_background(user_id: str, email: str, title: str, message: str, type: str = "alert"):
     """
     Utility to dispatch notifications from background loops where FastAPI's 
     BackgroundTasks context is not available.
     """
+    from .notifications import dispatch_web_push, send_email_sync, save_notification_to_db
+    
+    await save_notification_to_db(user_id, title, message, type)
     await dispatch_web_push(user_id, message, title)
+    
     if email:
         # Run synchronous SMTP send in a thread so it doesn't block the asyncio loop
         asyncio.create_task(asyncio.to_thread(send_email_sync, email, title, message))
@@ -120,10 +124,76 @@ async def daily_summary_loop():
         # Wait 1 hour
         await asyncio.sleep(3600)
 
+async def reminders_loop():
+    """
+    Runs every 1 minute.
+    Checks for scheduled tasks that have a reminder trigger happening right now
+    (e.g., if a task starts at 10:00 and has a 15 min reminder, triggers at 9:45).
+    """
+    while True:
+        try:
+            db = get_database()
+            now = now_ist()
+            # We look slightly ahead to catch anything in the next 1 minute window
+            window_end = now + timedelta(minutes=1)
+            
+            cursor = db["tasks"].find({
+                "status": "scheduled",
+                "reminders": {"$exists": True, "$ne": []}
+            })
+            tasks = await cursor.to_list(length=100)
+            user_collection = get_user_collection()
+            
+            for t in tasks:
+                start_time = t.get("scheduled_start")
+                if not start_time:
+                    continue
+                
+                # Make sure start_time is tz-aware IST
+                if start_time.tzinfo is None:
+                    from datetime import timezone
+                    start_time = start_time.replace(tzinfo=timezone.utc).astimezone(IST)
+                
+                reminders = t.get("reminders", [])
+                alerted_reminders = t.get("alerted_reminders", [])
+                
+                for r_mins in reminders:
+                    if r_mins in alerted_reminders:
+                        continue
+                        
+                    trigger_time = start_time - timedelta(minutes=r_mins)
+                    
+                    if now <= trigger_time <= window_end or (trigger_time < now and (now - trigger_time).total_seconds() < 300):
+                        # Time to fire the reminder
+                        user_id = t.get("user_id")
+                        user = await user_collection.find_one({"google_id": user_id})
+                        if not user:
+                            continue
+                        
+                        email = user.get("email", "")
+                        title = "Upcoming Task Reminder"
+                        message = f"Reminder: '{t['name']}' starts in {r_mins} minutes!"
+                        
+                        await dispatch_notification_from_background(user_id, email, title, message, type="reminder")
+                        
+                        # Mark this specific reminder as alerted
+                        alerted_reminders.append(r_mins)
+                        await db["tasks"].update_one(
+                            {"_id": t["_id"]},
+                            {"$set": {"alerted_reminders": alerted_reminders}}
+                        )
+                        
+        except Exception as e:
+            print(f"Error in reminders_loop: {e}")
+            
+        # Wait 1 minute before checking again
+        await asyncio.sleep(60)
+
 def start_background_jobs(app):
     """
     Called from main.py's lifespan manager to spin up background loops.
     """
     asyncio.create_task(deadline_warnings_loop())
     asyncio.create_task(daily_summary_loop())
+    asyncio.create_task(reminders_loop())
     print("Background jobs started.")

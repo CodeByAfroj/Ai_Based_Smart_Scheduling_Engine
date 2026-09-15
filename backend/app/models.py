@@ -14,6 +14,16 @@ class Task(BaseModel):
     preferred_start_before: Optional[datetime] = None
     resource_id: Optional[str] = "default"
     predecessors: Optional[List[str]] = []
+    reminders: Optional[List[int]] = []  # minutes before start to remind
+
+class NotificationResponse(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    message: str
+    type: str
+    is_read: bool
+    created_at: datetime
 
 class FixedEvent(BaseModel):
     id: str

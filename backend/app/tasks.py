@@ -24,6 +24,7 @@ class TaskCreate(BaseModel):
     preferred_start_before: Optional[datetime] = None
     resource_id: Optional[str] = "default"
     predecessors: Optional[List[str]] = []
+    reminders: Optional[List[int]] = []
 
 class TaskUpdate(BaseModel):
     name: Optional[str] = None
@@ -32,6 +33,7 @@ class TaskUpdate(BaseModel):
     deadline: Optional[datetime] = None
     priority: Optional[int] = None
     status: Optional[str] = None # "pending", "scheduled", "completed"
+    reminders: Optional[List[int]] = None
 
 def get_task_collection():
     return get_database()["tasks"]
@@ -42,9 +44,9 @@ async def list_tasks(user_id: str = Depends(get_current_user_id)):
     cursor = collection.find({"user_id": user_id})
     tasks = await cursor.to_list(length=100)
     for t in tasks:
-        t["id"] = t.pop("_id")
-        # Format naive UTC datetimes from MongoDB into IST ISO strings with +05:30 offset
-        for field in ["scheduled_start", "scheduled_end", "earliest_start", "deadline", "created_at"]:
+        t["id"] = str(t.pop("_id"))
+        # Format naive UTC datetimes or string datetimes from MongoDB into IST ISO strings with +05:30 offset
+        for field in ["scheduled_start", "scheduled_end", "earliest_start", "deadline", "created_at", "updated_at"]:
             val = t.get(field)
             if isinstance(val, datetime):
                 # If naive (as Motor returns BSON Date), attach UTC then convert to IST
@@ -65,8 +67,20 @@ async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_
     task_doc["status"] = "pending"
     task_doc["created_at"] = now_ist()
     await collection.insert_one(task_doc)
-    task_doc["id"] = task_doc.pop("_id")
+    task_doc["id"] = str(task_doc.pop("_id"))
+    
+    for field in ["scheduled_start", "scheduled_end", "earliest_start", "deadline", "created_at", "updated_at"]:
+        val = task_doc.get(field)
+        if isinstance(val, datetime):
+            if val.tzinfo is None:
+                val = val.replace(tzinfo=timezone.utc).astimezone(IST)
+            else:
+                val = val.astimezone(IST)
+            task_doc[field] = val.isoformat()
+            
     return {"message": "Task created", "task": task_doc}
+
+from bson import ObjectId
 
 @router.put("/{task_id}")
 async def update_task(task_id: str, data: TaskUpdate, user_id: str = Depends(get_current_user_id)):
@@ -76,10 +90,8 @@ async def update_task(task_id: str, data: TaskUpdate, user_id: str = Depends(get
         return {"message": "No fields to update"}
     
     update_data["updated_at"] = now_ist()
-    result = await collection.update_one(
-        {"_id": task_id, "user_id": user_id},
-        {"$set": update_data}
-    )
+    query = {"$or": [{"_id": task_id}, {"_id": ObjectId(task_id)}], "user_id": user_id} if ObjectId.is_valid(task_id) else {"_id": task_id, "user_id": user_id}
+    result = await collection.update_one(query, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task updated"}
@@ -87,7 +99,8 @@ async def update_task(task_id: str, data: TaskUpdate, user_id: str = Depends(get
 @router.delete("/{task_id}")
 async def delete_task(task_id: str, user_id: str = Depends(get_current_user_id)):
     collection = get_task_collection()
-    result = await collection.delete_one({"_id": task_id, "user_id": user_id})
+    query = {"$or": [{"_id": task_id}, {"_id": ObjectId(task_id)}], "user_id": user_id} if ObjectId.is_valid(task_id) else {"_id": task_id, "user_id": user_id}
+    result = await collection.delete_one(query)
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted"}

@@ -127,10 +127,14 @@ export function TaskProvider({ children }) {
     });
 
     try {
-      await fetch(`${API_BASE}/tasks/${id}`, {
+      const res = await fetch(`${API_BASE}/tasks/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) {
+        console.error('Failed to delete task on backend', res.status);
+        fetchTasks(true);
+      }
     } catch (err) {
       console.error('Error deleting task:', err);
       fetchTasks(true);

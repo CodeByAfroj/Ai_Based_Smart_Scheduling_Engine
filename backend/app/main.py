@@ -18,6 +18,7 @@ from .recommendations import router as recommendations_router
 from fastapi import Depends
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+from bson import ObjectId
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -116,7 +117,7 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
         for t in db_tasks:
             # Parse DB task into models.Task
             request.tasks.append(Task(
-                id=t["_id"],
+                id=str(t["_id"]),
                 name=t["name"],
                 duration_minutes=t["duration_minutes"],
                 earliest_start=t["earliest_start"],
@@ -145,8 +146,9 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
     # Save scheduled times back to DB
     if status in ["OPTIMAL", "FEASIBLE", "PARTIAL"]:
         for st in scheduled_tasks:
+            query = {"$or": [{"_id": st.task_id}, {"_id": ObjectId(st.task_id)}], "user_id": user_id} if ObjectId.is_valid(st.task_id) else {"_id": st.task_id, "user_id": user_id}
             await get_database()["tasks"].update_one(
-                {"_id": st.task_id, "user_id": user_id},
+                query,
                 {"$set": {
                     "status": "scheduled",
                     "scheduled_start": st.start,
@@ -176,7 +178,7 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
     for t in db_tasks:
         if t.get("scheduled_start") and t.get("scheduled_end"):
             previous_schedule.append(STModel(
-                task_id=t["_id"],
+                task_id=str(t["_id"]),
                 start=t["scheduled_start"],
                 end=t["scheduled_end"]
             ))
@@ -227,7 +229,7 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
         request.tasks = []
         for t in db_tasks:
             request.tasks.append(Task(
-                id=t["_id"],
+                id=str(t["_id"]),
                 name=t["name"],
                 duration_minutes=t["duration_minutes"],
                 earliest_start=t["earliest_start"],
@@ -254,8 +256,9 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
 
     if status in ["OPTIMAL", "FEASIBLE", "PARTIAL"]:
         for st in scheduled_tasks:
+            query = {"$or": [{"_id": st.task_id}, {"_id": ObjectId(st.task_id)}], "user_id": user_id} if ObjectId.is_valid(st.task_id) else {"_id": st.task_id, "user_id": user_id}
             await get_database()["tasks"].update_one(
-                {"_id": st.task_id, "user_id": user_id},
+                query,
                 {"$set": {
                     "status": "scheduled",
                     "scheduled_start": st.start,

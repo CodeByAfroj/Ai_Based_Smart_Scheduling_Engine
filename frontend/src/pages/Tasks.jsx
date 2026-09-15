@@ -17,6 +17,11 @@ export default function Tasks() {
   const [earliestStart, setEarliestStart] = useState(() => defaultLocalValue(60000)); // 1 min from now
   const [deadline, setDeadline] = useState(() => defaultLocalValue(86400000 * 2));    // 2 days from now
   const [priority, setPriority] = useState(1);
+  const [reminders, setReminders] = useState([]);
+
+  const handleReminderToggle = (mins) => {
+    setReminders(prev => prev.includes(mins) ? prev.filter(m => m !== mins) : [...prev, mins]);
+  };
 
   const createTask = async (e) => {
     e.preventDefault();
@@ -27,18 +32,30 @@ export default function Tasks() {
       earliest_start: localInputToIST(earliestStart),
       deadline: isFixed ? localInputToIST(earliestStart) : localInputToIST(deadline),
       priority: parseInt(priority),
-      fixed: isFixed
+      fixed: isFixed,
+      reminders: reminders
     });
     setShowForm(false);
     setName('');
     setTaskType('flexible');
     setEarliestStart(defaultLocalValue(60000));
     setDeadline(defaultLocalValue(86400000 * 2));
+    setReminders([]);
   };
 
   const toggleStatus = (task) => {
     updateTask(task.id, { status: task.status === 'completed' ? 'pending' : 'completed' });
   };
+
+  const [filter, setFilter] = useState('all');
+
+  const filteredTasks = tasks.filter(task => {
+    if (filter === 'pending') return task.status === 'pending';
+    if (filter === 'scheduled') return task.status === 'scheduled';
+    if (filter === 'completed') return task.status === 'completed';
+    if (filter === 'fixed') return task.fixed === true;
+    return true;
+  });
 
   if (loadingTasks && tasks.length === 0) return <div className="p-10 text-center text-[var(--text-muted)]">Loading tasks...</div>;
 
@@ -46,15 +63,17 @@ export default function Tasks() {
     <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
       <div className="max-w-5xl mx-auto">
 
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Tasks & Projects</h1>
-            <p className="text-sm text-[var(--text-muted)]">Manage your backlog and feed the scheduling engine</p>
+            <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Tasks & Projects Studio</h1>
+            <p className="text-sm text-[var(--text-muted)]">Manage your backlog, filter task modes, and feed the scheduling engine</p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="btn-primary py-2.5 px-5 flex items-center gap-2 text-sm">
-            <Plus size={16} /> New Task
-          </button>
-          <VoiceButton />
+          <div className="flex items-center gap-3">
+            <button onClick={() => setShowForm(!showForm)} className="btn-primary py-2.5 px-5 flex items-center gap-2 text-sm">
+              <Plus size={16} /> New Task
+            </button>
+            <VoiceButton />
+          </div>
         </div>
 
         {showForm && (
@@ -143,6 +162,25 @@ export default function Tasks() {
                 </div>
               )}
 
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-[var(--text-muted)] mb-2 uppercase">Reminders</label>
+                <div className="flex gap-2">
+                  {[5, 15, 30].map(mins => (
+                    <div
+                      key={mins}
+                      onClick={() => handleReminderToggle(mins)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${
+                        reminders.includes(mins)
+                          ? 'bg-[var(--accent-base)] text-white border-[var(--accent-base)]'
+                          : 'bg-transparent text-[var(--text-muted)] border-[var(--border-subtle)]'
+                      }`}
+                    >
+                      {mins} min before
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="md:col-span-2 flex justify-end gap-3 mt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="btn-ghost py-2 px-4 text-sm">Cancel</button>
                 <button type="submit" className="btn-primary py-2 px-4 text-sm">
@@ -153,18 +191,41 @@ export default function Tasks() {
           </div>
         )}
 
+        {/* Backlog Filter Tabs */}
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+          {[
+            { id: 'all', label: `All Tasks (${tasks.length})` },
+            { id: 'pending', label: `Pending (${tasks.filter(t => t.status === 'pending').length})` },
+            { id: 'scheduled', label: `Scheduled (${tasks.filter(t => t.status === 'scheduled').length})` },
+            { id: 'completed', label: `Completed (${tasks.filter(t => t.status === 'completed').length})` },
+            { id: 'fixed', label: `🔒 Fixed Meetings (${tasks.filter(t => t.fixed).length})` }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+                filter === tab.id
+                  ? 'bg-[var(--accent-base)] text-white shadow-sm'
+                  : 'bg-white border border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-slate-50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
         <div className="bg-white rounded-2xl border border-[var(--border-subtle)] overflow-hidden shadow-sm">
-          {tasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <div className="p-10 text-center flex flex-col items-center">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle2 size={32} className="text-slate-300" />
               </div>
-              <h3 className="font-bold text-[var(--text-main)] mb-1">Your backlog is empty</h3>
-              <p className="text-sm text-[var(--text-muted)]">Create tasks to allow the autonomous engine to schedule them.</p>
+              <h3 className="font-bold text-[var(--text-main)] mb-1">No tasks in this view</h3>
+              <p className="text-sm text-[var(--text-muted)]">Select another filter tab or create a new task above.</p>
             </div>
           ) : (
             <div className="divide-y divide-[var(--border-subtle)]">
-              {tasks.map(task => (
+              {filteredTasks.map(task => (
                 <div key={task.id} className={`p-4 flex items-center gap-4 hover:bg-[var(--bg-hover)] transition-colors ${task.status === 'completed' ? 'opacity-50' : ''}`}>
                   <button onClick={() => toggleStatus(task)} className="text-[var(--text-muted)] hover:text-[var(--accent-base)] transition-colors shrink-0">
                     {task.status === 'completed' ? <CheckCircle2 size={22} className="text-green-500" /> : <Circle size={22} />}

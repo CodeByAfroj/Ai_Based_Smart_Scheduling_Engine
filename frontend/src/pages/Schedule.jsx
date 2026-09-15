@@ -83,8 +83,30 @@ export default function Schedule() {
             {result.status === 'OPTIMAL' || result.status === 'FEASIBLE' ? <CheckCircle2 size={24} className="shrink-0" /> : <AlertTriangle size={24} className="shrink-0" />}
             <div>
               <h3 className="font-bold mb-1">Engine Result: {result.status}</h3>
-              <p className="text-sm opacity-80">{result.message} (Solved in {result.solve_time_ms.toFixed(2)}ms)</p>
+              <p className="text-sm opacity-80">{result.message} {result.solve_time_ms !== undefined ? `(Solved in ${result.solve_time_ms.toFixed(2)}ms)` : ''}</p>
             </div>
+          </div>
+        )}
+
+        {/* Unscheduled Pending Tasks Banner */}
+        {tasks.filter(t => t.status !== 'completed' && !t.scheduled_start).length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-amber-500 text-white p-2 rounded-xl shrink-0">
+                <Clock size={20} />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm">
+                  {tasks.filter(t => t.status !== 'completed' && !t.scheduled_start).length} Task(s) Pending Scheduling
+                </h3>
+                <p className="text-xs opacity-90 mt-0.5">
+                  Tasks like {tasks.filter(t => t.status !== 'completed' && !t.scheduled_start).map(t => `'${t.name}'`).join(', ')} are ready to be placed into non-overlapping time blocks.
+                </p>
+              </div>
+            </div>
+            <button onClick={runEngine} disabled={scheduling} className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shrink-0 transition-colors shadow-sm">
+              {scheduling ? 'Solving Schedule...' : '▶ Schedule Pending Tasks'}
+            </button>
           </div>
         )}
 

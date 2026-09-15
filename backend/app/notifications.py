@@ -68,10 +68,29 @@ def send_email_sync(to_email: str, subject: str, body: str):
     except Exception as e:
         print(f"Failed to send email to {to_email}: {str(e)}")
 
-async def notify_user(user_id: str, user_email: str, title: str, message: str, bg_tasks: BackgroundTasks):
+async def save_notification_to_db(user_id: str, title: str, message: str, type: str = "alert"):
+    from .database import get_database
+    from datetime import datetime, timezone
+    from zoneinfo import ZoneInfo
+    db = get_database()
+    IST = ZoneInfo("Asia/Kolkata")
+    doc = {
+        "user_id": user_id,
+        "title": title,
+        "message": message,
+        "type": type,
+        "is_read": False,
+        "created_at": datetime.now(timezone.utc).astimezone(IST)
+    }
+    await db["notifications"].insert_one(doc)
+    return doc
+
+async def notify_user(user_id: str, user_email: str, title: str, message: str, bg_tasks: BackgroundTasks, type: str = "alert"):
     """
-    Helper function to dispatch both web and email notifications concurrently
+    Helper function to dispatch both web and email notifications concurrently, and save to DB.
     """
+    await save_notification_to_db(user_id, title, message, type)
+    
     # 1. Dispatch Web Push instantly via SSE
     await dispatch_web_push(user_id, message, title)
     
@@ -100,16 +119,48 @@ async def notification_stream(request: Request, token: str):
                 # Disconnect if client goes away
                 if await request.is_disconnected():
                     break
-                # Wait for next notification
-                data = await q.get()
-                yield {
-                    "event": "notification",
-                    "data": str(data)
-                }
+                
+                try:
+                    # Wait for next notification with a timeout
+                    data = await asyncio.wait_for(q.get(), timeout=15.0)
+                    yield {
+                        "event": "notification",
+                        "data": str(data)
+                    }
+                except asyncio.TimeoutError:
+                    # Send a keep-alive ping to prevent ERR_INCOMPLETE_CHUNKED_ENCODING timeout
+                    yield {
+                        "event": "ping",
+                        "data": "keepalive"
+                    }
         finally:
             remove_client(user_id, q)
             
     return EventSourceResponse(event_generator())
+
+@router.get("/")
+async def get_notifications(user_id: str = Depends(get_current_user_id)):
+    from .database import get_database
+    db = get_database()
+    cursor = db["notifications"].find({"user_id": user_id}).sort("created_at", -1).limit(50)
+    notifications = await cursor.to_list(length=50)
+    for n in notifications:
+        n["id"] = str(n.pop("_id"))
+    return {"notifications": notifications}
+
+@router.put("/{notification_id}/read")
+async def mark_notification_read(notification_id: str, user_id: str = Depends(get_current_user_id)):
+    from .database import get_database
+    from bson import ObjectId
+    db = get_database()
+    try:
+        await db["notifications"].update_one(
+            {"_id": ObjectId(notification_id), "user_id": user_id},
+            {"$set": {"is_read": True}}
+        )
+        return {"success": True}
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid ID")
 
 # Example endpoint to trigger a manual test notification
 @router.post("/test")
@@ -125,5 +176,5 @@ async def test_notification(
     title = "System Test"
     message = "This is a test notification from the TaskPulse scheduling engine!"
     
-    await notify_user(user_id, email, title, message, bg_tasks)
+    await notify_user(user_id, email, title, message, bg_tasks, type="alert")
     return {"message": "Test notification dispatched"}

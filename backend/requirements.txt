@@ -33,3 +33,5 @@ pytest
 requests
 pymongo
 sse-starlette
+edge-tts
+

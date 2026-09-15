@@ -413,6 +413,18 @@ export default function Layout() {
                       ))
                     )}
                   </div>
+                  
+                  <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-hover)] px-4 py-2 text-center">
+                    <button 
+                      onClick={() => {
+                        setShowNotifMenu(false);
+                        navigate('/notifications');
+                      }}
+                      className="text-sm font-medium text-[var(--accent-base)] hover:underline"
+                    >
+                      View all Reminders & Alerts
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

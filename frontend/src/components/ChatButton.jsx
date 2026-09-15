@@ -76,6 +76,10 @@ export default function ChatButton() {
     setIsChatOpen((previous) => !previous);
   };
 
+  const openChat = () => {
+    setIsChatOpen(true);
+  };
+
   return (
     <>
       {/* Floating Chat Button */}
@@ -83,7 +87,7 @@ export default function ChatButton() {
         type="button"
         onClick={toggleChat}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-200 z-[99999]"
-        title={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
+        title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
       >
         {isChatOpen ? (
@@ -94,31 +98,32 @@ export default function ChatButton() {
       </button>
 
       {/* Chat Window */}
-      {isChatOpen && (
-        <div
-          className="
-            fixed
-            bottom-24
-            right-6
-            w-[calc(100vw-3rem)]
-            sm:w-[420px]
-            max-w-[420px]
-            h-[600px]
-            max-h-[calc(100vh-8rem)]
-            bg-white
-            rounded-2xl
-            shadow-2xl
-            border
-            border-[var(--border-subtle)]
-            overflow-hidden
-            z-[99998]
-          "
-        >
-          <ChatErrorBoundary>
-            <ChatInterface />
-          </ChatErrorBoundary>
-        </div>
-      )}
+      <div
+        className={`
+          fixed
+          bottom-24
+          right-6
+          w-[calc(100vw-3rem)]
+          sm:w-[420px]
+          max-w-[420px]
+          h-[600px]
+          max-h-[calc(100vh-8rem)]
+          bg-white
+          rounded-2xl
+          shadow-2xl
+          border
+          border-[var(--border-subtle)]
+          overflow-hidden
+          z-[99998]
+          transition-all
+          duration-300
+          ${isChatOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none hidden'}
+        `}
+      >
+        <ChatErrorBoundary>
+          <ChatInterface isChatOpen={isChatOpen} openChat={openChat} />
+        </ChatErrorBoundary>
+      </div>
     </>
   );
 }

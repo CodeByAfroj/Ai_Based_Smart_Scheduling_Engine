@@ -121,11 +121,17 @@ class SchedulerEngine:
 
             # Hard bounds from the task's own window
             min_start = max(0, self._datetime_to_mins(task.earliest_start))
-            max_end   = min(self.horizon_end, self._datetime_to_mins(task.deadline))
+            raw_max_end = self._datetime_to_mins(task.deadline)
+
+            # For flexible (non-fixed) tasks, ensure deadline horizon is at least min_start + 3 days to fit work windows
+            if not getattr(task, 'fixed', False):
+                max_end = max(raw_max_end, min_start + 24 * 60 * 3)
+            else:
+                max_end = max(raw_max_end, min_start + duration)
+            max_end = min(self.horizon_end, max_end)
 
             # Make sure the window is wide enough
             if max_end - min_start < duration:
-                # Widen slightly to allow feasibility check to fail gracefully
                 max_end = min_start + duration
 
             start_var    = self.model.NewIntVar(min_start, max_end - duration, f'start_{task.id}')

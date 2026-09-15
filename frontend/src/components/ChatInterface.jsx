@@ -3,58 +3,314 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import { useNavigate } from 'react-router-dom';
 import { localInputToIST, formatIST, formatDateIST } from '../utils/time';
-import { Zap, Volume2, VolumeX } from 'lucide-react';
+import { Zap, Volume2, VolumeX, Mic } from 'lucide-react';
+import ChatGPTVoiceOrb from './ChatGPTVoiceOrb';
 
-export default function ChatInterface() {
+// Component to render formatted Markdown (bold, headers, bullets, colors) cleanly
+function FormattedMessage({ text, isUser }) {
+  if (isUser) {
+    return <p className="whitespace-pre-wrap text-sm leading-relaxed">{text}</p>;
+  }
+
+  const cleanedText = text.replace(/```json[\s\S]*?```/gi, '').trim();
+  const lines = cleanedText.split('\n');
+
+  const renderInlineMarkdown = (str) => {
+    const parts = [];
+    const regex = /(\*\*|__)(.*?)\1|(\*|_)(.*?)\3/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(str)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(str.substring(lastIndex, match.index));
+      }
+      if (match[2]) {
+        parts.push(
+          <strong key={match.index} className="font-semibold text-indigo-700 bg-indigo-50/70 px-1 py-0.5 rounded border border-indigo-100/50">
+            {match[2]}
+          </strong>
+        );
+      } else if (match[4]) {
+        parts.push(<em key={match.index} className="italic text-slate-700">{match[4]}</em>);
+      }
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < str.length) {
+      parts.push(str.substring(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : str;
+  };
+
+  return (
+    <div className="space-y-1 text-sm text-slate-800 leading-relaxed">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-1" />;
+
+        if (trimmed.startsWith('#')) {
+          const headerText = trimmed.replace(/^#+\s*/, '');
+          return (
+            <h4 key={idx} className="font-bold text-indigo-900 text-sm mt-2 mb-1 flex items-center gap-1.5 border-b border-indigo-100 pb-1">
+              <span className="w-1.5 h-3 bg-indigo-600 rounded-full inline-block"></span>
+              {renderInlineMarkdown(headerText)}
+            </h4>
+          );
+        }
+
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          const bulletText = trimmed.replace(/^[*\-]\s*/, '');
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1 my-0.5">
+              <span className="text-indigo-500 font-bold text-xs mt-1">•</span>
+              <span className="flex-1">{renderInlineMarkdown(bulletText)}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="my-0.5">
+            {renderInlineMarkdown(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function ChatInterface({ isChatOpen, openChat }) {
+
   const { token, API_BASE } = useAuth();
-  const { tasks, addTask } = useTasks();
+  const { tasks, addTask, fetchTasks } = useTasks();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState([]);
+
+  // Load initial messages from localStorage or default welcome message
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('taskpulse_chat_history');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map(m => ({ ...m, timestamp: new Date(m.timestamp) }));
+      }
+    } catch (e) {
+      console.error('Failed to load chat history', e);
+    }
+    return [{
+      id: Date.now(),
+      text: "Hello! I'm your TaskPulse assistant. Say 'Hey TaskPulse' or type a command to get started.\n• Ask questions about your schedule or tasks\n• Hands-free voice accessibility active!",
+      isUser: false,
+      timestamp: new Date()
+    }];
+  });
+
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationState, setConversationState] = useState({
-    step: 'initial', // initial, task_creation, question_asked, waiting_for_clarification
-    taskData: {}, // stores partial task info during conversation
-    awaitingField: null // which field we're waiting for (date, priority, etc.)
-  });
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voices, setVoices] = useState([]);
+  const [isListening, setIsListening] = useState(false);
 
-  // Ref for message ID generation to avoid impure functions in render
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [latestTranscript, setLatestTranscript] = useState('');
+  const [latestAiResponse, setLatestAiResponse] = useState('');
+
+  // Load voices for speech synthesis
+  useEffect(() => {
+    const loadVoices = () => {
+      if ('speechSynthesis' in window) {
+        setVoices(window.speechSynthesis.getVoices());
+      }
+    };
+    loadVoices();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
+  const messagesRef = useRef(messages);
+
+  // Save messages to local storage and sync ref whenever they change
+  useEffect(() => {
+    messagesRef.current = messages;
+    localStorage.setItem('taskpulse_chat_history', JSON.stringify(messages));
+  }, [messages]);
+
+  const [conversationState, setConversationState] = useState({
+    step: 'initial',
+    taskData: {},
+    awaitingField: null
+  });
+
+  const activeRecognitionRef = useRef(null);
+  const isProcessingRef = useRef(false);
   const messageIdRef = useRef(0);
 
-  // Add a welcome message using useEffect properly
+  // Global Keyboard Shortcut for Push-to-Talk Voice Input (Alt+V)
   useEffect(() => {
-    if (messages.length === 0) {
-      const welcomeMessage = {
-        id: generateMessageId(),
-        text: "Hello! I'm your TaskPulse assistant. I can help you:\n• Create tasks: Just tell me what you want to schedule\n• Answer questions: Ask about your tasks, schedule, or profile\n• Navigate: Say 'go to schedule' or 'show my tasks'\n• Use voice input with the microphone button\n\nHow can I assist you today?",
-        isUser: false,
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, welcomeMessage]);
-    }
-  }, [messages.length]);
+    const handleKeyDown = (e) => {
+      if (e.altKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        if (openChat) openChat();
+        startVoiceInput();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [openChat]);
 
   // Generate unique message ID
   const generateMessageId = () => {
     return Date.now() + messageIdRef.current++;
   };
 
-  // Speech synthesis
-  const speakText = (text) => {
+  const [isTwoWayMode, setIsTwoWayMode] = useState(false);
+  const isTwoWayModeRef = useRef(false);
+
+  // Keep ref in sync with state for callback access
+  useEffect(() => {
+    isTwoWayModeRef.current = isTwoWayMode;
+  }, [isTwoWayMode]);
+
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState(() => localStorage.getItem('taskpulse_selected_voice_uri') || '');
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+
+  const handleVoiceChange = (uri) => {
+    setSelectedVoiceURI(uri);
+    localStorage.setItem('taskpulse_selected_voice_uri', uri);
+  };
+
+  const audioRef = useRef(null);
+
+  const testSelectedVoice = async (uriToTest = selectedVoiceURI) => {
+    const sampleText = "Hello! I am your TaskPulse AI assistant. How does this voice sound to you?";
+    speakText(sampleText);
+  };
+
+  // Clean text for natural human Speech Synthesis (strip markdown, JSON code blocks, symbols)
+  const cleanTextForSpeech = (rawText) => {
+    if (!rawText) return '';
+    return rawText
+      .replace(/```json[\s\S]*?```/gi, '') // remove json code blocks
+      .replace(/```[\s\S]*?```/gi, '')     // remove code blocks
+      .replace(/[\*\_`#\[\]\(\)>~]/g, ' ') // remove markdown symbols
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  // Ultra-realistic Neural Human Speech Synthesis (ChatGPT Voice Style) via /nlp/tts
+  const speakText = async (text, onSpeechEnd) => {
+    const cleanText = cleanTextForSpeech(text);
+    if (!cleanText) {
+      setIsSpeaking(false);
+      if (onSpeechEnd) onSpeechEnd();
+      return;
+    }
+
+    setLatestAiResponse(cleanText);
+    setIsSpeaking(true);
+
+    // Stop any ongoing speech
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch (e) { }
+    }
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // cancel any ongoing
-      const utterance = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.cancel();
+    }
+
+    // Try Neural TTS API first (Hyper-realistic ChatGPT Voice)
+    try {
+      const ttsVoice = selectedVoiceURI.startsWith('en-US-')
+        ? selectedVoiceURI
+        : 'en-US-AvaNeural'; // Default: Ava Neural (ChatGPT Warm Female Voice)
+
+      const response = await fetch(`${API_BASE}/nlp/tts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: cleanText,
+          voice: ttsVoice
+        })
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          setIsSpeaking(false);
+          if (onSpeechEnd) onSpeechEnd();
+          if (isTwoWayModeRef.current) {
+            setTimeout(() => {
+              startVoiceInput();
+            }, 400);
+          }
+        };
+
+        audio.onerror = (e) => {
+          console.error("Audio playback error:", e);
+          setIsSpeaking(false);
+          if (onSpeechEnd) onSpeechEnd();
+        };
+
+        await audio.play();
+        return;
+      }
+    } catch (err) {
+      console.warn('Neural TTS endpoint fallback to Web Speech:', err);
+    }
+
+    // Browser Web Speech Synthesis Fallback
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'en-US';
+      utterance.rate = 0.96;
+      utterance.pitch = 1.05;
+
+      const available = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+      const preferred = available.find(v => v.voiceURI === selectedVoiceURI)
+        || available.find(v => v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Google US English'))
+        || available[0];
+      if (preferred) utterance.voice = preferred;
+
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        if (onSpeechEnd) onSpeechEnd();
+        if (isTwoWayModeRef.current) {
+          setTimeout(() => startVoiceInput(), 600);
+        }
+      };
+
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        if (onSpeechEnd) onSpeechEnd();
+      };
+
       window.speechSynthesis.speak(utterance);
+    } else {
+      setIsSpeaking(false);
+      if (onSpeechEnd) onSpeechEnd();
     }
   };
 
-  const speakIfEnabled = (text) => {
+
+  const speakIfEnabled = (text, onSpeechEnd) => {
     if (voiceEnabled) {
-      speakText(text);
+      speakText(text, onSpeechEnd);
+    } else if (onSpeechEnd) {
+      onSpeechEnd();
     }
   };
+
 
   const sendMessage = async (messageText = input) => {
     const textToSend = messageText.trim();
@@ -68,7 +324,9 @@ export default function ChatInterface() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const updatedMessages = [...messagesRef.current, userMessage];
+    setMessages(updatedMessages);
+    messagesRef.current = updatedMessages;
     setInput('');
     setIsLoading(true);
 
@@ -94,41 +352,17 @@ export default function ChatInterface() {
           isUser: false,
           timestamp: new Date()
         };
-        setMessages(prev => [...prev, navResponse]);
+        const navUpdated = [...updatedMessages, navResponse];
+        setMessages(navUpdated);
+        messagesRef.current = navUpdated;
         speakIfEnabled(navResponse.text);
         setIsLoading(false);
         return;
       }
 
-      // Check if user wants to see their tasks
-      const showTasksMatch = textToSend.toLowerCase().match(/(show|list|what.*are).*my\s+(tasks|task list)/i);
-      if (showTasksMatch) {
-        const tasksResponse = {
-          id: generateMessageId(),
-          text: `You currently have ${tasks.length} task(s). Would you like me to show you your task list or help you with something specific?`,
-          isUser: false,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, tasksResponse]);
-        speakIfEnabled(tasksResponse.text);
-        setIsLoading(false);
-        return;
-      }
+      // Process query through contextual AI Assistant
+      await handleQuestion(textToSend, updatedMessages);
 
-      // Determine if this is a task creation request or a question
-      const isTaskRequest = /^(schedule|add|create|i want to|i need to|make|set up)\s+/i.test(textToSend);
-
-      // Handle conversational flow for task creation
-      if (conversationState.step === 'waiting_for_clarification' && conversationState.awaitingField) {
-        // User is providing missing information
-        await handleClarificationResponse(textToSend);
-      } else if (isTaskRequest || conversationState.step === 'task_creation') {
-        // Handle task creation flow
-        await handleTaskCreationFlow(textToSend);
-      } else {
-        // Treat as a question
-        await handleQuestion(textToSend);
-      }
     } catch (error) {
       console.error('Error processing message:', error);
       setMessages(prev => [...prev, {
@@ -399,8 +633,14 @@ export default function ChatInterface() {
     }
   };
 
-  const handleQuestion = async (questionText) => {
+  const handleQuestion = async (questionText, activeList = null) => {
     try {
+      const sourceList = activeList || messagesRef.current;
+      const historyPayload = sourceList.slice(-10).map(m => ({
+        role: m.isUser ? 'user' : 'assistant',
+        content: m.text
+      }));
+
       const queryResponse = await fetch(`${API_BASE}/nlp/query`, {
         method: 'POST',
         headers: {
@@ -409,6 +649,7 @@ export default function ChatInterface() {
         },
         body: JSON.stringify({
           question: questionText,
+          history: historyPayload,
           tasks: tasks
         })
       });
@@ -416,11 +657,7 @@ export default function ChatInterface() {
       if (!queryResponse.ok) throw new Error('Failed to process query');
       const queryData = await queryResponse.json();
 
-      let answer = queryData.answer;
-      // Customize out-of-scope response
-      if (queryData.type === 'unknown') {
-        answer = "I'm here to help you with task scheduling, managing your profile, and navigating the app. I can't help with shopping or other unrelated topics.";
-      }
+      let answer = queryData.answer || "I reviewed your message.";
 
       const responseMessage = {
         id: generateMessageId(),
@@ -429,21 +666,21 @@ export default function ChatInterface() {
         timestamp: new Date(),
         ...queryData
       };
-      setMessages(prev => [...prev, responseMessage]);
+      setMessages(prev => {
+        const nextList = [...prev, responseMessage];
+        messagesRef.current = nextList;
+        return nextList;
+      });
       speakIfEnabled(responseMessage.text);
 
-      // Refresh tasks if needed
-      if (questionText.toLowerCase().includes('task') &&
-        (questionText.toLowerCase().includes('count') ||
-          questionText.toLowerCase().includes('how many'))) {
-        // Fetch fresh task count
-        // Note: We don't have a direct refetch function here, but the UI might update via other means
+      if (queryData.task_created && fetchTasks) {
+        fetchTasks(true);
       }
     } catch (error) {
       console.error('Error processing question:', error);
       setMessages(prev => [...prev, {
         id: generateMessageId(),
-        text: "I'm sorry, but I wasn't able to understand your question. Could you please rephrase it?",
+        text: "I apologize, but I encountered an error processing your query. Please try again.",
         isUser: false,
         timestamp: new Date()
       }]);
@@ -465,7 +702,6 @@ export default function ChatInterface() {
       return await response.json();
     } catch (error) {
       console.error('Error parsing task:', error);
-      // Return basic fallback
       return {
         name: text.trim(),
         duration_minutes: 30,
@@ -487,106 +723,177 @@ export default function ChatInterface() {
   const handleVoiceInput = async (text) => {
     const transcript = text.trim();
 
-    if (!transcript) return;
+    if (!transcript || isLoading) return;
 
+    setLatestTranscript(transcript);
     setInput(transcript);
-    // Send the transcript directly so we don't depend on async state updates.
-    await sendMessage(transcript);
+    try {
+      await sendMessage(transcript);
+    } finally {
+      isProcessingRef.current = false;
+    }
   };
 
   const startVoiceInput = async () => {
-    // Check if browser supports Speech Recognition
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Voice input is not supported in your browser. Please use Chrome or Edge for voice features.');
       return;
     }
 
+    if (isListening || isLoading || isProcessingRef.current) {
+      if (activeRecognitionRef.current) {
+        try { activeRecognitionRef.current.stop(); } catch (e) { }
+      }
+      setIsListening(false);
+      return;
+    }
+
+    if (activeRecognitionRef.current) {
+      try { activeRecognitionRef.current.stop(); } catch (e) { }
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
 
+    activeRecognitionRef.current = recognition;
     recognition.lang = 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
-    recognition.start();
+    setIsListening(true);
+    try {
+      recognition.start();
+    } catch (e) {
+      setIsListening(false);
+    }
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      handleVoiceInput(transcript);
-      recognition.stop();
+      const transcript = event.results[0][0]?.transcript;
+      setIsListening(false);
+      if (transcript && !isLoading) {
+        handleVoiceInput(transcript);
+      }
+      try { recognition.stop(); } catch (e) { }
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      let errorMessage = 'Sorry, there was an error with voice recognition. Please try again.';
-
-      switch (event.error) {
-        case 'not-allowed':
-          errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings and try again.';
-          break;
-        case 'audio-capture':
-          errorMessage = 'No microphone found. Please check your microphone settings and try again.';
-          break;
-        case 'network':
-          errorMessage = 'Network error. Please check your internet connection and try again.';
-          break;
-        case 'not-supported':
-          errorMessage = 'Speech recognition not supported in your browser. Please use Chrome or Edge.';
-          break;
-        case 'aborted':
-          errorMessage = 'Speech recognition was aborted. Please try speaking again.';
-          break;
-        case 'language-not-supported':
-          errorMessage = 'Language not supported. Please try speaking in English.';
-          break;
-        case 'no-speech':
-          errorMessage = 'No speech detected. Please try speaking more clearly or closer to the microphone.';
-          break;
-        default:
-          errorMessage = `Speech recognition error: ${event.error}. Please try again.`;
-      }
-
-      alert(errorMessage);
-      recognition.stop();
+      setIsListening(false);
+      isProcessingRef.current = false;
+      try { recognition.stop(); } catch (e) { }
     };
 
     recognition.onend = () => {
-      // Recognition ended
+      setIsListening(false);
     };
   };
+
+  if (isTwoWayMode) {
+    return (
+      <ChatGPTVoiceOrb
+        isListening={isListening}
+        isLoading={isLoading}
+        isSpeaking={isSpeaking}
+        latestTranscript={latestTranscript}
+        latestAiResponse={latestAiResponse}
+        selectedVoiceURI={selectedVoiceURI}
+        onVoiceChange={handleVoiceChange}
+        onToggleMic={() => startVoiceInput()}
+        onCloseVoiceMode={() => {
+          setIsTwoWayMode(false);
+          setIsListening(false);
+          setIsSpeaking(false);
+          if (audioRef.current) {
+            try { audioRef.current.pause(); } catch (e) { }
+          }
+          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }}
+        onToggleTextChat={() => setIsTwoWayMode(false)}
+      />
+    );
+  }
 
   return (
     <div className="w-full h-full flex flex-col bg-white">
       {/* Chat Header */}
       <div className="bg-white rounded-t-xl shadow-lg border border-[var(--border-subtle)] flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
-          <h3 className="text-[var(--text-main)] font-semibold">
+          <h3 className="text-[var(--text-main)] font-semibold flex items-center gap-1.5 text-sm">
             <Zap className="h-4 w-4 text-[var(--accent-base)]" />
-            Assistant
+            TaskPulse AI
           </h3>
+          <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+            <kbd className="font-mono bg-white px-1 rounded shadow-sm border border-slate-200">Alt+V</kbd> to talk
+          </div>
+
+          <button
+            onClick={() => {
+              const nextState = !isTwoWayMode;
+              setIsTwoWayMode(nextState);
+              if (nextState) {
+                setVoiceEnabled(true);
+                startVoiceInput();
+              } else {
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                setIsListening(false);
+              }
+            }}
+            className={`text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 transition-all ${isTwoWayMode
+              ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-200 animate-pulse'
+              : 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
+              }`}
+            title="Launch ChatGPT Voice Mode Orb"
+          >
+            <Mic className="w-3 h-3" />
+            {isTwoWayMode ? 'Voice Mode ON' : 'Voice Mode Orb'}
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem('taskpulse_chat_history');
+              setMessages([{
+                id: Date.now(),
+                text: "Memory cleared! How can I assist you with your day?",
+                isUser: false,
+                timestamp: new Date()
+              }]);
+            }}
+            className="text-[10px] text-slate-400 hover:text-red-500 font-semibold px-2 py-1 border border-slate-200 rounded transition-colors"
+            title="Clear Conversation History"
+          >
+            Clear Memory
+          </button>
+          <button
+            onClick={() => {
+              const newState = !voiceEnabled;
+              setVoiceEnabled(newState);
+              if (!newState && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+              }
+            }}
+            className="text-[var(--text-muted)] hover:text-[var(--accent-base)] p-1 rounded"
+            title={voiceEnabled ? 'Disable voice response' : 'Enable voice response'}
+          >
+            {voiceEnabled ? (
+              <Volume2 className="h-4 w-4 text-[var(--accent-base)]" />
+            ) : (
+              <VolumeX className="h-4 w-4" />
+            )}
+          </button>
         </div>
-        <button
-          onClick={() => setVoiceEnabled(!voiceEnabled)}
-          className="text-[var(--text-muted)] hover:text-[var(--accent-base)] p-1 rounded"
-          title={voiceEnabled ? 'Disable voice response' : 'Enable voice response'}
-        >
-          {voiceEnabled ? (
-            <Volume2 className="h-4 w-4" />
-          ) : (
-            <VolumeX className="h-4 w-4" />
-          )}
-        </button>
       </div>
 
+
+
       {/* Chat Messages */}
-      <div className="flex-1 bg-white border-l border-r border-[var(--border-subtle)] overflow-y-auto px-4 py-4 space-y-3">
+      <div className="flex-1 bg-white border-l border-r border-[var(--border-subtle)] overflow-y-auto px-4 py-4 space-y-3" aria-live="polite" aria-atomic="false">
         {messages.map(message => (
           <div key={message.id} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] px-3 py-2 rounded-xl ${message.isUser
               ? 'bg-[var(--accent-base)] text-white'
               : 'bg-[var(--bg-hover)] text-[var(--text-main)]'
               }`}>
-              <p className="whitespace-pre-wrap">{message.text}</p>
+              <FormattedMessage text={message.text} isUser={message.isUser} />
+
               {message.timestamp && (
                 <p className="text-[10px] text-[var(--text-muted)] mt-1">{message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               )}
@@ -606,8 +913,11 @@ export default function ChatInterface() {
       <div className="bg-white border-b border-[var(--border-subtle)] flex items-center px-4 py-2">
         <button
           onClick={startVoiceInput}
-          className="text-[var(--text-muted)] hover:text-[var(--accent-base)] p-1 rounded"
-          title="Voice input"
+          className={`p-2 rounded-lg transition-all flex items-center gap-1 ${isListening
+            ? 'bg-red-500 text-white animate-pulse shadow-md ring-2 ring-red-300'
+            : 'text-[var(--text-muted)] hover:text-[var(--accent-base)] hover:bg-slate-100'
+            }`}
+          title={isListening ? "Listening... Click to stop" : "Click mic to speak (or Alt+V)"}
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 0 1-14 0M12 18v4M8 22h8" /></svg>
         </button>
@@ -622,9 +932,11 @@ export default function ChatInterface() {
               sendMessage();
             }
           }}
-          placeholder="Ask me to schedule a task or answer a question..."
-          className="flex-1 px-3 py-2 border border-[var(--border-subtle)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent-base)] text-sm"
+          placeholder={isListening ? "Listening to your voice..." : "Talk to me about anything or ask to schedule a task..."}
+          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm transition-all ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-50/30' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
+            }`}
         />
+
 
         <button
           onClick={() => sendMessage()}

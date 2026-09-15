@@ -29,6 +29,7 @@ const defaultTask = () => {
     earliest_start: dates.earliest_start,
     deadline: dates.deadline,
     fixed: false,
+    reminders: [],
   }
 }
 
@@ -59,8 +60,9 @@ export default function TaskForm({ onAddTask }) {
       duration_minutes: parseInt(task.duration_minutes),
       earliest_start: localInputToIST(task.earliest_start),
       deadline: localInputToIST(task.deadline),
-      priority: parseInt(task.priority),
-      fixed: false,
+      priority: task.priority,
+      fixed: task.fixed,
+      reminders: task.reminders || [],
     }
     onAddTask(newTask)
     setTask(defaultTask())
@@ -146,6 +148,31 @@ export default function TaskForm({ onAddTask }) {
                 className="input-field text-sm [color-scheme:dark]"
                 required
               />
+            </div>
+          </div>
+
+          <div>
+            <label className="input-label mb-2">Reminders</label>
+            <div className="flex gap-2">
+              {[5, 15, 30].map(mins => (
+                <div
+                  key={mins}
+                  onClick={() => {
+                    const current = task.reminders || [];
+                    const updated = current.includes(mins) 
+                      ? current.filter(m => m !== mins)
+                      : [...current, mins];
+                    handleChange('reminders', updated);
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-colors border ${
+                    (task.reminders || []).includes(mins)
+                      ? 'bg-[var(--accent-base)] text-white border-[var(--accent-base)]'
+                      : 'bg-transparent text-[var(--text-muted)] border-[var(--border-subtle)]'
+                  }`}
+                >
+                  {mins} min before
+                </div>
+              ))}
             </div>
           </div>
 

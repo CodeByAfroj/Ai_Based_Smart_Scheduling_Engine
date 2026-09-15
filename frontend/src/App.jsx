@@ -9,6 +9,7 @@ import Tasks from './pages/Tasks';
 import Schedule from './pages/Schedule';
 import Analytics from './pages/Analytics';
 import Integrations from './pages/Integrations';
+import Notifications from './pages/Notifications';
 import Layout from './components/Layout';
 import ActivityTracker from './components/ActivityTracker';
 
@@ -114,6 +115,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <Integrations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
                   </ProtectedRoute>
                 }
               />

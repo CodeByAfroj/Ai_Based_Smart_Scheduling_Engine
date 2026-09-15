@@ -191,3 +191,35 @@ body {
   border-radius: 4px; 
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+
+/* ChatGPT Voice Orb Fluid Liquid Animations */
+.orb-liquid-idle {
+  background: radial-gradient(circle at 30% 30%, #a5b4fc 0%, #6366f1 40%, #312e81 80%, #020617 100%);
+  animation: orb-swirl 12s linear infinite, orb-pulse 4s ease-in-out infinite;
+}
+
+.orb-liquid-listening {
+  background: radial-gradient(circle at 50% 50%, #fef08a 0%, #f43f5e 35%, #881337 75%, #020617 100%);
+  animation: orb-swirl 6s linear infinite, orb-pulse 1.8s ease-in-out infinite;
+}
+
+.orb-liquid-thinking {
+  background: radial-gradient(circle at 40% 60%, #c084fc 0%, #6366f1 35%, #0ea5e9 70%, #020617 100%);
+  animation: orb-swirl 3.5s linear infinite, orb-pulse 1.2s ease-in-out infinite;
+}
+
+.orb-liquid-speaking {
+  background: radial-gradient(circle at 60% 40%, #7dd3fc 0%, #2563eb 40%, #4c1d95 80%, #020617 100%);
+  animation: orb-swirl 5s linear infinite, orb-pulse 2s ease-in-out infinite;
+}
+
+@keyframes orb-swirl {
+  0% { transform: rotate(0deg) scale(1.05); filter: hue-rotate(0deg); }
+  50% { transform: rotate(180deg) scale(1.15); filter: hue-rotate(30deg); }
+  100% { transform: rotate(360deg) scale(1.05); filter: hue-rotate(0deg); }
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
