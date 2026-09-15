@@ -55,8 +55,8 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
 
     const particleTexture = createParticleTexture();
 
-    // 2. Controlled Particle Field (2200 particles following energy field structure)
-    const particleCount = 2200;
+    // 2. Vibrant Particle Field (2400 luminous particles following energy field structure)
+    const particleCount = 2400;
     const geometry = new THREE.BufferGeometry();
     const basePositions = new Float32Array(particleCount * 3);
     const currentPositions = new Float32Array(particleCount * 3);
@@ -64,13 +64,13 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
     const baseColors = new Float32Array(particleCount * 3);
     const phaseOffsets = new Float32Array(particleCount);
 
-    // Controlled color palette: Dominant Violet/Blue, Cyan, Soft Magenta, Rare Gold Accent
+    // Luminous electric color palette: Cyan, Vibrant Violet, Electric Blue, Vivid Magenta, Gold Highlight
     const colorPalette = [
-      new THREE.Color(0x7c3aed), // Violet (Dominant)
+      new THREE.Color(0x00f0ff), // Luminous Cyan (Dominant)
+      new THREE.Color(0xa855f7), // Vibrant Violet (Dominant)
       new THREE.Color(0x3b82f6), // Electric Blue (Dominant)
-      new THREE.Color(0x06b6d4), // Cyan
-      new THREE.Color(0xc084fc), // Soft Magenta
-      new THREE.Color(0xfacc15), // Subtle Gold Accent (~3% rare)
+      new THREE.Color(0xec4899), // Vivid Magenta
+      new THREE.Color(0xfacc15), // Warm Gold Accent (~4% rare)
     ];
 
     const baseRadius = 1.15;
@@ -81,7 +81,7 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
       const theta = Math.PI * (1 + Math.sqrt(5)) * i;
 
       // Tight radial distribution (clean boundary, no outer random scattering)
-      const radialNoise = (Math.random() - 0.5) * 0.14;
+      const radialNoise = (Math.random() - 0.5) * 0.16;
       const r = baseRadius + radialNoise;
 
       const x = r * Math.sin(phi) * Math.cos(theta);
@@ -98,29 +98,28 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
 
       phaseOffsets[i] = Math.random() * Math.PI * 2;
 
-      // Selective color distribution: Dominant Violet/Blue
+      // Color distribution: Luminous Cyan, Violet, Blue
       const randColor = Math.random();
       let color;
-      if (randColor > 0.97) {
-        color = colorPalette[4]; // Gold highlight (~3%)
-      } else if (randColor > 0.80) {
-        color = colorPalette[3]; // Soft Magenta (~17%)
-      } else if (randColor > 0.50) {
-        color = colorPalette[2]; // Cyan (~30%)
-      } else if (randColor > 0.25) {
-        color = colorPalette[1]; // Electric Blue (~25%)
+      if (randColor > 0.96) {
+        color = colorPalette[4]; // Gold highlight (~4%)
+      } else if (randColor > 0.78) {
+        color = colorPalette[3]; // Vivid Magenta (~18%)
+      } else if (randColor > 0.48) {
+        color = colorPalette[2]; // Electric Blue (~30%)
+      } else if (randColor > 0.22) {
+        color = colorPalette[1]; // Vibrant Violet (~26%)
       } else {
-        color = colorPalette[0]; // Violet (~25%)
+        color = colorPalette[0]; // Luminous Cyan (~22%)
       }
 
-      // Controlled intensity hierarchy: 80% subtle, 15% medium, 5% highlight
-      let intensity = 0.5 + Math.random() * 0.3; // Default 80% subtle
-      if (randColor > 0.95) intensity = 1.0; // 5% bright highlight
-      else if (randColor > 0.80) intensity = 0.75; // 15% medium
+      // Brightness factor: vivid and clear
+      let intensity = 0.95 + Math.random() * 0.35; // Bright default
+      if (randColor > 0.90) intensity = 1.4; // 10% luminous highlight points
 
-      baseColors[i * 3] = color.r * intensity;
-      baseColors[i * 3 + 1] = color.g * intensity;
-      baseColors[i * 3 + 2] = color.b * intensity;
+      baseColors[i * 3] = Math.min(1.0, color.r * intensity);
+      baseColors[i * 3 + 1] = Math.min(1.0, color.g * intensity);
+      baseColors[i * 3 + 2] = Math.min(1.0, color.b * intensity);
 
       colors[i * 3] = baseColors[i * 3];
       colors[i * 3 + 1] = baseColors[i * 3 + 1];
@@ -131,11 +130,11 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
     const particleMaterial = new THREE.PointsMaterial({
-      size: 0.044,
+      size: 0.054,
       map: particleTexture,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.95,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -143,9 +142,9 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
     const particleCloud = new THREE.Points(geometry, particleMaterial);
     scene.add(particleCloud);
 
-    // 3. Subtle Flowing Energy Strands (Thinner, softer, less dominant)
-    const strandCount = 12;
-    const strandPointsPerRing = 80;
+    // 3. Glowing Flowing Energy Strands (Bright, clear orbital neon lines)
+    const strandCount = 14;
+    const strandPointsPerRing = 85;
     const strandGroup = new THREE.Group();
 
     const strandMaterials = [];
@@ -157,9 +156,9 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
       const colArray = new Float32Array(strandPointsPerRing * 3);
 
       const tiltAngleX = (s / strandCount) * Math.PI;
-      const tiltAngleY = (s / strandCount) * Math.PI * 0.55;
+      const tiltAngleY = (s / strandCount) * Math.PI * 0.58;
 
-      const strandColor = colorPalette[s % 3].clone().lerp(colorPalette[(s + 1) % 4], 0.3);
+      const strandColor = colorPalette[s % 4].clone().lerp(colorPalette[(s + 1) % 4], 0.4);
 
       for (let p = 0; p < strandPointsPerRing; p++) {
         const angle = (p / strandPointsPerRing) * Math.PI * 2;
@@ -176,10 +175,10 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
         posArray[p * 3 + 1] = vec.y;
         posArray[p * 3 + 2] = vec.z;
 
-        const fade = 0.3 + 0.5 * Math.sin((p / strandPointsPerRing) * Math.PI);
-        colArray[p * 3] = strandColor.r * fade * 0.7;
-        colArray[p * 3 + 1] = strandColor.g * fade * 0.7;
-        colArray[p * 3 + 2] = strandColor.b * fade * 0.7;
+        const fade = 0.5 + 0.5 * Math.sin((p / strandPointsPerRing) * Math.PI);
+        colArray[p * 3] = Math.min(1.0, strandColor.r * fade * 1.3);
+        colArray[p * 3 + 1] = Math.min(1.0, strandColor.g * fade * 1.3);
+        colArray[p * 3 + 2] = Math.min(1.0, strandColor.b * fade * 1.3);
       }
 
       strandGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
@@ -188,7 +187,7 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
       const mat = new THREE.LineBasicMaterial({
         vertexColors: true,
         transparent: true,
-        opacity: 0.32,
+        opacity: 0.52,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
@@ -213,17 +212,17 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
 
       // Audio reactivity & State modulation
       if (isSpeaking) {
-        targetDeform = 0.35 + Math.sin(time * 5) * 0.12;
+        targetDeform = 0.38 + Math.sin(time * 5.5) * 0.14;
       } else if (isLoading) {
-        targetDeform = 0.22 + Math.sin(time * 3) * 0.07;
+        targetDeform = 0.25 + Math.sin(time * 3.2) * 0.08;
       } else if (isListening) {
-        targetDeform = 0.10 + micLevel * 0.45;
+        targetDeform = 0.12 + micLevel * 0.50;
       } else {
-        targetDeform = 0.05; // Gentle breathing in calm idle state
+        targetDeform = 0.06; // Gentle breathing in calm idle state
       }
 
       // Smooth lerp for liquid organic deformation
-      currentDeformFactor += (targetDeform - currentDeformFactor) * 0.05;
+      currentDeformFactor += (targetDeform - currentDeformFactor) * 0.06;
 
       const posArr = geometry.attributes.position.array;
       const colArr = geometry.attributes.color.array;
@@ -235,9 +234,9 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
         const phase = phaseOffsets[i];
 
         // Multi-frequency wave flow around surface
-        const wave1 = Math.sin(time * 1.5 + bx * 2.0 + phase) * 0.07;
-        const wave2 = Math.cos(time * 1.8 + by * 2.0 + phase) * 0.07;
-        const wave3 = Math.sin(time * 1.2 + bz * 2.0 + phase) * 0.05;
+        const wave1 = Math.sin(time * 1.7 + bx * 2.2 + phase) * 0.08;
+        const wave2 = Math.cos(time * 2.0 + by * 2.2 + phase) * 0.08;
+        const wave3 = Math.sin(time * 1.4 + bz * 2.2 + phase) * 0.06;
 
         const totalDeform = (wave1 + wave2 + wave3) * currentDeformFactor;
 
@@ -249,8 +248,8 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
         posArr[i * 3 + 1] = cy;
         posArr[i * 3 + 2] = cz;
 
-        // Depth-based brightness modulation (Front = brighter, Back = dimmer)
-        const depthFactor = THREE.MathUtils.clamp((cz + baseRadius) / (baseRadius * 2), 0.35, 1.0);
+        // Depth-based brightness modulation (Minimum depth factor 0.65 for high visibility)
+        const depthFactor = THREE.MathUtils.clamp((cz + baseRadius) / (baseRadius * 2), 0.65, 1.0);
         colArr[i * 3] = baseColors[i * 3] * depthFactor;
         colArr[i * 3 + 1] = baseColors[i * 3 + 1] * depthFactor;
         colArr[i * 3 + 2] = baseColors[i * 3 + 2] * depthFactor;
@@ -260,12 +259,12 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
       geometry.attributes.color.needsUpdate = true;
 
       // Slow, serene rotation (no obvious planet spin)
-      const rotSpeed = 0.08 + currentDeformFactor * 0.12;
+      const rotSpeed = 0.10 + currentDeformFactor * 0.15;
       particleCloud.rotation.y = time * rotSpeed;
-      particleCloud.rotation.x = Math.sin(time * 0.1) * 0.1;
+      particleCloud.rotation.x = Math.sin(time * 0.12) * 0.12;
 
-      strandGroup.rotation.y = time * (rotSpeed * 0.8);
-      strandGroup.rotation.z = Math.cos(time * 0.08) * 0.08;
+      strandGroup.rotation.y = time * (rotSpeed * 0.82);
+      strandGroup.rotation.z = Math.cos(time * 0.1) * 0.1;
 
       // Deform strand geometries subtly
       strandGroup.children.forEach((mesh, index) => {
@@ -275,7 +274,7 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
 
         for (let p = 0; p < strandPointsPerRing; p++) {
           const angle = (p / strandPointsPerRing) * Math.PI * 2;
-          const wave = Math.sin(angle * 3.0 + time * 2.0 + index) * 0.05 * (0.5 + currentDeformFactor);
+          const wave = Math.sin(angle * 3.2 + time * 2.2 + index) * 0.06 * (0.6 + currentDeformFactor);
           const sr = baseRadius * (0.98 + wave);
 
           const lx = Math.cos(angle) * sr;
@@ -283,7 +282,7 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
 
           const vec = new THREE.Vector3(lx, ly, 0);
           vec.applyAxisAngle(new THREE.Vector3(1, 0, 0), tiltAngleX);
-          vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), (index / strandCount) * Math.PI * 0.55);
+          vec.applyAxisAngle(new THREE.Vector3(0, 1, 0), (index / strandCount) * Math.PI * 0.58);
 
           sPosArr[p * 3] = vec.x;
           sPosArr[p * 3 + 1] = vec.y;
@@ -364,6 +363,16 @@ export default function ChatGPTVoiceOrb({
     }
     return () => clearInterval(interval);
   }, [isListening, isSpeaking]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onCloseVoiceMode();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCloseVoiceMode]);
 
   let stateLabel = 'Listening...';
   let dotColor = 'bg-cyan-400';
@@ -459,8 +468,8 @@ export default function ChatGPTVoiceOrb({
           onClick={onToggleMic}
           className="w-[320px] h-[320px] sm:w-[440px] sm:h-[440px] md:w-[540px] md:h-[540px] max-h-[56vh] relative flex items-center justify-center cursor-pointer pointer-events-auto transition-transform duration-300 hover:scale-[1.01]"
         >
-          {/* Subtle halo glow behind sphere */}
-          <div className="absolute w-[75%] h-[75%] rounded-full bg-gradient-to-r from-blue-600/15 via-purple-600/15 to-transparent blur-3xl pointer-events-none opacity-60" />
+          {/* Vibrant Luminous Halo Glow behind sphere */}
+          <div className="absolute w-[85%] h-[85%] rounded-full bg-gradient-to-r from-cyan-500/25 via-purple-600/30 to-blue-500/20 blur-3xl pointer-events-none opacity-85 animate-pulse duration-1000" />
 
           <Organic3DVoiceEntity
             isListening={isListening}
@@ -504,34 +513,35 @@ export default function ChatGPTVoiceOrb({
         </div>
       </div>
 
-      {/* 3. Floating Bottom Controls (Lifted slightly, clear primary/secondary spacing) */}
-      <div className="w-full pb-12 pt-3 flex items-center justify-center gap-7 z-20 pointer-events-auto">
-        {/* Primary 64px Microphone Button */}
-        <button
-          onClick={onToggleMic}
-          className={`rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 transform active:scale-95 border backdrop-blur-xl relative group ${
-            isListening
-              ? 'bg-slate-950/85 border-cyan-500/40 text-cyan-300 shadow-cyan-950/40 ring-2 ring-cyan-500/20'
-              : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:bg-slate-900 hover:border-slate-700'
-          }`}
-          style={{ width: '64px', height: '64px' }}
-          title={isListening ? 'Mute Microphone' : 'Unmute Microphone'}
-        >
-          {isListening && (
-            <span className="absolute inset-0 rounded-full border border-cyan-500/30 animate-ping opacity-60 pointer-events-none" />
-          )}
-          {isListening ? (
-            <Mic className="w-6 h-6 text-cyan-400 animate-pulse" />
-          ) : (
-            <MicOff className="w-6 h-6 text-slate-400 group-hover:text-slate-200" />
-          )}
-        </button>
+      {/* 3. Floating Bottom Controls matching reference image target ring design */}
+      <div className="w-full pb-10 pt-3 flex items-center justify-center gap-4 z-20 pointer-events-auto">
+        
+        {/* Primary Mic Button with Concentric Outer Cyan Target Ring */}
+        <div className="p-2 rounded-full border border-cyan-500/30 bg-cyan-950/10 shadow-[0_0_25px_rgba(6,182,212,0.2)] flex items-center justify-center relative">
+          <button
+            onClick={onToggleMic}
+            className={`w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 transform active:scale-95 border backdrop-blur-xl relative group ${
+              isListening
+                ? 'bg-slate-950/90 border-cyan-500/80 text-cyan-300 shadow-cyan-950/60 ring-2 ring-cyan-500/30'
+                : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:bg-slate-900 hover:border-slate-700'
+            }`}
+            title={isListening ? 'Mute Microphone' : 'Unmute Microphone'}
+          >
+            {isListening && (
+              <span className="absolute inset-0 rounded-full border border-cyan-400/40 animate-ping opacity-60 pointer-events-none" />
+            )}
+            {isListening ? (
+              <Mic className="w-6 h-6 text-cyan-400 animate-pulse" />
+            ) : (
+              <MicOff className="w-6 h-6 text-slate-400 group-hover:text-slate-200" />
+            )}
+          </button>
+        </div>
 
-        {/* Secondary 48px Close Button */}
+        {/* Secondary Close Button */}
         <button
           onClick={onCloseVoiceMode}
-          className="rounded-full bg-slate-950/80 border border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900 hover:border-slate-700 flex items-center justify-center transition-all shadow-xl backdrop-blur-xl"
-          style={{ width: '48px', height: '48px' }}
+          className="w-12 h-12 rounded-full bg-slate-950/90 border border-slate-800/90 hover:border-slate-700 text-slate-400 hover:text-slate-200 flex items-center justify-center transition-all shadow-xl backdrop-blur-xl"
           title="Exit Voice Mode"
         >
           <X className="w-4 h-4" />

@@ -34,6 +34,27 @@
   --success-text: #059669;
 }
 
+.dark {
+  /* TaskPulse Dark Palette */
+  --bg-app: #0f172a; /* slate-900 */
+  --bg-panel: #1e293b; /* slate-800 */
+  --bg-hover: #334155; /* slate-700 */
+  
+  --border-subtle: #334155; /* slate-700 */
+  --border-strong: #475569; /* slate-600 */
+  
+  --text-main: #f8fafc; /* slate-50 */
+  --text-muted: #94a3b8; /* slate-400 */
+  
+  /* Accent adjusted for dark mode */
+  --accent-base: #6366f1; /* indigo-500 */
+  --accent-hover: #818cf8; /* indigo-400 */
+  --accent-light: #3730a3; /* indigo-800 */
+  
+  --success-bg: #064e3b;
+  --success-text: #34d399;
+}
+
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -45,6 +66,17 @@ body {
   -webkit-font-smoothing: antialiased;
   margin: 0;
 }
+
+/* Mobile input zoom prevention */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px; /* prevents iOS zoom on focus */
+  }
+  button {
+    touch-action: manipulation;
+  }
+}
+
 
 @layer utilities {
   .panel {

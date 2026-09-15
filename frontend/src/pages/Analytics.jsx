@@ -51,10 +51,10 @@ const dayLabels = [];
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">Completion Rate</h3>
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-[var(--accent-base)]">
+              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                 <CheckCircle2 size={16} />
               </div>
             </div>
@@ -64,10 +64,10 @@ const dayLabels = [];
             <p className="text-xs text-[var(--text-muted)] mt-2">{completed.length} of {tasks.length} tasks completed</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">Focus Time</h3>
-              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <Clock size={16} />
               </div>
             </div>
@@ -77,10 +77,10 @@ const dayLabels = [];
             <p className="text-xs text-[var(--text-muted)] mt-2">{(totalDuration / 60).toFixed(1)}h total across all tasks</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">Scheduled</h3>
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <Calendar size={16} />
               </div>
             </div>
@@ -90,10 +90,10 @@ const dayLabels = [];
             <p className="text-xs text-[var(--text-muted)] mt-2">{pending.length} pending • {scheduledRate}% auto-scheduled</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">High Priority</h3>
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+              <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400">
                 <Activity size={16} />
               </div>
             </div>
@@ -105,7 +105,7 @@ const dayLabels = [];
         </div>
 
         {/* Chart */}
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm mb-8">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-bold text-[var(--text-main)] flex items-center gap-2"><BarChart3 size={18} className="text-[var(--accent-base)]" /> Tasks Completed (Last 7 Days)</h2>
             <span className="text-xs text-[var(--text-muted)]">{completed.length} total completed</span>
@@ -135,7 +135,7 @@ const dayLabels = [];
         </div>
 
         {/* Task Breakdown Table */}
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
           <h2 className="font-bold text-[var(--text-main)] flex items-center gap-2 mb-5"><ListTodo size={18} className="text-[var(--accent-base)]" /> Task Breakdown</h2>
           {tasks.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)] py-4 text-center">No tasks to analyze yet.</p>
@@ -156,19 +156,19 @@ const dayLabels = [];
                       <td className="py-3 px-3 font-semibold text-[var(--text-main)] truncate max-w-[200px]">{task.name}</td>
                       <td className="py-3 px-3 text-[var(--text-muted)]">{task.duration_minutes}m</td>
                       <td className="py-3 px-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          (task.priority || 1) >= 3 ? 'bg-red-100 text-red-700' :
-                          (task.priority || 1) >= 2 ? 'bg-amber-100 text-amber-700' :
-                          'bg-slate-100 text-slate-600'
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${
+                          (task.priority || 1) >= 3 ? 'bg-red-100/50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-800/50' :
+                          (task.priority || 1) >= 2 ? 'bg-amber-100/50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50' :
+                          'bg-slate-100/50 dark:bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-subtle)]'
                         }`}>
                           {(task.priority || 1) >= 3 ? 'High' : (task.priority || 1) >= 2 ? 'Medium' : 'Low'}
                         </span>
                       </td>
                       <td className="py-3 px-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          task.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          task.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${
+                          task.status === 'completed' ? 'bg-green-100/50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200/50 dark:border-green-800/50' :
+                          task.status === 'scheduled' ? 'bg-blue-100/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50' :
+                          'bg-slate-100/50 dark:bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-subtle)]'
                         }`}>
                           {task.status}
                         </span>

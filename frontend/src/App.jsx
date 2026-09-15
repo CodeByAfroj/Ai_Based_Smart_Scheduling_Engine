@@ -10,8 +10,8 @@ import Schedule from './pages/Schedule';
 import Analytics from './pages/Analytics';
 import Integrations from './pages/Integrations';
 import Notifications from './pages/Notifications';
+import Settings from './pages/Settings';
 import Layout from './components/Layout';
-import ActivityTracker from './components/ActivityTracker';
 
 function ProtectedRoute({ children }) {
   const { token, loading } = useAuth();
@@ -58,7 +58,6 @@ export default function App() {
     <AuthProvider>
       <TaskProvider>
         <BrowserRouter>
-          <ActivityTracker />
           <Routes>
             <Route element={<Layout />}>
               <Route path="/login" element={<Login />} />
@@ -123,6 +122,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 }
               />

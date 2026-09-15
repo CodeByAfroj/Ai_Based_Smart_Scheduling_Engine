@@ -68,7 +68,7 @@ export default function Notifications() {
         )}
       </div>
 
-      <div className="bg-white border border-[var(--border-subtle)] rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-2xl shadow-sm overflow-hidden">
         <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-hover)] font-medium text-[var(--text-main)]">
           Recent Activity
         </div>
@@ -87,20 +87,20 @@ export default function Notifications() {
             {notifications.map(notification => (
               <div 
                 key={notification.id} 
-                className={`p-6 flex items-start gap-4 transition-colors ${!notification.is_read ? 'bg-[var(--bg-app)]' : 'bg-white hover:bg-[var(--bg-app)]'}`}
+                className={`p-6 flex items-start gap-4 transition-colors ${!notification.is_read ? 'bg-[var(--bg-app)]' : 'bg-[var(--bg-panel)] hover:bg-[var(--bg-hover)]'}`}
               >
-                <div className={`mt-1 p-2 rounded-full ${notification.type === 'reminder' ? 'bg-blue-100 text-blue-600' : 'bg-[var(--accent-base)]/10 text-[var(--accent-base)]'}`}>
+                <div className={`mt-1 p-2 rounded-full shrink-0 ${notification.type === 'reminder' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'bg-[var(--accent-base)]/10 text-[var(--accent-base)]'}`}>
                   {notification.type === 'reminder' ? <Clock className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+                    <div className="min-w-0 flex-1">
                       <h4 className={`font-medium ${!notification.is_read ? 'text-[var(--text-main)] font-semibold' : 'text-[var(--text-main)]'}`}>
                         {notification.title}
                       </h4>
-                      <p className="text-[var(--text-muted)] mt-1 text-sm whitespace-pre-wrap">{notification.message}</p>
+                      <p className="text-[var(--text-muted)] mt-1 text-sm whitespace-pre-wrap break-words">{notification.message}</p>
                     </div>
-                    <span className="text-xs text-[var(--text-muted)] whitespace-nowrap font-medium bg-white px-2 py-1 rounded-md border border-[var(--border-subtle)] shadow-sm">
+                    <span className="text-xs text-[var(--text-muted)] whitespace-nowrap shrink-0 font-medium bg-[var(--bg-app)] px-2.5 py-1 rounded-md border border-[var(--border-subtle)] shadow-sm">
                       {new Date(notification.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
                   </div>
@@ -108,7 +108,7 @@ export default function Notifications() {
                 {!notification.is_read && (
                   <button 
                     onClick={() => markAsRead(notification.id)}
-                    className="p-2 text-[var(--text-muted)] hover:text-[var(--accent-base)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors ml-2"
+                    className="p-2 text-[var(--text-muted)] hover:text-[var(--accent-base)] hover:bg-[var(--bg-hover)] rounded-lg transition-colors ml-2 shrink-0"
                     title="Mark as read"
                   >
                     <Check className="h-5 w-5" />

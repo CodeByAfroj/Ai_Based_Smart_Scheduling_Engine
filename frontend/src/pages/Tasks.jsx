@@ -77,7 +77,7 @@ export default function Tasks() {
         </div>
 
         {showForm && (
-          <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 mb-6 shadow-sm">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 mb-6 shadow-sm">
             <h2 className="font-bold text-[var(--text-main)] mb-4">Create New Task</h2>
             <form onSubmit={createTask} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
@@ -206,7 +206,7 @@ export default function Tasks() {
               className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
                 filter === tab.id
                   ? 'bg-[var(--accent-base)] text-white shadow-sm'
-                  : 'bg-white border border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-slate-50'
+                  : 'bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               {tab.label}
@@ -214,7 +214,7 @@ export default function Tasks() {
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] overflow-hidden shadow-sm">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] overflow-hidden shadow-sm">
           {filteredTasks.length === 0 ? (
             <div className="p-10 text-center flex flex-col items-center">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -232,23 +232,27 @@ export default function Tasks() {
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className={`font-semibold text-[var(--text-main)] truncate ${task.status === 'completed' ? 'line-through' : ''}`}>{task.name}</p>
-                    <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
                       <span className="flex items-center gap-1"><Clock size={12} /> {task.duration_minutes}m</span>
                       {!task.fixed && <span className="flex items-center gap-1"><CalendarIcon size={12} /> Deadline: {formatDateIST(task.deadline)}</span>}
                       {task.fixed && (
-                        <span className="bg-amber-100 text-amber-800 px-2 rounded-full font-bold">
-                          🔒 Fixed Event ({formatIST(task.scheduled_start || task.earliest_start)})
+                        <span className="bg-amber-100/50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold whitespace-nowrap">
+                          Fixed Event ({formatIST(task.scheduled_start || task.earliest_start)})
                         </span>
                       )}
                       {!task.fixed && task.status === 'scheduled' && task.scheduled_start && (
-                        <span className="bg-blue-100 text-blue-700 px-2 rounded-full font-bold">
-                          📅 {formatIST(task.scheduled_start)} IST
+                        <span className="bg-blue-100/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold whitespace-nowrap">
+                          {formatIST(task.scheduled_start)} IST
                         </span>
                       )}
-                      {task.priority >= 3 && <span className="text-red-500 font-bold">High Priority</span>}
+                      {task.priority >= 3 && (
+                        <span className="bg-red-100/50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-800/50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold whitespace-nowrap">
+                          High Priority
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <button onClick={() => deleteTask(task.id)} className="text-slate-300 hover:text-red-500 transition-colors p-2 shrink-0">
+                  <button onClick={() => deleteTask(task.id)} className="text-[var(--text-muted)] opacity-50 hover:opacity-100 hover:text-red-500 transition-all p-2 shrink-0">
                     <Trash2 size={16} />
                   </button>
                 </div>

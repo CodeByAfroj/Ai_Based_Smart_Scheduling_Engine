@@ -114,39 +114,26 @@ export default function ProfileSetup() {
     const offset = circ - (value / 100) * circ;
     return (
       <svg width="110" height="110" viewBox="0 0 110 110">
-        <circle cx="55" cy="55" r={r} fill="none" stroke="#e0e7ff" strokeWidth="8" />
-        <circle cx="55" cy="55" r={r} fill="none" stroke="#4338ca" strokeWidth="8"
+        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--border-subtle)" strokeWidth="8" />
+        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--accent-base)" strokeWidth="8"
           strokeDasharray={circ} strokeDashoffset={offset}
           strokeLinecap="round" transform="rotate(-90 55 55)"
           style={{ transition: 'stroke-dashoffset 0.5s ease' }}
         />
-        <text x="55" y="51" textAnchor="middle" fontSize="20" fontWeight="700" fill="#0f172a">{value}</text>
-        <text x="55" y="66" textAnchor="middle" fontSize="10" fill="#64748b">/100</text>
+        <text x="55" y="51" textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--text-main)">{value}</text>
+        <text x="55" y="66" textAnchor="middle" fontSize="10" fill="var(--text-muted)">/100</text>
       </svg>
     );
   };
 
   const Toggle = ({ enabled, onToggle }) => (
-    <button onClick={onToggle} className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-[var(--accent-base)]' : 'bg-slate-200'}`}>
+    <button onClick={onToggle} className={`relative w-12 h-6 rounded-full transition-colors ${enabled ? 'bg-[var(--accent-base)]' : 'bg-slate-200 dark:bg-slate-700'}`}>
       <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? 'translate-x-6' : ''}`} />
     </button>
   );
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)]">
-      {/* Focus Score Banner */}
-      <div className="bg-gradient-to-r from-[var(--accent-base)] to-indigo-500 text-white px-6 lg:px-10 py-4 flex items-center gap-4">
-        <div className="bg-white/20 rounded-lg p-2 shrink-0">
-          <Zap size={20} className="text-white" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-bold text-sm">AI Scheduling Model Training</span>
-            <span className="bg-green-400/30 text-green-100 text-[10px] font-bold px-2 py-0.5 rounded-full">Active</span>
-          </div>
-          <p className="text-white/80 text-xs">By providing accurate details about your role and work style, our AI scheduling engine adapts to your unique rhythm, optimizing for maximum focus and minimizing burnout.</p>
-        </div>
-      </div>
 
       <div className="max-w-4xl mx-auto px-4 lg:px-10 py-8">
         {/* Header */}
@@ -168,7 +155,7 @@ export default function ProfileSetup() {
         </div>
 
         {/* Mobile readiness */}
-        <div className="lg:hidden flex items-center gap-4 mb-6 bg-white p-4 rounded-xl border border-[var(--border-subtle)]">
+        <div className="lg:hidden flex items-center gap-4 mb-6 bg-[var(--bg-panel)] p-4 rounded-xl border border-[var(--border-subtle)]">
           <CircleProgress value={readinessScore} />
           <div>
             <h3 className="font-bold text-[var(--text-main)]">Profile Completion</h3>
@@ -177,7 +164,7 @@ export default function ProfileSetup() {
         </div>
 
         {/* STEP 1: Personal & Work Style */}
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 mb-4">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 mb-4">
           <div className="flex items-center gap-3 mb-5">
             <div className="bg-indigo-100 text-[var(--accent-base)] w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">1</div>
             <div>
@@ -228,7 +215,7 @@ export default function ProfileSetup() {
         </div>
 
         {/* STEP 2: Work Hours & Timezone */}
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 mb-4">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 mb-4">
           <div className="flex items-center gap-3 mb-5">
             <div className="bg-amber-100 text-amber-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">2</div>
             <div>
@@ -307,7 +294,7 @@ export default function ProfileSetup() {
 
           <div className="flex items-center justify-between bg-[var(--bg-app)] p-4 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-[var(--accent-base)]/10 flex items-center justify-center shrink-0">
                 <Clock size={16} className="text-[var(--accent-base)]" />
               </div>
               <div>
@@ -320,7 +307,7 @@ export default function ProfileSetup() {
         </div>
 
         {/* STEP 3: Tags */}
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 mb-6">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 mb-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="bg-slate-100 text-slate-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">3</div>
             <div>
@@ -360,38 +347,7 @@ export default function ProfileSetup() {
           </div>
         </div>
 
-        {/* STEP 4: Notifications */}
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 mb-6">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="bg-green-100 text-green-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">4</div>
-            <div>
-              <h2 className="font-bold text-[var(--text-main)]">Alert Channels & Preferences</h2>
-              <p className="text-xs text-[var(--text-muted)]">How should the engine notify you when events occur?</p>
-            </div>
-          </div>
 
-          <div>
-            <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2 block flex items-center gap-1.5">Notification Style</label>
-            <div className="flex items-end gap-3">
-              <div className="relative flex-1">
-                <select value={notificationPref} onChange={e => setNotificationPref(e.target.value)} className="input-field appearance-none">
-                  <option value="text_and_sound">Web Push + Notification Sound (Default)</option>
-                  <option value="sound">Notification Sound Only (No popup)</option>
-                  <option value="voice">Web Push + Voice (AI will read the alert aloud)</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={16} />
-              </div>
-              <button 
-                onClick={testNotification} 
-                disabled={testingNotif}
-                className="btn-primary py-2.5 px-4 text-sm shrink-0 flex items-center gap-2"
-              >
-                {testingNotif ? <CheckCircle2 size={16} /> : <Zap size={16} />} 
-                {testingNotif ? 'Sent!' : 'Test'}
-              </button>
-            </div>
-          </div>
-        </div>
 
         <div className="flex justify-end gap-3 mt-8">
           <button onClick={() => navigate(-1)} className="btn-ghost py-3.5 px-6 text-sm rounded-xl">

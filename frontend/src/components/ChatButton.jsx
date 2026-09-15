@@ -82,11 +82,11 @@ export default function ChatButton() {
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - sits above mobile bottom nav */}
       <button
         type="button"
         onClick={toggleChat}
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-200 z-[99999]"
+        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-6 w-14 h-14 rounded-full bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-200 z-[99999]"
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
       >
@@ -97,19 +97,20 @@ export default function ChatButton() {
         )}
       </button>
 
-      {/* Chat Window */}
+      {/* Chat Window - full-screen on mobile, floating on desktop */}
       <div
         className={`
           fixed
-          bottom-24
-          right-6
-          w-[calc(100vw-3rem)]
+          bottom-0 right-0
+          w-full h-[100dvh]
+          sm:bottom-[calc(4rem+2.5rem)] sm:right-6
+          lg:bottom-24
           sm:w-[420px]
-          max-w-[420px]
-          h-[600px]
-          max-h-[calc(100vh-8rem)]
+          sm:max-w-[420px]
+          sm:h-[600px]
+          sm:max-h-[calc(100vh-8rem)]
+          sm:rounded-2xl
           bg-white
-          rounded-2xl
           shadow-2xl
           border
           border-[var(--border-subtle)]

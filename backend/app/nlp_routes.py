@@ -175,6 +175,22 @@ async def query_endpoint(
                 result["created_task_id"] = task_id
                 result["task_created"] = True
 
+                # Dispatch real-time web push notification with task name
+                try:
+                    from .notifications import notify_user
+                    user_email = (user or {}).get("email", "")
+                    task_name = params.get("name", "New Task")
+                    background_tasks.add_task(
+                        notify_user,
+                        user_id,
+                        user_email,
+                        "Task Created",
+                        f"Scheduled '{task_name}' into your optimal focus window.",
+                        background_tasks
+                    )
+                except Exception as ne:
+                    print(f"Task notification error: {ne}")
+
                 # Offload CP-SAT auto scheduler to background task for instant response
                 background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
                 

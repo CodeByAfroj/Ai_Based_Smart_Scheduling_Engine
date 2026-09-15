@@ -135,7 +135,7 @@ export default function Integrations() {
 
         <div className="grid grid-cols-1 gap-4">
           {integrations.map((intg, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm flex flex-col sm:flex-row items-start gap-4">
+            <div key={i} className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm flex flex-col sm:flex-row items-start gap-4">
               <div className="text-3xl shrink-0">{intg.icon}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -157,7 +157,7 @@ export default function Integrations() {
         </div>
 
         {/* Notification Architecture Info */}
-        <div className="mt-8 bg-indigo-50 rounded-2xl border border-indigo-100 p-6">
+        <div className="mt-8 bg-[var(--accent-base)]/5 dark:bg-[var(--accent-base)]/10 rounded-2xl border border-[var(--accent-base)]/10 dark:border-[var(--accent-base)]/20 p-6">
           <div className="flex items-start gap-3">
             <Zap size={20} className="text-[var(--accent-base)] shrink-0 mt-0.5" />
             <div>
@@ -165,11 +165,11 @@ export default function Integrations() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-[var(--text-muted)]">
                 <div>
                   <p className="font-semibold text-[var(--text-main)] mb-1">📧 Email Channel</p>
-                  <p>Uses Python <code className="bg-white px-1 rounded text-xs">smtplib</code> via FastAPI BackgroundTasks. Configure SMTP credentials in <code className="bg-white px-1 rounded text-xs">.env</code> for real delivery, otherwise emails are simulated in the backend terminal.</p>
+                  <p>Uses Python <code className="bg-[var(--bg-app)] px-1 rounded text-xs">smtplib</code> via FastAPI BackgroundTasks. Configure SMTP credentials in <code className="bg-[var(--bg-app)] px-1 rounded text-xs">.env</code> for real delivery, otherwise emails are simulated in the backend terminal.</p>
                 </div>
                 <div>
                   <p className="font-semibold text-[var(--text-main)] mb-1">🔔 Web Push Channel</p>
-                  <p>Server-Sent Events (SSE) stream at <code className="bg-white px-1 rounded text-xs">/notifications/stream</code>. The frontend connects via <code className="bg-white px-1 rounded text-xs">EventSource</code> for real-time push notifications without polling.</p>
+                  <p>Server-Sent Events (SSE) stream at <code className="bg-[var(--bg-app)] px-1 rounded text-xs">/notifications/stream</code>. The frontend connects via <code className="bg-[var(--bg-app)] px-1 rounded text-xs">EventSource</code> for real-time push notifications without polling.</p>
                 </div>
               </div>
             </div>

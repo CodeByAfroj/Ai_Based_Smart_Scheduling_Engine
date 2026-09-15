@@ -37,11 +37,10 @@ export default function Dashboard() {
     deleteTask(id);
   };
 
-  const getPriorityLabel = (p) => {
-    if (p >= 5) return { text: 'Critical', cls: 'bg-red-100 text-red-700' };
-    if (p >= 3) return { text: 'High Priority', cls: 'bg-red-100 text-red-700' };
-    if (p >= 2) return { text: 'Medium', cls: 'bg-amber-100 text-amber-700' };
-    return { text: 'Low', cls: 'bg-slate-100 text-slate-600' };
+  const getPriorityLabel = (pri) => {
+    if (pri >= 3) return { text: 'Critical', cls: 'bg-red-100/50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-800/50' };
+    if (pri === 2) return { text: 'High', cls: 'bg-amber-100/50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50' };
+    return { text: 'Low', cls: 'bg-slate-100/50 dark:bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-subtle)]' };
   };
 
   const [recommendation, setRecommendation] = useState(null);
@@ -92,7 +91,7 @@ export default function Dashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6">
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Main Content */}
           <div className="flex-1 min-w-0">
 
@@ -134,7 +133,7 @@ export default function Dashboard() {
 
             {/* Profile Completion Banner */}
             {!notifDismissed && profileIncomplete && (
-              <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 mb-6 flex flex-col lg:flex-row gap-5">
+              <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 mb-6 flex flex-col lg:flex-row gap-5">
                 <div className="flex items-start gap-4 flex-1">
                   <div className="bg-[var(--accent-base)] p-3 rounded-xl shrink-0">
                     <Bell size={24} className="text-white" />
@@ -190,7 +189,7 @@ export default function Dashboard() {
             {loading ? (
               <div className="text-center py-10 text-[var(--text-muted)]">Loading tasks...</div>
             ) : tasks.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-10 text-center">
+              <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-10 text-center">
                 <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 size={32} className="text-indigo-300" />
                 </div>
@@ -207,19 +206,19 @@ export default function Dashboard() {
                   const isComplete = task.status === 'completed';
                   const isScheduled = task.status === 'scheduled';
                   return (
-                    <div key={task.id} className={`bg-white rounded-2xl border border-[var(--border-subtle)] border-l-4 ${isComplete ? 'border-l-green-400 opacity-60' : isScheduled ? 'border-l-blue-400' : 'border-l-[var(--accent-base)]'} p-5 shadow-sm transition-opacity`}>
+                    <div key={task.id} className={`group bg-gradient-to-br from-[var(--bg-panel)] to-[var(--bg-app)] hover:to-[var(--bg-hover)] rounded-2xl border border-[var(--border-subtle)] border-l-4 ${isComplete ? 'border-l-green-400 opacity-60' : isScheduled ? 'border-l-blue-400' : 'border-l-[var(--accent-base)]'} p-5 shadow-sm hover:shadow-md transition-all duration-300`}>
                       <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pri.cls}`}>
-                          ● {pri.text}
+                        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${pri.cls}`}>
+                          {pri.text}
                         </span>
                         {isScheduled && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                          <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-blue-100/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50">
                             Scheduled
                           </span>
                         )}
                         {isComplete && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
-                            ✓ Completed
+                          <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-green-100/50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200/50 dark:border-green-800/50">
+                            Completed
                           </span>
                         )}
                         <span className="ml-auto text-[10px] font-bold text-[var(--text-muted)] flex items-center gap-1">
@@ -237,7 +236,7 @@ export default function Dashboard() {
 
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className="ml-auto flex items-center gap-2">
-                          <button onClick={() => toggleStatus(task)} className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg border transition-colors ${isComplete ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' : 'bg-[var(--accent-light)] text-[var(--accent-base)] border-[var(--accent-base)] hover:bg-indigo-100'}`}>
+                          <button onClick={() => toggleStatus(task)} className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg border transition-colors ${isComplete ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 hover:bg-green-500/20' : 'bg-[var(--accent-base)]/10 text-[var(--accent-base)] border-[var(--accent-base)]/20 hover:bg-[var(--accent-base)]/20'}`}>
                             <CheckCircle2 size={14} /> {isComplete ? 'Undo' : 'Mark Done'}
                           </button>
                           <button onClick={() => removeTask(task.id)} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border border-[var(--border-subtle)] text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors">
@@ -250,8 +249,8 @@ export default function Dashboard() {
                 })}
 
                 {/* Direct Link to Full Backlog */}
-                <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between text-xs">
-                  <span className="text-indigo-900 font-medium">Viewing today's active focus items. Manage full backlog & projects ({tasks.length} total)</span>
+                <div className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-full py-2 px-4 flex items-center justify-between text-xs w-full mt-6">
+                  <span className="text-[var(--text-main)] font-medium">Viewing today's active focus items. Manage full backlog & projects ({tasks.length} total)</span>
                   <Link to="/tasks" className="text-[var(--accent-base)] font-bold flex items-center gap-1 hover:underline">
                     Tasks Studio <ChevronRight size={14} />
                   </Link>
@@ -260,10 +259,10 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* RIGHT SIDEBAR */}
-          <div className="hidden lg:flex flex-col gap-6 w-72 xl:w-80 shrink-0">
+          {/* RIGHT SIDEBAR - shows below on mobile, aside on desktop */}
+          <div className="flex flex-col gap-6 lg:w-72 xl:w-80 lg:shrink-0">
             {/* Workspace Readiness */}
-            <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6">
+            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6">
               <div className="flex items-start justify-between mb-1">
                 <div>
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Account Setup</p>
@@ -310,7 +309,7 @@ export default function Dashboard() {
             </div>
 
             {/* Today's Schedule from Real Data */}
-            <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6">
+            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6">
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-[var(--accent-base)]" />
@@ -334,7 +333,7 @@ export default function Dashboard() {
                     return (
                       <div key={task.id} className="flex items-start gap-3">
                         <div className="flex flex-col items-center">
-                          <div className={`w-3 h-3 rounded-full border-2 mt-0.5 shrink-0 ${i === 0 ? 'bg-[var(--accent-base)] border-[var(--accent-base)]' : 'border-slate-300 bg-white'}`} />
+                          <div className={`w-3 h-3 rounded-full border-2 mt-0.5 shrink-0 ${i === 0 ? 'bg-[var(--accent-base)] border-[var(--accent-base)]' : 'border-slate-300 bg-[var(--bg-panel)]'}`} />
                           {i < todayTasks.length - 1 && <div className="w-0.5 h-8 bg-slate-200 mt-1" />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -357,7 +356,7 @@ export default function Dashboard() {
 
             {/* Stats Row - Real Data */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-4 text-center">
+              <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-4 text-center">
                 <div className="flex items-center justify-center gap-1 text-green-600 mb-2">
                   <CheckCircle2 size={14} />
                   <span className="text-[10px] font-bold uppercase">Completed</span>
@@ -365,7 +364,7 @@ export default function Dashboard() {
                 <p className="text-2xl font-bold text-[var(--text-main)]">{completedTasks.length}</p>
                 <p className="text-[10px] font-bold text-[var(--text-muted)]">Tasks</p>
               </div>
-              <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-4 text-center">
+              <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-4 text-center">
                 <div className="flex items-center justify-center gap-1 text-[var(--accent-base)] mb-2">
                   <BarChart3 size={14} />
                   <span className="text-[10px] font-bold uppercase">Focus Time</span>

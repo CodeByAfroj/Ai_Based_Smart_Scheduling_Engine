@@ -12,6 +12,7 @@ import {
   Zap,
   LogOut,
   ChevronDown,
+  AlertCircle,
 } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,7 +45,11 @@ export default function Layout() {
       let data;
 
       try {
-        data = JSON.parse(event.data);
+        let raw = event.data;
+        if (typeof raw === 'string' && raw.trim().startsWith('{')) {
+          raw = raw.replace(/'/g, '"');
+        }
+        data = JSON.parse(raw);
       } catch (error) {
         console.error('Failed to parse notification:', error);
         data = {
@@ -85,53 +90,119 @@ export default function Layout() {
     };
   }, [token, API_BASE, profile?.notification_preference]);
 
-  const triggerAudioAlert = (title, message) => {
-    const pref =
-      profile?.notification_preference || 'text_and_sound';
+  const playHumanizedVoice = async (textToSpeak) => {
+    if (!textToSpeak || !textToSpeak.trim()) return;
+    const cleanText = textToSpeak
+      .replace(/[\*\_`#\[\]\(\)>~]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    if (pref === 'voice') {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-
-        const utterance = new SpeechSynthesisUtterance(
-          `${title}. ${message}`
-        );
-
-        window.speechSynthesis.speak(utterance);
-      }
-
-      return;
-    }
-
-    if (pref !== 'sound' && pref !== 'text_and_sound') {
-      return;
-    }
-
+    // 1. Try Neural Edge-TTS Endpoint (/nlp/tts) for hyper-realistic ChatGPT Ava Neural Voice
     try {
-      const AudioContext =
-        window.AudioContext || window.webkitAudioContext;
+      const selectedVoice = localStorage.getItem('taskpulse_selected_voice_uri') || 'en-US-AvaNeural';
+      const response = await fetch(`${API_BASE}/nlp/tts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          text: cleanText,
+          voice: selectedVoice
+        })
+      });
 
+      if (response.ok) {
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        await audio.play();
+        return;
+      }
+    } catch (err) {
+      console.warn('Neural TTS notification endpoint fallback to Web Speech:', err);
+    }
+
+    // 2. Fallback to Web Speech API with Natural Voice Selection & Cadence Tuning
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.96;
+      utterance.pitch = 1.05;
+
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => v.voiceURI === localStorage.getItem('taskpulse_selected_voice_uri'))
+        || voices.find(v => v.name.includes('Ava') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Google US English') || v.name.includes('Karen'))
+        || voices.find(v => v.lang.startsWith('en'))
+        || voices[0];
+
+      if (preferredVoice) utterance.voice = preferredVoice;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const playElegantChime = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
 
       const ctx = new AudioContext();
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const now = ctx.currentTime;
 
-      oscillator.connect(gain);
-      gain.connect(ctx.destination);
+      // Soft ambient glass chime (C-major 7th chord triad with exponential decay)
+      const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.04);
 
-      oscillator.addEventListener('ended', () => {
-        ctx.close().catch(() => { });
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.08 / (idx + 1), now + idx * 0.04 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.04 + 0.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.04);
+        osc.stop(now + idx * 0.04 + 0.65);
       });
 
-      oscillator.start();
-      oscillator.stop(ctx.currentTime + 0.1);
-    } catch (error) {
-      console.log('Audio playback blocked:', error);
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 800);
+    } catch (e) {
+      console.log('Chime playback error:', e);
+    }
+  };
+
+  const triggerVibration = () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 300]);
+      }
+    } catch (e) { }
+  };
+
+  const triggerAudioAlert = async (title, message) => {
+    const pref = profile?.notification_preference || 'text_and_sound';
+    const textToAnnounce = `${title}. ${message}`;
+
+    if (pref === 'voice') {
+      triggerVibration();
+      playElegantChime();
+      setTimeout(() => {
+        playHumanizedVoice(textToAnnounce);
+      }, 250);
+    } else if (pref === 'text_and_sound') {
+      triggerVibration();
+      playElegantChime();
+    } else if (pref === 'sound') {
+      playElegantChime();
+    } else if (pref === 'vibrate') {
+      triggerVibration();
     }
   };
 
@@ -151,34 +222,15 @@ export default function Layout() {
 
   const workspaceNav = [
     { path: '/', label: 'Dashboard', icon: LayoutGrid },
-    {
-      path: '/schedule',
-      label: 'Schedule & Timeline',
-      icon: Calendar,
-    },
-    {
-      path: '/tasks',
-      label: 'Tasks & Projects',
-      icon: CheckSquare,
-    },
-    {
-      path: '/analytics',
-      label: 'Analytics',
-      icon: BarChart2,
-    },
+    { path: '/schedule', label: 'Schedule & Timeline', icon: Calendar },
+    { path: '/tasks', label: 'Tasks & Projects', icon: CheckSquare },
+    { path: '/analytics', label: 'Analytics', icon: BarChart2 },
   ];
 
   const systemNav = [
-    {
-      path: '/integrations',
-      label: 'Integrations',
-      icon: Link,
-    },
-    {
-      path: '/profile',
-      label: 'Settings / Profile',
-      icon: Settings,
-    },
+    { path: '/integrations', label: 'Integrations', icon: Link },
+    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/profile', label: 'Profile', icon: User },
   ];
 
   const mobileNavItems = [
@@ -186,6 +238,7 @@ export default function Layout() {
     { path: '/tasks', label: 'Tasks', icon: CheckSquare },
     { path: '/schedule', label: 'Schedule', icon: Calendar },
     { path: '/profile', label: 'Profile', icon: User },
+    { path: '/settings', label: 'Settings', icon: Settings },
   ];
 
   const isActivePath = (path) =>
@@ -304,7 +357,7 @@ export default function Layout() {
         </div>
 
         <div className="p-4 border-t border-[var(--border-subtle)]">
-          <div className="bg-indigo-50/50 p-4 rounded-xl flex items-start gap-3 border border-indigo-100">
+          <div className="bg-[var(--accent-base)]/5 dark:bg-[var(--accent-base)]/10 p-4 rounded-xl flex items-start gap-3 border border-[var(--accent-base)]/10 dark:border-[var(--accent-base)]/20">
             <Zap
               className="text-[var(--success-text)] shrink-0 mt-0.5"
               size={16}
@@ -326,7 +379,7 @@ export default function Layout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
         {/* Desktop Header */}
-        <header className="hidden lg:flex h-16 border-b border-[var(--border-subtle)] bg-white px-8 items-center justify-between sticky top-0 z-40">
+        <header className="hidden lg:flex h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] px-8 items-center justify-between sticky top-0 z-40">
           <div className="flex-1 max-w-xl">
             <div className="relative">
               <Search
@@ -371,7 +424,7 @@ export default function Layout() {
               </button>
 
               {showNotifMenu && (
-                <div className="absolute right-0 top-10 w-80 max-w-[90vw] bg-white border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="absolute right-0 top-10 w-80 max-w-[90vw] bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
                     <p className="font-semibold text-sm text-[var(--text-main)]">
                       Notifications
@@ -461,7 +514,7 @@ export default function Layout() {
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 top-12 w-56 bg-white border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 py-2">
+                <div className="absolute right-0 top-12 w-56 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 py-2">
                   <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
                     <p className="font-bold text-sm text-[var(--text-main)] truncate">
                       {profile?.name || 'User'}
@@ -491,7 +544,7 @@ export default function Layout() {
                     type="button"
                     onClick={() => {
                       setShowUserMenu(false);
-                      navigate('/profile-setup');
+                      navigate('/settings');
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors"
                   >
@@ -519,7 +572,7 @@ export default function Layout() {
         </header>
 
         {/* Mobile Header */}
-        <header className="lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-[var(--border-subtle)]">
+        <header className="lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 bg-[var(--bg-panel)]/80 backdrop-blur-md z-40 border-b border-[var(--border-subtle)]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[var(--accent-base)] flex items-center justify-center text-white shrink-0">
               <svg
@@ -548,23 +601,70 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Tap-outside backdrop for mobile dropdowns */}
+            {(showNotifMenu || showUserMenu) && (
+              <div
+                className="fixed inset-0 z-[9998]"
+                onClick={() => { setShowNotifMenu(false); setShowUserMenu(false); }}
+              />
+            )}
             {/* Mobile Notifications */}
-            <button
-              type="button"
-              aria-label="Notifications"
-              aria-expanded={showNotifMenu}
-              onClick={() => {
-                setShowNotifMenu((prev) => !prev);
-                setShowUserMenu(false);
-              }}
-              className="text-[var(--text-main)] hover:text-[var(--accent-base)] transition-colors relative"
-            >
-              <Bell size={20} />
+            <div className="relative">
+              <button
+                type="button"
+                aria-label="Notifications"
+                aria-expanded={showNotifMenu}
+                onClick={() => {
+                  setShowNotifMenu((prev) => !prev);
+                  setShowUserMenu(false);
+                }}
+                style={{ minHeight: 'unset' }}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-[var(--text-main)] hover:text-[var(--accent-base)] hover:bg-[var(--bg-hover)] transition-colors relative"
+              >
+                <Bell size={20} />
 
-              {(hasUnread || readinessScore < 100) && (
-                <span className="absolute top-0 right-0 w-2 h-2 bg-[var(--priority-critical)] rounded-full border-2 border-white" />
+                {(hasUnread || readinessScore < 100) && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--priority-critical)] rounded-full border-2 border-white" />
+                )}
+              </button>
+
+              {showNotifMenu && (
+                <div className="fixed right-4 top-16 w-80 max-w-[calc(100vw-2rem)] bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-[9999] overflow-hidden">
+                  <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                    <p className="font-semibold text-sm text-[var(--text-main)]">Notifications</p>
+                    {notifications.length > 0 && (
+                      <button type="button" onClick={markAllRead} style={{ minHeight: 'unset' }} className="text-xs text-[var(--accent-base)] hover:underline">
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="px-4 py-6 text-sm text-[var(--text-muted)] text-center">No notifications yet.</p>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 ${notification.read ? '' : 'bg-[var(--bg-hover)]'}`}
+                        >
+                          <p className="text-sm font-semibold text-[var(--text-main)]">{notification.title || 'Alert'}</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-1">{notification.message || ''}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-hover)] px-4 py-2 text-center">
+                    <button
+                      style={{ minHeight: 'unset' }}
+                      onClick={() => { setShowNotifMenu(false); navigate('/notifications'); }}
+                      className="text-sm font-medium text-[var(--accent-base)] hover:underline"
+                    >
+                      View all Reminders & Alerts
+                    </button>
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
 
             {/* Mobile User Menu */}
             <div className="relative">
@@ -572,11 +672,12 @@ export default function Layout() {
                 type="button"
                 aria-expanded={showUserMenu}
                 aria-label="Open user menu"
+                style={{ minHeight: 'unset' }}
                 onClick={() => {
                   setShowUserMenu((prev) => !prev);
                   setShowNotifMenu(false);
                 }}
-                className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-[var(--border-subtle)]"
+                className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden border border-[var(--border-subtle)] shrink-0"
               >
                 {profile?.picture ? (
                   <img
@@ -592,12 +693,11 @@ export default function Layout() {
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 top-11 w-56 bg-white border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 py-2">
+                <div className="fixed right-4 top-16 w-56 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-[9999] py-2">
                   <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
                     <p className="font-bold text-sm text-[var(--text-main)] truncate">
                       {profile?.name || 'User'}
                     </p>
-
                     <p className="text-xs text-[var(--text-muted)] truncate">
                       {profile?.email || ''}
                     </p>
@@ -605,10 +705,8 @@ export default function Layout() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      navigate('/profile');
-                    }}
+                    style={{ minHeight: 'unset' }}
+                    onClick={() => { setShowUserMenu(false); navigate('/profile'); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)]"
                   >
                     <User size={15} />
@@ -617,10 +715,8 @@ export default function Layout() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      navigate('/profile-setup');
-                    }}
+                    style={{ minHeight: 'unset' }}
+                    onClick={() => { setShowUserMenu(false); navigate('/settings'); }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)]"
                   >
                     <Settings size={15} />
@@ -630,6 +726,7 @@ export default function Layout() {
                   <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
                     <button
                       type="button"
+                      style={{ minHeight: 'unset' }}
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
                     >
@@ -644,12 +741,26 @@ export default function Layout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0 relative">
+        <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0 relative flex flex-col">
+          {readinessScore < 100 && location.pathname !== '/profile-setup' && (
+            <div className="bg-amber-500 text-white px-4 py-2.5 text-center text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 z-30 sticky top-0 shadow-sm">
+              <div className="flex items-center gap-1.5">
+                <AlertCircle size={16} />
+                <span>Please complete your profile setup.</span>
+              </div>
+              <button
+                onClick={() => navigate('/profile-setup')}
+                className="underline hover:text-amber-100 transition-colors"
+              >
+                Set up now
+              </button>
+            </div>
+          )}
           <Outlet />
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="lg:hidden fixed bottom-0 w-full bg-white border-t border-[var(--border-subtle)] px-6 py-3 flex justify-between items-center z-50">
+        <nav className="lg:hidden fixed bottom-0 w-full bg-[var(--bg-panel)]/95 backdrop-blur-md border-t border-[var(--border-subtle)] px-6 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-between items-center z-50">
           {mobileNavItems.map((item) => {
             const isActive = isActivePath(item.path);
             const Icon = item.icon;

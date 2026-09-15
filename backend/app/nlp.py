@@ -41,7 +41,7 @@ _PROVIDER_COOLDOWN = {
     "groq_until": 0
 }
 
-def call_gemini_llm(messages: List[Dict[str, str]], timeout: float = 1.8) -> Optional[str]:
+def call_gemini_llm(messages: List[Dict[str, str]], timeout: float = 2.0) -> Optional[str]:
     """
     Tier 1: Google Gemini API (gemini-3.5-flash-lite)
     Short-circuits immediately if rate limited (429) or timed out.
@@ -50,11 +50,10 @@ def call_gemini_llm(messages: List[Dict[str, str]], timeout: float = 1.8) -> Opt
     if not api_key:
         return None
 
-    # Skip if Gemini was recently rate-limited or timed out
+    # Skip if Gemini was recently rate-limited (HTTP 429)
     if time.time() < _PROVIDER_COOLDOWN["gemini_until"]:
         return None
 
-    # Try top fast models max
     for model_name in ["gemini-3.5-flash-lite", "gemini-3.5-flash"]:
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
@@ -88,14 +87,12 @@ def call_gemini_llm(messages: List[Dict[str, str]], timeout: float = 1.8) -> Opt
                         if parts:
                             print(f"🤖 [AI Provider] Responded via Google Gemini API ({model_name}).")
                             return parts[0].get("text", "")
-                elif resp.status_code in [429, 403, 400]:
-                    print(f"⚠️ [AI Fast Switch] Gemini HTTP {resp.status_code} ({model_name}). Cooldowning Gemini for 180s...")
-                    _PROVIDER_COOLDOWN["gemini_until"] = time.time() + 180
+                elif resp.status_code == 429:
+                    print(f"⚠️ [AI Fast Switch] Gemini Rate Limit 429 ({model_name}). Cooldowning Gemini for 30s...")
+                    _PROVIDER_COOLDOWN["gemini_until"] = time.time() + 30
                     break
         except Exception as e:
-            print(f"⚠️ [AI Fast Switch] Gemini timeout/exception ({model_name}). Cooldowning Gemini for 180s...")
-            _PROVIDER_COOLDOWN["gemini_until"] = time.time() + 180
-            break
+            print(f"⚠️ [AI Fast Switch] Gemini exception ({model_name}): {e}")
 
     return None
 
@@ -122,7 +119,8 @@ def call_groq_llm(messages: List[Dict[str, str]], timeout: float = 2.5) -> Optio
             payload = {
                 "model": model_name,
                 "messages": messages,
-                "temperature": 0.3
+                "temperature": 0.3,
+                "max_tokens": 250
             }
 
             with httpx.Client(timeout=timeout) as client:
@@ -133,19 +131,17 @@ def call_groq_llm(messages: List[Dict[str, str]], timeout: float = 2.5) -> Optio
                     if choices:
                         print(f"⚡ [AI Provider] Responded via Groq API ({model_name}).")
                         return choices[0].get("message", {}).get("content", "")
-                elif resp.status_code in [401, 400, 429, 403]:
-                    print(f"⚠️ [AI Fast Switch] Groq HTTP {resp.status_code} ({model_name}). Cooldowning Groq for 180s...")
-                    _PROVIDER_COOLDOWN["groq_until"] = time.time() + 180
+                elif resp.status_code == 429:
+                    print(f"⚠️ [AI Fast Switch] Groq Rate Limit 429 ({model_name}). Cooldowning Groq for 30s...")
+                    _PROVIDER_COOLDOWN["groq_until"] = time.time() + 30
                     break
         except Exception as e:
-            print(f"⚠️ [AI Fast Switch] Groq timeout/exception ({model_name}). Cooldowning Groq for 180s...")
-            _PROVIDER_COOLDOWN["groq_until"] = time.time() + 180
-            break
+            print(f"⚠️ [AI Fast Switch] Groq exception ({model_name}): {e}")
 
     return None
 
 
-def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 8.0) -> Optional[str]:
+def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 5.0) -> Optional[str]:
     """
     Tier 3: Ollama API
     """
@@ -163,7 +159,8 @@ def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 8.0) -> Opt
         payload = {
             "model": get_ollama_model(),
             "messages": messages,
-            "temperature": 0.3
+            "temperature": 0.3,
+            "max_tokens": 250
         }
         with httpx.Client(timeout=timeout) as client:
             resp = client.post(url, headers=headers, json=payload)
@@ -178,23 +175,23 @@ def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 8.0) -> Opt
 
     return None
 
-def call_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 5.0) -> Optional[str]:
+def call_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 4.0) -> Optional[str]:
     """
     Failover Chain: Gemini -> Groq -> Ollama
     Automatically switches if rate limits (429) or errors occur.
     """
     # 1. Try Gemini
-    res = call_gemini_llm(messages, timeout=timeout)
+    res = call_gemini_llm(messages, timeout=2.0)
     if res:
         return res
 
     # 2. Try Groq
-    res = call_groq_llm(messages, timeout=timeout)
+    res = call_groq_llm(messages, timeout=2.5)
     if res:
         return res
 
     # 3. Try Ollama
-    res = call_ollama_llm(messages, timeout=timeout)
+    res = call_ollama_llm(messages, timeout=4.0)
     if res:
         return res
 
@@ -227,8 +224,13 @@ def answer_user_question_contextual(question: str, user_tasks: List[Dict], user_
         f"Peak Energy Window: {profile_settings.get('peak_start', '09:00 AM')} to {profile_settings.get('peak_end', '01:00 PM')}"
     )
 
-    system_prompt = f"""You are TaskPulse AI, a versatile, warm, highly intelligent, and empathetic human-like personal AI companion.
-You sound completely natural, engaging, friendly, and helpful. You are open to conversing on ANY topic (general knowledge, coding, advice, daily motivation, ideas, or casual conversation) while staying aware of the user's schedule and energy context.
+    system_prompt = f"""You are TaskPulse AI, the dedicated AI smart scheduling, task management, and productivity assistant for TaskPulse.
+
+STRICT DOMAIN BOUNDARY & CONTEXT RULES:
+1. SCOPE LIMITATION: You MUST strictly answer ONLY queries related to TaskPulse, user tasks, schedules, calendar events, meetings, productivity optimization, biometric profile, and TaskPulse project features.
+2. OFF-TOPIC REJECTION: If the user asks general off-topic questions (e.g., general world trivia, quantum physics, unrelated coding, movies, sports, celebrity news, or general world history), politely decline by stating:
+   "I am TaskPulse AI, your dedicated Smart Scheduling Assistant. I am specialized strictly to assist with your TaskPulse workspace tasks, schedule optimization, meetings, productivity, and project features."
+3. CONCISE INSTANT VOICE RESPONSE: For voice interactions and queries, keep your answer concise, direct, clear, and conversational (1 to 3 short sentences maximum unless detailed list is explicitly requested). Avoid long winded intros.
 
 Current Local Time (IST): {curr_str}
 
@@ -239,15 +241,11 @@ Current Workspace Tasks & Schedule:
 {tasks_str}
 
 RESPONSE INSTRUCTIONS:
-1. Speak naturally like a friendly, intelligent human companion. Use clear markdown formatting.
+1. Always maintain the TaskPulse project context boundary.
 2. CRITICAL TASK CREATION RULE:
    - ONLY output a `create_task` JSON block if the user has specified an EXPLICIT task/meeting name in their message (e.g., "Schedule a 45 min team sync tomorrow at 10 AM with high priority").
    - NEVER output a `create_task` JSON block for vague requests like "schedule a task for me", "add a task", or "make a meeting".
-   - If the request is vague or missing details, DO NOT create a task yet. Instead, ask the user warm clarification questions to gather:
-     • Task Name / Title
-     • Duration & Start Time / Date
-     • Priority (Low, Medium, High, Critical)
-     • Type: Fixed event at a specific time OR Flexible task
+   - If the request is vague or missing details, DO NOT create a task yet. Ask brief clarification questions regarding title, duration, start time, and priority.
 3. If a task creation JSON block is included, place it at the VERY END inside triple backticks:
 ```json
 {{
@@ -262,9 +260,8 @@ RESPONSE INSTRUCTIONS:
   }}
 }}
 ```
-4. Maintain a warm, encouraging, positive, and human tone at all times.
+4. Maintain a warm, encouraging, positive, and focused tone at all times.
 """
-
 
     messages = [{"role": "system", "content": system_prompt}]
 
@@ -349,24 +346,69 @@ If no start time mentioned, set earliest_start to current time. Default deadline
 
 def answer_user_question_fallback(question: str, user_tasks: List[Dict], user_profile: Dict) -> Dict[str, Any]:
     """
-    Fallback deterministic Q&A rule engine.
+    Dynamic intent-aware fallback engine for offline or unconfigured environments.
     """
     question_lower = question.lower().strip()
     today = now_ist()
+    task_count = len(user_tasks)
 
-    if any(p in question_lower for p in ["today", "schedule today", "tasks today"]):
-        today_tasks = [t for t in user_tasks if t.get("scheduled_start") and str(t["scheduled_start"]).startswith(today.strftime("%Y-%m-%d"))]
+    # 1. Greetings Intent
+    if any(p in question_lower for p in ["hello", "hi", "hey", "greetings", "good morning", "good evening", "good afternoon"]):
         return {
             "action": "answer",
-            "answer": f"You have **{len(today_tasks)} task(s)** scheduled for today.",
-            "type": "count",
-            "data": len(today_tasks)
+            "answer": f"Hello! I am TaskPulse AI, your smart scheduling companion. You currently have **{task_count} task(s)** in your workspace. How can I help you organize your schedule or tasks today?",
+            "type": "greeting"
         }
 
+    # 2. Reschedule / Reorganize Intent
+    if any(p in question_lower for p in ["reschedule", "reorganize", "move task", "adjust schedule", "change time"]):
+        return {
+            "action": "answer",
+            "answer": f"I can help you reschedule your tasks! TaskPulse uses a CP-SAT solver to automatically optimize your timetable around your peak energy window ({user_profile.get('settings', {}).get('peak_start', '09:00 AM')} to {user_profile.get('settings', {}).get('peak_end', '01:00 PM')}). To reschedule a specific task, tell me the task name and your preferred new time!",
+            "type": "reschedule_help"
+        }
+
+    # 3. Schedule / Task Listing Intent
+    if any(p in question_lower for p in ["what are my tasks", "show tasks", "list tasks", "my schedule", "what do i have", "tasks today", "today"]):
+        today_tasks = [t for t in user_tasks if t.get("scheduled_start") and str(t["scheduled_start"]).startswith(today.strftime("%Y-%m-%d"))]
+        if today_tasks:
+            t_lines = [f"• **{t.get('name', 'Untitled')}** ({t.get('duration_minutes', 30)} mins)" for t in today_tasks[:5]]
+            list_str = "\n".join(t_lines)
+            return {
+                "action": "answer",
+                "answer": f"You have **{len(today_tasks)} task(s)** scheduled for today:\n{list_str}",
+                "type": "task_list"
+            }
+        else:
+            return {
+                "action": "answer",
+                "answer": f"You have **{task_count} total active task(s)** in your workspace. Tell me if you'd like to add a new task or auto-schedule your pending items!",
+                "type": "task_list"
+            }
+
+    # 4. Time / Date Intent
+    if any(p in question_lower for p in ["time", "date", "what time", "today's date"]):
+        return {
+            "action": "answer",
+            "answer": f"Current local time is **{today.strftime('%I:%M %p %Z')}** on **{today.strftime('%A, %B %d, %Y')}**.",
+            "type": "time"
+        }
+
+    # 5. Capabilities / Help Intent
+    if any(p in question_lower for p in ["help", "what can you do", "features"]):
+        return {
+            "action": "answer",
+            "answer": "I am TaskPulse AI! I can create tasks from natural language, auto-schedule your day using Constraint Programming (CP-SAT), reschedule meetings, optimize tasks around your energy levels, and answer queries about your workspace.",
+            "type": "help"
+        }
+
+    # 6. Default Dynamic Contextual Fallback
+    top_task = user_tasks[0].get("name") if user_tasks else None
+    top_task_str = f" Top pending item: '{top_task}'." if top_task else ""
     return {
         "action": "answer",
-        "answer": f"I reviewed your workspace context. You currently have **{len(user_tasks)} active tasks** scheduled.",
-        "type": "summary"
+        "answer": f"I reviewed your query '{question}'. You currently have **{task_count} active task(s)** scheduled.{top_task_str} How would you like me to adjust your timetable?",
+        "type": "contextual"
     }
 
 def parse_task_from_text_fallback(text: str) -> Dict[str, Any]:

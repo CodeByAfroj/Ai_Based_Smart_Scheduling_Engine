@@ -110,7 +110,7 @@ export default function Schedule() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
           <h2 className="font-bold text-[var(--text-main)] mb-6 flex items-center gap-2"><CalendarIcon size={18} className="text-[var(--accent-base)]" /> Upcoming Timeline</h2>
           
           <div className="relative border-l-2 border-slate-200 ml-3 pl-6 space-y-6">
@@ -121,9 +121,8 @@ export default function Schedule() {
                 return (
                   <div key={task.id} className="relative">
                     {/* Timeline dot */}
-                    <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-4 border-white ${task.status === 'completed' ? 'bg-slate-300' : 'bg-[var(--accent-base)]'}`}></div>
-                    
-                    <div className={`p-4 rounded-xl border border-[var(--border-subtle)] ${task.status === 'completed' ? 'bg-slate-50 opacity-60' : 'bg-white hover:border-[var(--accent-light)]'} transition-colors`}>
+                    <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-4 border-[var(--bg-panel)] ${task.status === 'completed' ? 'bg-slate-300 dark:bg-slate-600' : 'bg-[var(--accent-base)]'}`}></div>
+                    <div className={`p-4 rounded-xl border border-[var(--border-subtle)] ${task.status === 'completed' ? 'bg-[var(--bg-hover)] opacity-60' : 'bg-gradient-to-r from-[var(--bg-panel)] to-[var(--bg-app)] hover:border-[var(--accent-light)] shadow-sm hover:shadow-md'} transition-all duration-300`}>
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
@@ -131,7 +130,7 @@ export default function Schedule() {
                           </p>
                           <h3 className={`font-bold text-lg ${task.status === 'completed' ? 'text-slate-500 line-through' : 'text-[var(--text-main)]'}`}>{task.name}</h3>
                         </div>
-                        <div className="text-right shrink-0 bg-indigo-50 text-[var(--accent-base)] px-3 py-1.5 rounded-lg border border-indigo-100">
+                        <div className="text-right shrink-0 bg-[var(--accent-base)]/10 text-[var(--accent-base)] px-3 py-1.5 rounded-lg border border-[var(--accent-base)]/20">
                           <p className="font-bold text-sm flex items-center gap-1"><Clock size={14} /> {formatIST(task.scheduled_start)}</p>
                           <p className="text-xs opacity-70 text-center">to {formatIST(task.scheduled_end)}</p>
                         </div>

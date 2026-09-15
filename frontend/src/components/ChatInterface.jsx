@@ -27,12 +27,12 @@ function FormattedMessage({ text, isUser }) {
       }
       if (match[2]) {
         parts.push(
-          <strong key={match.index} className="font-semibold text-indigo-700 bg-indigo-50/70 px-1 py-0.5 rounded border border-indigo-100/50">
+          <strong key={match.index} className="font-semibold text-[var(--accent-base)] bg-[var(--accent-base)]/10 px-1 py-0.5 rounded border border-[var(--accent-base)]/20">
             {match[2]}
           </strong>
         );
       } else if (match[4]) {
-        parts.push(<em key={match.index} className="italic text-slate-700">{match[4]}</em>);
+        parts.push(<em key={match.index} className="italic opacity-90">{match[4]}</em>);
       }
       lastIndex = regex.lastIndex;
     }
@@ -45,7 +45,7 @@ function FormattedMessage({ text, isUser }) {
   };
 
   return (
-    <div className="space-y-1 text-sm text-slate-800 leading-relaxed">
+    <div className="space-y-1 text-sm leading-relaxed">
       {lines.map((line, idx) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={idx} className="h-1" />;
@@ -53,8 +53,8 @@ function FormattedMessage({ text, isUser }) {
         if (trimmed.startsWith('#')) {
           const headerText = trimmed.replace(/^#+\s*/, '');
           return (
-            <h4 key={idx} className="font-bold text-indigo-900 text-sm mt-2 mb-1 flex items-center gap-1.5 border-b border-indigo-100 pb-1">
-              <span className="w-1.5 h-3 bg-indigo-600 rounded-full inline-block"></span>
+            <h4 key={idx} className="font-bold text-[var(--text-main)] text-sm mt-2 mb-1 flex items-center gap-1.5 border-b border-[var(--border-subtle)] pb-1">
+              <span className="w-1.5 h-3 bg-[var(--accent-base)] rounded-full inline-block"></span>
               {renderInlineMarkdown(headerText)}
             </h4>
           );
@@ -64,7 +64,7 @@ function FormattedMessage({ text, isUser }) {
           const bulletText = trimmed.replace(/^[*\-]\s*/, '');
           return (
             <div key={idx} className="flex items-start gap-2 pl-1 my-0.5">
-              <span className="text-indigo-500 font-bold text-xs mt-1">•</span>
+              <span className="text-[var(--accent-base)] font-bold text-xs mt-1">•</span>
               <span className="flex-1">{renderInlineMarkdown(bulletText)}</span>
             </div>
           );
@@ -129,6 +129,22 @@ export default function ChatInterface({ isChatOpen, openChat }) {
   }, []);
 
   const messagesRef = useRef(messages);
+  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
+
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
+  };
+
+  // Scroll to bottom on mount and whenever messages or loading state changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToBottom(messages.length <= 2 ? 'auto' : 'smooth');
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [messages, isLoading]);
 
   // Save messages to local storage and sync ref whenever they change
   useEffect(() => {
@@ -183,6 +199,43 @@ export default function ChatInterface({ isChatOpen, openChat }) {
 
   const audioRef = useRef(null);
 
+  const stopAllVoiceActivity = () => {
+    setIsTwoWayMode(false);
+    isTwoWayModeRef.current = false;
+    setIsListening(false);
+    setIsSpeaking(false);
+    setIsLoading(false);
+    isProcessingRef.current = false;
+
+    // 1. Instantly strip callbacks and abort active SpeechRecognition
+    if (activeRecognitionRef.current) {
+      try {
+        activeRecognitionRef.current.onresult = null;
+        activeRecognitionRef.current.onerror = null;
+        activeRecognitionRef.current.onend = null;
+        activeRecognitionRef.current.stop();
+        activeRecognitionRef.current.abort();
+      } catch (e) { }
+      activeRecognitionRef.current = null;
+    }
+
+    // 2. Instantly pause, strip callbacks, and destroy HTML5 Audio
+    if (audioRef.current) {
+      try {
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch (e) { }
+      audioRef.current = null;
+    }
+
+    // 3. Cancel Web Speech Synthesis
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
   const testSelectedVoice = async (uriToTest = selectedVoiceURI) => {
     const sampleText = "Hello! I am your TaskPulse AI assistant. How does this voice sound to you?";
     speakText(sampleText);
@@ -201,6 +254,13 @@ export default function ChatInterface({ isChatOpen, openChat }) {
 
   // Ultra-realistic Neural Human Speech Synthesis (ChatGPT Voice Style) via /nlp/tts
   const speakText = async (text, onSpeechEnd) => {
+    // If voice orb mode has been closed, do NOT start speaking
+    if (!isTwoWayModeRef.current) {
+      setIsSpeaking(false);
+      if (onSpeechEnd) onSpeechEnd();
+      return;
+    }
+
     const cleanText = cleanTextForSpeech(text);
     if (!cleanText) {
       setIsSpeaking(false);
@@ -241,7 +301,18 @@ export default function ChatInterface({ isChatOpen, openChat }) {
       });
 
       if (response.ok) {
+        // Double-check modal hasn't closed during network request
+        if (!isTwoWayModeRef.current) {
+          setIsSpeaking(false);
+          return;
+        }
+
         const blob = await response.blob();
+        if (!isTwoWayModeRef.current) {
+          setIsSpeaking(false);
+          return;
+        }
+
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         audioRef.current = audio;
@@ -251,7 +322,9 @@ export default function ChatInterface({ isChatOpen, openChat }) {
           if (onSpeechEnd) onSpeechEnd();
           if (isTwoWayModeRef.current) {
             setTimeout(() => {
-              startVoiceInput();
+              if (isTwoWayModeRef.current) {
+                startVoiceInput();
+              }
             }, 400);
           }
         };
@@ -262,7 +335,11 @@ export default function ChatInterface({ isChatOpen, openChat }) {
           if (onSpeechEnd) onSpeechEnd();
         };
 
-        await audio.play();
+        if (isTwoWayModeRef.current) {
+          await audio.play();
+        } else {
+          setIsSpeaking(false);
+        }
         return;
       }
     } catch (err) {
@@ -271,6 +348,11 @@ export default function ChatInterface({ isChatOpen, openChat }) {
 
     // Browser Web Speech Synthesis Fallback
     if ('speechSynthesis' in window) {
+      if (!isTwoWayModeRef.current) {
+        setIsSpeaking(false);
+        return;
+      }
+
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'en-US';
       utterance.rate = 0.96;
@@ -278,7 +360,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
 
       const available = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
       const preferred = available.find(v => v.voiceURI === selectedVoiceURI)
-        || available.find(v => v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Google US English'))
+        || available.find(v => v.name.includes('Ava') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Google US English') || v.name.includes('Karen'))
         || available[0];
       if (preferred) utterance.voice = preferred;
 
@@ -286,7 +368,11 @@ export default function ChatInterface({ isChatOpen, openChat }) {
         setIsSpeaking(false);
         if (onSpeechEnd) onSpeechEnd();
         if (isTwoWayModeRef.current) {
-          setTimeout(() => startVoiceInput(), 600);
+          setTimeout(() => {
+            if (isTwoWayModeRef.current) {
+              startVoiceInput();
+            }
+          }, 600);
         }
       };
 
@@ -295,7 +381,11 @@ export default function ChatInterface({ isChatOpen, openChat }) {
         if (onSpeechEnd) onSpeechEnd();
       };
 
-      window.speechSynthesis.speak(utterance);
+      if (isTwoWayModeRef.current) {
+        window.speechSynthesis.speak(utterance);
+      } else {
+        setIsSpeaking(false);
+      }
     } else {
       setIsSpeaking(false);
       if (onSpeechEnd) onSpeechEnd();
@@ -304,7 +394,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
 
 
   const speakIfEnabled = (text, onSpeechEnd) => {
-    if (voiceEnabled) {
+    if (isTwoWayModeRef.current) {
       speakText(text, onSpeechEnd);
     } else if (onSpeechEnd) {
       onSpeechEnd();
@@ -720,10 +810,28 @@ export default function ChatInterface({ isChatOpen, openChat }) {
     }
   };
 
+  const cancelSpeech = () => {
+    setIsSpeaking(false);
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch (e) { }
+      audioRef.current = null;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
   const handleVoiceInput = async (text) => {
+    if (!isTwoWayModeRef.current) return;
     const transcript = text.trim();
 
-    if (!transcript || isLoading) return;
+    if (!transcript) return;
+
+    // BARGE-IN: Instantly cancel any ongoing AI speech
+    cancelSpeech();
 
     setLatestTranscript(transcript);
     setInput(transcript);
@@ -735,21 +843,32 @@ export default function ChatInterface({ isChatOpen, openChat }) {
   };
 
   const startVoiceInput = async () => {
+    // BARGE-IN: Instantly cancel/stop any ongoing AI speech when user interacts!
+    cancelSpeech();
+
+    if (!isTwoWayModeRef.current) {
+      return;
+    }
+
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Voice input is not supported in your browser. Please use Chrome or Edge for voice features.');
       return;
     }
 
-    if (isListening || isLoading || isProcessingRef.current) {
-      if (activeRecognitionRef.current) {
-        try { activeRecognitionRef.current.stop(); } catch (e) { }
-      }
-      setIsListening(false);
-      return;
+    if (activeRecognitionRef.current) {
+      try {
+        activeRecognitionRef.current.onresult = null;
+        activeRecognitionRef.current.onerror = null;
+        activeRecognitionRef.current.onend = null;
+        activeRecognitionRef.current.stop();
+        activeRecognitionRef.current.abort();
+      } catch (e) { }
+      activeRecognitionRef.current = null;
     }
 
-    if (activeRecognitionRef.current) {
-      try { activeRecognitionRef.current.stop(); } catch (e) { }
+    if (isListening) {
+      setIsListening(false);
+      return;
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -768,9 +887,15 @@ export default function ChatInterface({ isChatOpen, openChat }) {
     }
 
     recognition.onresult = (event) => {
+      if (!isTwoWayModeRef.current) {
+        setIsListening(false);
+        try { recognition.stop(); recognition.abort(); } catch (e) { }
+        return;
+      }
       const transcript = event.results[0][0]?.transcript;
       setIsListening(false);
-      if (transcript && !isLoading) {
+      if (transcript) {
+        cancelSpeech();
         handleVoiceInput(transcript);
       }
       try { recognition.stop(); } catch (e) { }
@@ -799,43 +924,33 @@ export default function ChatInterface({ isChatOpen, openChat }) {
         selectedVoiceURI={selectedVoiceURI}
         onVoiceChange={handleVoiceChange}
         onToggleMic={() => startVoiceInput()}
-        onCloseVoiceMode={() => {
-          setIsTwoWayMode(false);
-          setIsListening(false);
-          setIsSpeaking(false);
-          if (audioRef.current) {
-            try { audioRef.current.pause(); } catch (e) { }
-          }
-          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        }}
-        onToggleTextChat={() => setIsTwoWayMode(false)}
+        onCloseVoiceMode={stopAllVoiceActivity}
+        onToggleTextChat={stopAllVoiceActivity}
       />
     );
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-white">
+    <div className="w-full h-full flex flex-col bg-[var(--bg-panel)]">
       {/* Chat Header */}
-      <div className="bg-white rounded-t-xl shadow-lg border border-[var(--border-subtle)] flex items-center justify-between px-4 py-2">
+      <div className="bg-[var(--bg-panel)] rounded-t-xl shadow-lg border border-[var(--border-subtle)] flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
           <h3 className="text-[var(--text-main)] font-semibold flex items-center gap-1.5 text-sm">
             <Zap className="h-4 w-4 text-[var(--accent-base)]" />
             TaskPulse AI
           </h3>
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
-            <kbd className="font-mono bg-white px-1 rounded shadow-sm border border-slate-200">Alt+V</kbd> to talk
+          <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
+            <kbd className="font-mono bg-[var(--bg-panel)] px-1 rounded shadow-sm border border-[var(--border-subtle)]">Alt+V</kbd> to talk
           </div>
 
           <button
             onClick={() => {
-              const nextState = !isTwoWayMode;
-              setIsTwoWayMode(nextState);
-              if (nextState) {
-                setVoiceEnabled(true);
-                startVoiceInput();
+              if (isTwoWayMode) {
+                stopAllVoiceActivity();
               } else {
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-                setIsListening(false);
+                setIsTwoWayMode(true);
+                isTwoWayModeRef.current = true;
+                startVoiceInput();
               }
             }}
             className={`text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 transition-all ${isTwoWayMode
@@ -857,7 +972,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
                 timestamp: new Date()
               }]);
             }}
-            className="text-[10px] text-slate-400 hover:text-red-500 font-semibold px-2 py-1 border border-slate-200 rounded transition-colors"
+            className="text-[10px] text-[var(--text-muted)] hover:text-red-500 font-semibold px-2 py-1 border border-[var(--border-subtle)] rounded transition-colors"
             title="Clear Conversation History"
           >
             Clear Memory
@@ -885,7 +1000,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
 
 
       {/* Chat Messages */}
-      <div className="flex-1 bg-white border-l border-r border-[var(--border-subtle)] overflow-y-auto px-4 py-4 space-y-3" aria-live="polite" aria-atomic="false">
+      <div ref={chatContainerRef} className="flex-1 bg-[var(--bg-panel)] border-l border-r border-[var(--border-subtle)] overflow-y-auto px-4 py-4 space-y-3" aria-live="polite" aria-atomic="false">
         {messages.map(message => (
           <div key={message.id} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] px-3 py-2 rounded-xl ${message.isUser
@@ -907,10 +1022,11 @@ export default function ChatInterface({ isChatOpen, openChat }) {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Chat Input */}
-      <div className="bg-white border-b border-[var(--border-subtle)] flex items-center px-4 py-2">
+      <div className="bg-[var(--bg-panel)] border-b border-[var(--border-subtle)] flex items-center px-4 py-2">
         <button
           onClick={startVoiceInput}
           className={`p-2 rounded-lg transition-all flex items-center gap-1 ${isListening
@@ -933,7 +1049,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
             }
           }}
           placeholder={isListening ? "Listening to your voice..." : "Talk to me about anything or ask to schedule a task..."}
-          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm transition-all ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-50/30' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
+          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm transition-all bg-[var(--bg-app)] text-[var(--text-main)] placeholder-[var(--text-muted)] ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-500/10' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
             }`}
         />
 

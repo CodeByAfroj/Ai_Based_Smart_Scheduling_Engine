@@ -121,11 +121,11 @@ async def notification_stream(request: Request, token: str):
                     break
                 
                 try:
-                    # Wait for next notification with a timeout
+                    import json
                     data = await asyncio.wait_for(q.get(), timeout=15.0)
                     yield {
                         "event": "notification",
-                        "data": str(data)
+                        "data": json.dumps(data)
                     }
                 except asyncio.TimeoutError:
                     # Send a keep-alive ping to prevent ERR_INCOMPLETE_CHUNKED_ENCODING timeout
@@ -173,8 +173,8 @@ async def test_notification(
     user = await collection.find_one({"google_id": user_id})
     email = user.get("email") if user else ""
     
-    title = "System Test"
-    message = "This is a test notification from the TaskPulse scheduling engine!"
+    title = "TaskPulse Alert"
+    message = "Your notification channels and schedule alerts are fully active."
     
     await notify_user(user_id, email, title, message, bg_tasks, type="alert")
     return {"message": "Test notification dispatched"}
