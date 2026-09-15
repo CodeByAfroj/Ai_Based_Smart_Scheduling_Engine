@@ -28,7 +28,7 @@ TaskPulse is an autonomous, context-aware smart scheduling system that transform
 
 ## 💡 Key Features
 
-### 1. 🎙️ ChatGPT-Style 2-Way Voice Mode Orb Interface
+### 1. 🎙️ 2-Way Voice Mode Orb Interface
 - **3D Canvas Energy Visualizer**: Features a luminous 3D sphere rendered with over 2,400 glowing orbital energy particles in WebGL/Three.js, styled with electric cyan, violet, and indigo color fields.
 - **Hands-Free 2-Way Voice Loop**: Talk naturally with hands-free speech recognition and instant neural AI voice playback.
 - **Speech Interruption (Barge-In)**: Speaking at any point immediately interrupts ongoing AI speech playback and processes your new query without delay.
