@@ -98,22 +98,11 @@ $$\text{Task Score} = \text{Base Priority Score} + \text{Circadian Energy Alignm
 
 ---
 
-## 🚦 Getting Started
+## 🚦 Getting Started & Environment Setup
 
-### 1. Backend Setup
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate  # On macOS/Linux
-pip install -r requirements.txt
-uvicorn app.main:app --reload   # Runs on http://127.0.0.1:8000
-```
+TaskPulse consists of a Python/FastAPI backend and a React/Vite frontend. Each component has its own dedicated `.env` configuration and setup process.
 
-### 2. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev               # Runs on http://localhost:5173
-```
+For complete, step-by-step installation instructions and environment variable templates, please refer to the dedicated setup guides:
 
-Visit `http://localhost:5173` to access the application dashboard.
+- 🔗 [Backend Setup & Environment Variables](./backend/README.md)
+- 🔗 [Frontend Setup & Environment Variables](./frontend/README.md)

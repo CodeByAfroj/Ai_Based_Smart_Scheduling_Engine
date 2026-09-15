@@ -1,19 +1,28 @@
-# React + Vite
+# 💻 TaskPulse Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend for TaskPulse is a responsive Single Page Application (SPA) built using React, Vite, TailwindCSS (Vanilla CSS design system), and WebGL/Three.js for the ChatGPT-style Voice Orb.
 
-Currently, two official plugins are available:
+## 🛠️ Prerequisites
+- Node.js 18.x or newer
+- npm or yarn
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ⚙️ Environment Variables Setup
+Create a `.env` file in the root of the `frontend/` directory and configure the backend URL.
 
-## React Compiler
+**Template (`.env`):**
+```env
+# API URL connecting to the backend
+VITE_API_BASE_URL=http://localhost:8000
+```
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## 🚀 Running the Frontend Locally
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+   The frontend will be available at `http://localhost:5173`. Open this URL in your browser to access the TaskPulse dashboard.
