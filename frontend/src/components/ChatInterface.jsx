@@ -1027,16 +1027,16 @@ export default function ChatInterface({ isChatOpen, openChat }) {
       </div>
 
       {/* Chat Input */}
-      <div className="bg-[var(--bg-panel)] border-b border-[var(--border-subtle)] flex items-center px-4 py-2">
+      <div className="bg-[var(--bg-panel)] border-b border-[var(--border-subtle)] flex items-center gap-2 px-3 sm:px-4 py-3 shrink-0">
         <button
           onClick={startVoiceInput}
-          className={`p-2 rounded-lg transition-all flex items-center gap-1 ${isListening
+          className={`p-2 shrink-0 rounded-lg transition-all flex items-center justify-center ${isListening
             ? 'bg-red-500 text-white animate-pulse shadow-md ring-2 ring-red-300'
             : 'text-[var(--text-muted)] hover:text-[var(--accent-base)] hover:bg-slate-100'
             }`}
           title={isListening ? "Listening... Click to stop" : "Click mic to speak (or Alt+V)"}
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 0 1-14 0M12 18v4M8 22h8" /></svg>
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 0 1-14 0M12 18v4M8 22h8" /></svg>
         </button>
 
         <input
@@ -1049,18 +1049,17 @@ export default function ChatInterface({ isChatOpen, openChat }) {
               sendMessage();
             }
           }}
-          placeholder={isListening ? "Listening to your voice..." : "Talk to me about anything or ask to schedule a task..."}
-          className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 text-sm transition-all bg-[var(--bg-app)] text-[var(--text-main)] placeholder-[var(--text-muted)] ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-500/10' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
+          placeholder={isListening ? "Listening..." : "Message TaskPulse..."}
+          className={`flex-1 min-w-0 px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 text-sm transition-all bg-[var(--bg-app)] text-[var(--text-main)] placeholder-[var(--text-muted)] ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-500/10' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
             }`}
         />
-
 
         <button
           onClick={() => sendMessage()}
           disabled={isLoading || !input.trim()}
-          className={`ml-2 px-4 py-2 rounded-lg ${isLoading || !input.trim()
+          className={`shrink-0 px-4 py-2 rounded-xl font-medium transition-colors ${isLoading || !input.trim()
             ? 'bg-[var(--bg-hover)] text-[var(--text-muted)]'
-            : 'bg-[var(--accent-base)] text-white'
+            : 'bg-[var(--accent-base)] text-white hover:bg-[var(--accent-hover)]'
             }`}
         >
           {isLoading ? '...' : 'Send'}

@@ -103,7 +103,7 @@ def classify_activity(request: ClassifyRequest):
         # Determine if busy based on label (e.g. walking, running -> busy, sitting -> free)
         # Assuming label names from standard UCI HAR
         busy_labels = ['walking', 'walking_upstairs', 'walking_downstairs']
-        busy = prediction_label in busy_labels
+        busy = prediction_label in busy_labels and confidence >= 0.85
         
         print(f" -> Predicted Activity: {prediction_label} (Idx: {pred_idx}) | Confidence: {confidence:.2f} | Busy: {busy}")
         
