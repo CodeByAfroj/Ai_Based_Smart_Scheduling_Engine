@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   LayoutGrid,
   CheckSquare,
@@ -34,60 +34,49 @@ export default function Layout() {
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
 
+  const notifiedIdsRef = useRef(new Set());
+
   useEffect(() => {
     if (!token || !API_BASE) return undefined;
 
-    const eventSource = new EventSource(
-      `${API_BASE}/notifications/stream?token=${encodeURIComponent(token)}`
-    );
-
-    const handleNotification = (event) => {
-      let data;
-
+    const fetchNotifications = async () => {
       try {
-        let raw = event.data;
-        if (typeof raw === 'string' && raw.trim().startsWith('{')) {
-          raw = raw.replace(/'/g, '"');
+        const res = await fetch(`${API_BASE}/notifications/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        if (data.notifications) {
+          const freshNotifications = data.notifications;
+          setNotifications(freshNotifications.slice(0, 10));
+          
+          let hasNewUnread = false;
+          
+          for (const n of freshNotifications) {
+            if (!n.is_read) {
+              setHasUnread(true);
+              
+              if (!notifiedIdsRef.current.has(n.id)) {
+                hasNewUnread = true;
+                notifiedIdsRef.current.add(n.id);
+                triggerAudioAlert(n.title || 'Alert', n.message || '');
+              }
+            }
+          }
         }
-        data = JSON.parse(raw);
-      } catch (error) {
-        console.error('Failed to parse notification:', error);
-        data = {
-          title: 'Alert',
-          message: event.data,
-        };
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
       }
-
-      const notification = {
-        id: Date.now(),
-        title: data?.title || 'Alert',
-        message: data?.message || '',
-        ...data,
-        read: false,
-      };
-
-      setNotifications((prev) => [notification, ...prev].slice(0, 10));
-      setHasUnread(true);
-
-      triggerAudioAlert(
-        notification.title,
-        notification.message
-      );
     };
 
-    eventSource.addEventListener('notification', handleNotification);
+    // Initial fetch
+    fetchNotifications();
 
-    eventSource.onerror = (error) => {
-      console.error('Notification SSE connection error:', error);
-    };
+    // Poll every 15 seconds
+    const intervalId = setInterval(fetchNotifications, 15000);
 
-    return () => {
-      eventSource.removeEventListener(
-        'notification',
-        handleNotification
-      );
-      eventSource.close();
-    };
+    return () => clearInterval(intervalId);
   }, [token, API_BASE, profile?.notification_preference]);
 
   const playHumanizedVoice = async (textToSpeak) => {

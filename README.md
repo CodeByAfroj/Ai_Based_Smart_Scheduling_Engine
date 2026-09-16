@@ -86,7 +86,8 @@ $$\text{Task Score} = \text{Base Priority Score} + \text{Circadian Energy Alignm
 ---
 
 ### 7. 📱 Sensor-Based Real-Time Activity Detection
-- Mobile motion sensor data (accelerometer + gyroscope) passed to browser ONNX runtime to classify user state (walking, sitting, driving) and trigger autonomous schedule updates (`/auto-shift`).
+- Mobile motion sensor data (accelerometer + gyroscope) is continuously streamed to the backend where a **1D CNN + LSTM Deep Learning Model** classifies the user's physical state (e.g., walking, sitting, standing) in real-time.
+- If the model confidently detects that the user is busy or in transit, it automatically triggers an autonomous schedule update (`/auto-shift`) to defer deep-focus work.
 
 ---
 
@@ -94,7 +95,7 @@ $$\text{Task Score} = \text{Base Priority Score} + \text{Circadian Energy Alignm
 
 - **Backend**: Python 3.13 / 3.14, FastAPI, Edge-TTS (Neural Human Voice), Google Gemini / Groq / Ollama LLMs, OR-Tools (CP-SAT Solver), Motor / PyMongo, PyJWT, Pydantic.
 - **Frontend**: React, Vite, Three.js / WebGL (Voice Orb 3D Engine), Lucide Icons, Vanilla CSS Design System.
-- **Machine Learning & Sensors**: ONNX Runtime Web, Random Forest Activity Classifier.
+- **Machine Learning & Sensors**: PyTorch (1D CNN-LSTM Architecture), ONNX Runtime (Backend Inference), UCI-HAR Dataset.
 
 ---
 
