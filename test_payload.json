@@ -1,0 +1,7 @@
+{
+  "window_duration_sec": 2.5,
+  "readings": [
+    {"timestamp": 123456789, "accel_x": 0.1, "accel_y": 0.2, "accel_z": 9.8, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0},
+    {"timestamp": 123456790, "accel_x": 0.1, "accel_y": 0.2, "accel_z": 9.8, "gyro_x": 0.0, "gyro_y": 0.0, "gyro_z": 0.0}
+  ]
+}

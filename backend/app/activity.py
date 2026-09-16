@@ -63,7 +63,15 @@ def classify_activity(request: ClassifyRequest):
     
     window_data = np.array(data, dtype=np.float32)
     
-    # The PyTorch 1D CNN expects shape (Batch, Channels, Length) -> (1, 6, N)
+    # The PyTorch 1D CNN expects shape (Batch, Channels, Length) -> (1, 6, 128)
+    expected_length = 128
+    if window_data.shape[0] > expected_length:
+        window_data = window_data[:expected_length, :]
+    elif window_data.shape[0] < expected_length:
+        padding = np.zeros((expected_length - window_data.shape[0], 6), dtype=np.float32)
+        window_data = np.vstack((window_data, padding))
+    
+    # Transpose from (128, 6) to (6, 128)
     # Transpose from (N, 6) to (6, N)
     window_data = np.transpose(window_data, (1, 0))
     # Add batch dimension
