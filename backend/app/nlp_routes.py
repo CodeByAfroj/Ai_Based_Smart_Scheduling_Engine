@@ -230,13 +230,14 @@ async def tts_endpoint(request: dict):
 
     try:
         communicate = edge_tts.Communicate(cleaned_text, voice)
-        audio_data = bytearray()
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                audio_data.extend(chunk["data"])
+        
+        async def audio_generator():
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    yield chunk["data"]
 
         return StreamingResponse(
-            io.BytesIO(audio_data),
+            audio_generator(),
             media_type="audio/mpeg",
             headers={"Content-Disposition": "inline; filename=speech.mp3"}
         )

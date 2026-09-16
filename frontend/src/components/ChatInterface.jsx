@@ -933,16 +933,19 @@ export default function ChatInterface({ isChatOpen, openChat }) {
   return (
     <div className="w-full h-full flex flex-col bg-[var(--bg-panel)]">
       {/* Chat Header */}
-      <div className="bg-[var(--bg-panel)] rounded-t-xl shadow-lg border border-[var(--border-subtle)] flex items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[var(--text-main)] font-semibold flex items-center gap-1.5 text-sm">
+      <div className="bg-[var(--bg-panel)] rounded-t-xl shadow-lg border border-[var(--border-subtle)] flex items-center justify-between px-3 sm:px-4 py-2 gap-2 overflow-hidden">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <h3 className="text-[var(--text-main)] font-semibold flex items-center gap-1.5 text-sm shrink-0">
             <Zap className="h-4 w-4 text-[var(--accent-base)]" />
-            TaskPulse AI
+            <span className="hidden sm:inline">TaskPulse AI</span>
+            <span className="sm:hidden">AI</span>
           </h3>
-          <div className="hidden sm:flex items-center gap-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
+          <div className="hidden md:flex items-center gap-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)] shrink-0">
             <kbd className="font-mono bg-[var(--bg-panel)] px-1 rounded shadow-sm border border-[var(--border-subtle)]">Alt+V</kbd> to talk
           </div>
+        </div>
 
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <button
             onClick={() => {
               if (isTwoWayMode) {
@@ -953,7 +956,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
                 startVoiceInput();
               }
             }}
-            className={`text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${isTwoWayMode
+            className={`text-[10px] font-bold px-2 sm:px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${isTwoWayMode
               ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-200 animate-pulse'
               : 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
               }`}
@@ -973,7 +976,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
                 timestamp: new Date()
               }]);
             }}
-            className="text-[10px] text-[var(--text-muted)] hover:text-red-500 font-semibold px-2 py-1 border border-[var(--border-subtle)] rounded transition-colors"
+            className="hidden sm:inline-block text-[10px] text-[var(--text-muted)] hover:text-red-500 font-semibold px-2 py-1 border border-[var(--border-subtle)] rounded transition-colors shrink-0"
             title="Clear Conversation History"
           >
             Clear Memory
@@ -986,7 +989,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
                 window.speechSynthesis.cancel();
               }
             }}
-            className="text-[var(--text-muted)] hover:text-[var(--accent-base)] p-1 rounded"
+            className="text-[var(--text-muted)] hover:text-[var(--accent-base)] p-1 rounded shrink-0"
             title={voiceEnabled ? 'Disable voice response' : 'Enable voice response'}
           >
             {voiceEnabled ? (

@@ -57,9 +57,20 @@ def classify_activity(request: ClassifyRequest):
     print(f"\n[Activity Tracker] Received {len(request.readings)} sensor events for a {request.window_duration_sec}s window.")
     
     # Convert readings to a numpy array (N, 6)
+    # Note: Web API gives accel in m/s^2 and gyro in deg/s. 
+    # The UCI HAR model expects accel in 'g' and gyro in rad/s.
+    import math
     data = []
     for r in request.readings:
-        data.append([r.accel_x, r.accel_y, r.accel_z, r.gyro_x, r.gyro_y, r.gyro_z])
+        # Convert accel from m/s^2 to g
+        ax = r.accel_x / 9.80665
+        ay = r.accel_y / 9.80665
+        az = r.accel_z / 9.80665
+        # Convert gyro from deg/s to rad/s
+        gx = r.gyro_x * (math.pi / 180.0)
+        gy = r.gyro_y * (math.pi / 180.0)
+        gz = r.gyro_z * (math.pi / 180.0)
+        data.append([ax, ay, az, gx, gy, gz])
     
     window_data = np.array(data, dtype=np.float32)
     
@@ -68,7 +79,9 @@ def classify_activity(request: ClassifyRequest):
     if window_data.shape[0] > expected_length:
         window_data = window_data[:expected_length, :]
     elif window_data.shape[0] < expected_length:
-        padding = np.zeros((expected_length - window_data.shape[0], 6), dtype=np.float32)
+        # Pad with the last observed value instead of zeros to avoid discontinuity
+        last_val = window_data[-1, :]
+        padding = np.tile(last_val, (expected_length - window_data.shape[0], 1)).astype(np.float32)
         window_data = np.vstack((window_data, padding))
     
     # Transpose from (128, 6) to (6, 128)
