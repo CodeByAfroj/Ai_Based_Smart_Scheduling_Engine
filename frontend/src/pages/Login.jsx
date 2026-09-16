@@ -33,7 +33,7 @@ export default function Login() {
     <div className="min-h-screen bg-[var(--bg-app)] flex">
       
       {/* Left Column - Branding (Hidden on Mobile) */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[#eff6ff] to-[#e0e7ff] p-12 flex-col justify-between">
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[var(--bg-panel)] to-[var(--bg-hover)] border-r border-[var(--border-subtle)] p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3 mb-16">
             <div className="w-10 h-10 rounded-xl bg-[var(--accent-base)] flex items-center justify-center text-white shadow-lg">
@@ -58,24 +58,24 @@ export default function Login() {
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-16">
-            <div className="bg-white/60 backdrop-blur p-5 rounded-2xl border border-white/40 shadow-sm">
-              <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4">
+            <div className="bg-[var(--bg-panel)] p-5 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent-light)] text-[var(--accent-base)] flex items-center justify-center mb-4">
                 <CalendarSync size={18} />
               </div>
               <h3 className="font-bold text-sm text-[var(--text-main)] mb-2">Dual-Way Sync</h3>
               <p className="text-xs text-[var(--text-muted)] leading-relaxed">Real-time bi-directional cadence with Google & Outlook.</p>
             </div>
             
-            <div className="bg-white/60 backdrop-blur p-5 rounded-2xl border border-white/40 shadow-sm">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+            <div className="bg-[var(--bg-panel)] p-5 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent-light)] text-[var(--accent-base)] flex items-center justify-center mb-4">
                 <Sparkles size={18} />
               </div>
               <h3 className="font-bold text-sm text-[var(--text-main)] mb-2">AI Smart Priority</h3>
               <p className="text-xs text-[var(--text-muted)] leading-relaxed">Context-aware ranking prevents deadline bottlenecks.</p>
             </div>
 
-            <div className="bg-white/60 backdrop-blur p-5 rounded-2xl border border-white/40 shadow-sm">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+            <div className="bg-[var(--bg-panel)] p-5 rounded-2xl border border-[var(--border-subtle)] shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent-light)] text-[var(--accent-base)] flex items-center justify-center mb-4">
                 <ShieldCheck size={18} />
               </div>
               <h3 className="font-bold text-sm text-[var(--text-main)] mb-2">Zero Drift Guarantee</h3>
@@ -84,7 +84,7 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="border-t border-indigo-200/50 pt-8">
+        <div className="border-t border-[var(--border-subtle)] pt-8">
           <p className="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase mb-2">Enterprise Performance</p>
           <p className="text-xl font-semibold text-[var(--text-main)]">Trusted by 45,000+ teams</p>
           <p className="text-sm text-[var(--text-muted)] mt-1">From high-growth scaleups to distributed Fortune 500 units.</p>
@@ -92,7 +92,7 @@ export default function Login() {
       </div>
 
       {/* Right Column - Auth Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-white">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-[var(--bg-app)]">
         <div className="w-full max-w-md flex flex-col">
           
           {/* Mobile Header (Hidden on Desktop) */}
@@ -121,7 +121,7 @@ export default function Login() {
 
           <button 
             onClick={() => handleGoogleLogin()}
-            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-app)] hover:bg-slate-100 transition-colors mb-6 font-semibold text-[var(--text-main)] shadow-sm"
+            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-panel)] hover:bg-[var(--bg-hover)] transition-colors mb-6 font-semibold text-[var(--text-main)] shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -161,7 +161,7 @@ export default function Login() {
 
             <div className="flex items-center mb-4">
               <label className="flex items-center gap-2 text-sm text-[var(--text-main)] font-medium cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-gray-300 text-[var(--accent-base)] focus:ring-[var(--accent-base)]" />
+                <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-[var(--border-strong)] bg-[var(--bg-panel)] text-[var(--accent-base)] focus:ring-[var(--accent-base)]" />
                 Remember this device for 30 days
               </label>
             </div>
