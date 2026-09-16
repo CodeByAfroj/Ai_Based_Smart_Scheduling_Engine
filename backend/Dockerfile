@@ -9,9 +9,8 @@ ENV PORT=8000
 
 WORKDIR /app
 
-# Install system dependencies (build tools needed for C extensions like OR-Tools / scipy if building wheel)
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
