@@ -35,3 +35,5 @@ pymongo
 sse-starlette
 edge-tts
 
+torch
+onnxruntime

@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import { Plus, Clock, Calendar as CalendarIcon, CheckCircle2, Circle, Trash2 } from 'lucide-react';
 import { localInputToIST, defaultLocalValue, formatIST, formatDateIST } from '../utils/time';
-import VoiceButton from '../ai/VoiceButton';
 
 export default function Tasks() {
   const { token } = useAuth();
@@ -72,7 +71,6 @@ export default function Tasks() {
             <button onClick={() => setShowForm(!showForm)} className="btn-primary py-2.5 px-5 flex items-center gap-2 text-sm">
               <Plus size={16} /> New Task
             </button>
-            <VoiceButton />
           </div>
         </div>
 

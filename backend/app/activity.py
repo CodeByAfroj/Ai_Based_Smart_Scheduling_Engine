@@ -1,17 +1,15 @@
 import os
 import json
-import joblib
 import numpy as np
+import onnxruntime as ort
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 
-from activity_classifier.features import compute_features
-
 router = APIRouter()
 
 # Global cache for the model and mapping
-_model = None
+_ort_session = None
 _label_mapping = None
 
 class SensorReading(BaseModel):
@@ -32,14 +30,14 @@ class ClassifyResponse(BaseModel):
     busy: bool
     confidence: float
 
-def get_model():
-    global _model
-    if _model is None:
-        model_path = os.path.join(os.path.dirname(__file__), '..', 'activity_classifier', 'model', 'activity_rf.joblib')
+def get_ort_session():
+    global _ort_session
+    if _ort_session is None:
+        model_path = os.path.join(os.path.dirname(__file__), '..', 'activity_classifier', 'model', 'activity_dl.onnx')
         if not os.path.exists(model_path):
-            raise RuntimeError("Model file not found. Train the model first.")
-        _model = joblib.load(model_path)
-    return _model
+            raise RuntimeError(f"ONNX model file not found at {model_path}. Train the DL model first.")
+        _ort_session = ort.InferenceSession(model_path)
+    return _ort_session
 
 def get_label_mapping():
     global _label_mapping
@@ -59,59 +57,50 @@ def classify_activity(request: ClassifyRequest):
     print(f"\n[Activity Tracker] Received {len(request.readings)} sensor events for a {request.window_duration_sec}s window.")
     
     # Convert readings to a numpy array (N, 6)
-    # Ensure order matches training: accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
     data = []
     for r in request.readings:
         data.append([r.accel_x, r.accel_y, r.accel_z, r.gyro_x, r.gyro_y, r.gyro_z])
     
-    window_data = np.array(data)
+    window_data = np.array(data, dtype=np.float32)
     
-    # Calculate approximate sample rate
-    if len(request.readings) > 1:
-        time_diff = request.readings[-1].timestamp - request.readings[0].timestamp
-        # Convert timestamp to seconds if it's in ms
-        if time_diff > 1000:
-            time_diff = time_diff / 1000.0
-            
-        sample_rate = len(request.readings) / max(time_diff, 0.001)
-    else:
-        sample_rate = 50.0 # fallback default
-
-    # Extract features
+    # The PyTorch 1D CNN expects shape (Batch, Channels, Length) -> (1, 6, N)
+    # Transpose from (N, 6) to (6, N)
+    window_data = np.transpose(window_data, (1, 0))
+    # Add batch dimension
+    input_tensor = np.expand_dims(window_data, axis=0)
+    
     try:
-        features = compute_features(window_data, sample_rate=sample_rate)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Feature extraction failed: {str(e)}")
-
-    if len(features) == 0:
-        raise HTTPException(status_code=400, detail="Could not compute features from window")
-
-    # Load model and mapping
-    try:
-        model = get_model()
+        session = get_ort_session()
         mapping = get_label_mapping()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Inference
+    # Inference using ONNX Runtime
     try:
-        # Reshape for single prediction
-        features_2d = features.reshape(1, -1)
+        input_name = session.get_inputs()[0].name
         
-        # Predict class index or label
-        prediction = model.predict(features_2d)[0]
+        # Run inference
+        outputs = session.run(None, {input_name: input_tensor})
+        logits = outputs[0][0] # Shape: (num_classes,)
         
-        # Predict probabilities to get confidence
-        proba = model.predict_proba(features_2d)[0]
-        confidence = float(np.max(proba))
+        # Convert logits to probabilities using softmax
+        exp_logits = np.exp(logits - np.max(logits))
+        probabilities = exp_logits / exp_logits.sum()
         
-        # Determine if busy based on mapping
-        busy = mapping.get(str(prediction), "free") == "busy"
+        pred_idx = np.argmax(probabilities)
+        confidence = float(probabilities[pred_idx])
         
-        print(f" -> Predicted Activity: {prediction} | Confidence: {confidence:.2f} | Busy: {busy}")
+        prediction_label = mapping.get(str(pred_idx), "unknown")
+        
+        # Determine if busy based on label (e.g. walking, running -> busy, sitting -> free)
+        # Assuming label names from standard UCI HAR
+        busy_labels = ['walking', 'walking_upstairs', 'walking_downstairs']
+        busy = prediction_label in busy_labels
+        
+        print(f" -> Predicted Activity: {prediction_label} (Idx: {pred_idx}) | Confidence: {confidence:.2f} | Busy: {busy}")
         
         return ClassifyResponse(
-            activity=str(prediction),
+            activity=prediction_label,
             busy=busy,
             confidence=confidence
         )
