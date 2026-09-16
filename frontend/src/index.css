@@ -6,6 +6,8 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* TaskPulse Light Palette */
   --bg-app: #f8fafc; /* slate-50 */

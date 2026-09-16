@@ -8,94 +8,8 @@ import {
 } from 'lucide-react';
 import { useTasks } from '../contexts/TaskContext';
 
-// ── Live Tracking logic ───────────────────────────────────────────────────────
-function useLiveTracking(token, API_BASE) {
-  const { fetchTasks } = useTasks();
-  const [tracking, setTracking] = useState(false);
-  const [error, setError] = useState('');
-  const [status, setStatus] = useState(null);
-  const bufferRef = useRef([]);
-  const timerRef = useRef(null);
-
-  const handleMotion = (event) => {
-    const { accelerationIncludingGravity, rotationRate } = event;
-    bufferRef.current.push({
-      timestamp: Date.now(),
-      accel_x: accelerationIncludingGravity?.x || 0,
-      accel_y: accelerationIncludingGravity?.y || 0,
-      accel_z: accelerationIncludingGravity?.z || 0,
-      gyro_x: rotationRate?.alpha || 0,
-      gyro_y: rotationRate?.beta || 0,
-      gyro_z: rotationRate?.gamma || 0,
-    });
-  };
-
-  const sendBuffer = async () => {
-    if (bufferRef.current.length < 5) { bufferRef.current = []; return; }
-    const batch = [...bufferRef.current];
-    bufferRef.current = [];
-    try {
-      const res = await fetch(`${API_BASE}/classify-activity`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ window_duration_sec: 2.5, readings: batch }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStatus(data);
-        if (data.busy) {
-          await fetch(`${API_BASE}/auto-shift`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
-          fetchTasks(true);
-        }
-      }
-    } catch { /* silent */ }
-  };
-
-  const toggle = async () => {
-    if (tracking) {
-      window.removeEventListener('devicemotion', handleMotion);
-      clearInterval(timerRef.current);
-      setTracking(false);
-      setStatus(null);
-      bufferRef.current = [];
-    } else {
-      if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-        try {
-          const perm = await DeviceMotionEvent.requestPermission();
-          if (perm !== 'granted') { setError('Motion sensor permission denied.'); return; }
-        } catch { setError('Could not request sensor permission.'); return; }
-      }
-      setError('');
-      window.addEventListener('devicemotion', handleMotion);
-      timerRef.current = setInterval(sendBuffer, 2500);
-      setTracking(true);
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      window.removeEventListener('devicemotion', handleMotion);
-      clearInterval(timerRef.current);
-    };
-  }, []);
-
-  return { tracking, error, status, toggle };
-}
-
-// ── Theme hook ────────────────────────────────────────────────────────────────
-function useTheme() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('taskpulse_theme') || 'light');
-
-  const apply = (t) => {
-    setTheme(t);
-    localStorage.setItem('taskpulse_theme', t);
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = t === 'dark' || (t === 'system' && prefersDark);
-    document.documentElement.classList.toggle('dark', isDark);
-  };
-
-  return { theme, apply };
-}
+import { useTheme } from '../contexts/ThemeContext';
+import { useLiveTracking } from '../contexts/TrackingContext';
 
 // ── Main Settings Page ────────────────────────────────────────────────────────
 export default function Settings() {
@@ -107,8 +21,8 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const { theme, apply: applyTheme } = useTheme();
-  const { tracking, error: trackError, status: trackStatus, toggle: toggleTracking } = useLiveTracking(token, API_BASE);
+  const { theme, applyTheme } = useTheme();
+  const { tracking, error: trackError, status: trackStatus, toggle: toggleTracking } = useLiveTracking();
 
   const notifOptions = [
     { id: 'voice',         icon: Volume2,       label: 'Neural AI Voice',     desc: 'Humanized TTS reads alerts aloud via edge-tts',        color: 'indigo' },

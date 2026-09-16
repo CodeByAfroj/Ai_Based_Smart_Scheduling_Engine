@@ -7,7 +7,15 @@ import { localInputToIST, defaultLocalValue, formatIST, formatDateIST } from '..
 export default function Tasks() {
   const { token } = useAuth();
   const { tasks, loadingTasks, addTask, updateTask, deleteTask } = useTasks();
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(() => sessionStorage.getItem('taskpulse_showform') === 'true');
+
+  const toggleForm = () => {
+    setShowForm(prev => {
+      const next = !prev;
+      sessionStorage.setItem('taskpulse_showform', next);
+      return next;
+    });
+  };
 
   // Form State
   const [name, setName] = useState('');
@@ -34,6 +42,7 @@ export default function Tasks() {
       fixed: isFixed,
       reminders: reminders
     });
+    sessionStorage.setItem('taskpulse_showform', 'false');
     setShowForm(false);
     setName('');
     setTaskType('flexible');
@@ -68,7 +77,7 @@ export default function Tasks() {
             <p className="text-sm text-[var(--text-muted)]">Manage your backlog, filter task modes, and feed the scheduling engine</p>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setShowForm(!showForm)} className="btn-primary py-2.5 px-5 flex items-center gap-2 text-sm">
+            <button onClick={toggleForm} className="btn-primary py-2.5 px-5 flex items-center gap-2 text-sm">
               <Plus size={16} /> New Task
             </button>
           </div>
@@ -180,7 +189,7 @@ export default function Tasks() {
               </div>
 
               <div className="md:col-span-2 flex justify-end gap-3 mt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="btn-ghost py-2 px-4 text-sm">Cancel</button>
+                <button type="button" onClick={toggleForm} className="btn-ghost py-2 px-4 text-sm">Cancel</button>
                 <button type="submit" className="btn-primary py-2 px-4 text-sm">
                   {taskType === 'fixed' ? '🔒 Save Fixed Event' : '🤖 Create Flexible Task'}
                 </button>

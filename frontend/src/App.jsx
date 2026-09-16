@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TaskProvider } from './contexts/TaskContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { TrackingProvider } from './contexts/TrackingContext';
 import Login from './pages/Login';
 import ProfileSetup from './pages/ProfileSetup';
 import Dashboard from './pages/Dashboard';
@@ -55,10 +57,12 @@ function ComingSoon({ page }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <TaskProvider>
-        <BrowserRouter>
-          <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <TaskProvider>
+          <TrackingProvider>
+            <BrowserRouter>
+              <Routes>
             <Route element={<Layout />}>
               <Route path="/login" element={<Login />} />
               <Route
@@ -136,8 +140,10 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>
-        </BrowserRouter>
-      </TaskProvider>
-    </AuthProvider>
+            </BrowserRouter>
+          </TrackingProvider>
+        </TaskProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
