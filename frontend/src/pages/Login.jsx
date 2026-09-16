@@ -143,7 +143,7 @@ export default function Login() {
               <label className="text-xs font-semibold text-[var(--text-main)] mb-1.5 block">Corporate Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
-                <input type="email" placeholder="alex.turner@company.com" className="input-field pl-10 bg-[var(--bg-app)] border-transparent focus:border-[var(--accent-base)]" />
+                <input type="email" placeholder="alex.turner@company.com" className="input-field !pl-10 bg-[var(--bg-app)] border-transparent focus:border-[var(--accent-base)]" />
               </div>
             </div>
             
@@ -154,7 +154,7 @@ export default function Login() {
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
-                <input type="password" placeholder="••••••••••••" className="input-field pl-10 pr-10 bg-[var(--bg-app)] border-transparent focus:border-[var(--accent-base)]" />
+                <input type="password" placeholder="••••••••••••" className="input-field !pl-10 !pr-10 bg-[var(--bg-app)] border-transparent focus:border-[var(--accent-base)]" />
                 <Eye className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
               </div>
             </div>

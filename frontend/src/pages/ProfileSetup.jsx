@@ -228,7 +228,7 @@ export default function ProfileSetup() {
             <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2 block">Standard Primary Timezone</label>
             <div className="relative">
               <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
-              <select value={timezone} onChange={e => setTimezone(e.target.value)} className="input-field pl-9 appearance-none">
+              <select value={timezone} onChange={e => setTimezone(e.target.value)} className="input-field !pl-9 appearance-none">
                 <option>UTC+05:30 (IST)</option>
                 <option>UTC+00:00 (GMT)</option>
                 <option>UTC-05:00 (EST)</option>

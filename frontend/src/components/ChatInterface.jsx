@@ -939,7 +939,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
             <Zap className="h-4 w-4 text-[var(--accent-base)]" />
             TaskPulse AI
           </h3>
-          <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
+          <div className="hidden sm:flex items-center gap-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
             <kbd className="font-mono bg-[var(--bg-panel)] px-1 rounded shadow-sm border border-[var(--border-subtle)]">Alt+V</kbd> to talk
           </div>
 
@@ -953,14 +953,15 @@ export default function ChatInterface({ isChatOpen, openChat }) {
                 startVoiceInput();
               }
             }}
-            className={`text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 transition-all ${isTwoWayMode
+            className={`text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${isTwoWayMode
               ? 'bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-200 animate-pulse'
               : 'bg-indigo-600 text-white shadow-sm hover:bg-indigo-700'
               }`}
             title="Launch ChatGPT Voice Mode Orb"
           >
-            <Mic className="w-3 h-3" />
-            {isTwoWayMode ? 'Voice Mode ON' : 'Voice Mode Orb'}
+            <Mic className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{isTwoWayMode ? 'Voice Mode ON' : 'Voice Mode Orb'}</span>
+            <span className="sm:hidden">Voice</span>
           </button>
           <button
             onClick={() => {

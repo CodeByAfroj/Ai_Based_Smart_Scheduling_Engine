@@ -236,17 +236,17 @@ export default function Tasks() {
                       <span className="flex items-center gap-1"><Clock size={12} /> {task.duration_minutes}m</span>
                       {!task.fixed && <span className="flex items-center gap-1"><CalendarIcon size={12} /> Deadline: {formatDateIST(task.deadline)}</span>}
                       {task.fixed && (
-                        <span className="bg-amber-100/50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold whitespace-nowrap">
+                        <span className="bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold whitespace-nowrap shadow-sm">
                           Fixed Event ({formatIST(task.scheduled_start || task.earliest_start)})
                         </span>
                       )}
                       {!task.fixed && task.status === 'scheduled' && task.scheduled_start && (
-                        <span className="bg-blue-100/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold whitespace-nowrap">
+                        <span className="bg-indigo-50 text-indigo-600 border border-indigo-200/80 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/30 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold whitespace-nowrap shadow-sm">
                           {formatIST(task.scheduled_start)} IST
                         </span>
                       )}
                       {task.priority >= 3 && (
-                        <span className="bg-red-100/50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-800/50 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-bold whitespace-nowrap">
+                        <span className="bg-rose-50 text-rose-600 border border-rose-200/80 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/30 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold whitespace-nowrap shadow-sm">
                           High Priority
                         </span>
                       )}

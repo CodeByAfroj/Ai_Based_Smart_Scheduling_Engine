@@ -123,16 +123,16 @@ export default function Schedule() {
                     {/* Timeline dot */}
                     <div className={`absolute -left-[31px] top-1 w-4 h-4 rounded-full border-4 border-[var(--bg-panel)] ${task.status === 'completed' ? 'bg-slate-300 dark:bg-slate-600' : 'bg-[var(--accent-base)]'}`}></div>
                     <div className={`p-4 rounded-xl border border-[var(--border-subtle)] ${task.status === 'completed' ? 'bg-[var(--bg-hover)] opacity-60' : 'bg-gradient-to-r from-[var(--bg-panel)] to-[var(--bg-app)] hover:border-[var(--accent-light)] shadow-sm hover:shadow-md'} transition-all duration-300`}>
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                         <div>
                           <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">
                             {formatDateIST(task.scheduled_start)}
                           </p>
                           <h3 className={`font-bold text-lg ${task.status === 'completed' ? 'text-slate-500 line-through' : 'text-[var(--text-main)]'}`}>{task.name}</h3>
                         </div>
-                        <div className="text-right shrink-0 bg-[var(--accent-base)]/10 text-[var(--accent-base)] px-3 py-1.5 rounded-lg border border-[var(--accent-base)]/20">
-                          <p className="font-bold text-sm flex items-center gap-1"><Clock size={14} /> {formatIST(task.scheduled_start)}</p>
-                          <p className="text-xs opacity-70 text-center">to {formatIST(task.scheduled_end)}</p>
+                        <div className="sm:text-right shrink-0 bg-[var(--accent-base)]/10 text-[var(--accent-base)] px-3 py-1.5 rounded-lg border border-[var(--accent-base)]/20 self-start sm:self-auto w-full sm:w-auto mt-1 sm:mt-0">
+                          <p className="font-bold text-sm flex items-center justify-start sm:justify-end gap-1"><Clock size={14} /> {formatIST(task.scheduled_start)}</p>
+                          <p className="text-xs opacity-70 text-left sm:text-right">to {formatIST(task.scheduled_end)}</p>
                         </div>
                       </div>
                     </div>
