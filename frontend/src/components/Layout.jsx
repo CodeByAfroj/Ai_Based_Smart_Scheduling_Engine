@@ -36,6 +36,13 @@ export default function Layout() {
 
   const notifiedIdsRef = useRef(new Set());
 
+  // Request browser notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
   useEffect(() => {
     if (!token || !API_BASE) return undefined;
 
@@ -175,9 +182,37 @@ export default function Layout() {
     } catch (e) { }
   };
 
+  const fireNativePushNotification = (title, message) => {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().then((perm) => {
+        if (perm === 'granted') {
+          new Notification(title, {
+            body: message,
+            icon: '/pwa-192x192.png',
+            badge: '/pwa-192x192.png',
+            tag: 'taskpulse-alert',
+            renotify: true,
+          });
+        }
+      });
+    } else if (Notification.permission === 'granted') {
+      new Notification(title, {
+        body: message,
+        icon: '/pwa-192x192.png',
+        badge: '/pwa-192x192.png',
+        tag: 'taskpulse-alert',
+        renotify: true,
+      });
+    }
+  };
+
   const triggerAudioAlert = async (title, message) => {
     const pref = profile?.notification_preference || 'text_and_sound';
     const textToAnnounce = `${title}. ${message}`;
+
+    // Always fire a native OS/browser push notification
+    fireNativePushNotification(title, message);
 
     if (pref === 'voice') {
       triggerVibration();
@@ -393,6 +428,14 @@ export default function Layout() {
               + New Task
             </button>
 
+            {/* Click-outside backdrop for desktop dropdowns */}
+            {(showNotifMenu || showUserMenu) && (
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => { setShowNotifMenu(false); setShowUserMenu(false); }}
+              />
+            )}
+
             {/* Notifications */}
             <div className="relative">
               <button
@@ -439,10 +482,11 @@ export default function Layout() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 ${notification.read
+                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 cursor-pointer ${notification.read
                             ? ''
                             : 'bg-[var(--bg-hover)]'
                             }`}
+                          onClick={() => setShowNotifMenu(false)}
                         >
                           <p className="text-sm font-semibold text-[var(--text-main)]">
                             {notification.title || 'Alert'}
@@ -634,7 +678,8 @@ export default function Layout() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 ${notification.read ? '' : 'bg-[var(--bg-hover)]'}`}
+                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 cursor-pointer ${notification.read ? '' : 'bg-[var(--bg-hover)]'}`}
+                          onClick={() => setShowNotifMenu(false)}
                         >
                           <p className="text-sm font-semibold text-[var(--text-main)]">{notification.title || 'Alert'}</p>
                           <p className="text-xs text-[var(--text-muted)] mt-1">{notification.message || ''}</p>
