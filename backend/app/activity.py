@@ -74,12 +74,31 @@ def classify_activity(request: ClassifyRequest):
     
     window_data = np.array(data, dtype=np.float32)
     
-    # --- Normalization ---
-    # The UCI-HAR model was trained on pre-normalized signals. Apply per-channel
-    # z-score normalization to bring the raw browser data into a similar range.
-    mean = window_data.mean(axis=0, keepdims=True)
-    std = window_data.std(axis=0, keepdims=True) + 1e-8  # avoid div-by-zero
-    window_data = (window_data - mean) / std
+    # --- Pre-model Static State Detector ---
+    # If total acceleration barely changes, the user is stationary. This also
+    # avoids dividing by near-zero std (which explodes normalized values to ±billions
+    # when the device is still — the root cause of the "always laying" bug).
+    accel_magnitude = np.sqrt(window_data[:, 0]**2 + window_data[:, 1]**2 + window_data[:, 2]**2)
+    accel_variance = float(np.var(accel_magnitude))
+    print(f" -> Accel variance: {accel_variance:.5f}")
+
+    # UCI-HAR: walking produces variance ~0.05+g²; static activities ~0.001g²
+    STATIC_VARIANCE_THRESHOLD = 0.005
+    if accel_variance < STATIC_VARIANCE_THRESHOLD:
+        print(f" -> Static signal detected (var={accel_variance:.5f}) — returning 'stationary'")
+        static_conf = max(0.5, 1.0 - (accel_variance / STATIC_VARIANCE_THRESHOLD))
+        return ClassifyResponse(activity='stationary', busy=False, confidence=round(static_conf, 2))
+
+    # --- Normalize using fixed UCI-HAR training dataset statistics ---
+    # Per-window z-score breaks for static signals (std≈0 → divide by ~0 → ±infinity).
+    # Fixed per-channel mean/std from the UCI-HAR training set keeps values in range.
+    # Accel (g): gravity offset ~1g on one axis, overall std ~0.5
+    # Gyro (rad/s): centred at 0, std ~0.3
+    UCI_MEAN = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 0.0], dtype=np.float32)
+    UCI_STD  = np.array([0.5, 0.5, 0.5, 0.3, 0.3, 0.3], dtype=np.float32)
+    window_data = (window_data - UCI_MEAN) / UCI_STD
+    # Clip to ±4σ to suppress sensor spikes
+    window_data = np.clip(window_data, -4.0, 4.0)
     
     # The PyTorch 1D CNN expects shape (Batch, Channels, Length) -> (1, 6, 128)
     expected_length = 128
