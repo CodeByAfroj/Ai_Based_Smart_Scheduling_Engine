@@ -35,6 +35,24 @@ export default function Layout() {
   const [hasUnread, setHasUnread] = useState(false);
 
   const notifiedIdsRef = useRef(new Set());
+  const notifRef = useRef(null);
+  const userMenuRef = useRef(null);
+
+  // Close menus when clicking/tapping anywhere outside — works on all screen sizes
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      const clickedInsideNotif = notifRef.current?.contains(e.target);
+      const clickedInsideUser = userMenuRef.current?.contains(e.target);
+      if (!clickedInsideNotif) setShowNotifMenu(false);
+      if (!clickedInsideUser) setShowUserMenu(false);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, []);
 
   // Request browser notification permission on mount
   useEffect(() => {
@@ -428,16 +446,8 @@ export default function Layout() {
               + New Task
             </button>
 
-            {/* Click-outside backdrop for desktop dropdowns */}
-            {(showNotifMenu || showUserMenu) && (
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => { setShowNotifMenu(false); setShowUserMenu(false); }}
-              />
-            )}
-
             {/* Notifications */}
-            <div className="relative">
+            <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 aria-label="Notifications"
@@ -516,7 +526,7 @@ export default function Layout() {
             </div>
 
             {/* Desktop User Menu */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 type="button"
                 aria-expanded={showUserMenu}
@@ -634,15 +644,8 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Tap-outside backdrop for mobile dropdowns */}
-            {(showNotifMenu || showUserMenu) && (
-              <div
-                className="fixed inset-0 z-[9998]"
-                onClick={() => { setShowNotifMenu(false); setShowUserMenu(false); }}
-              />
-            )}
             {/* Mobile Notifications */}
-            <div className="relative">
+            <div className="relative" ref={notifRef}>
               <button
                 type="button"
                 aria-label="Notifications"
