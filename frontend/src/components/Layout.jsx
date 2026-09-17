@@ -35,16 +35,12 @@ export default function Layout() {
   const [hasUnread, setHasUnread] = useState(false);
 
   const notifiedIdsRef = useRef(new Set());
-  const notifRef = useRef(null);
-  const userMenuRef = useRef(null);
 
   // Close menus when clicking/tapping anywhere outside — works on all screen sizes
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      const clickedInsideNotif = notifRef.current?.contains(e.target);
-      const clickedInsideUser = userMenuRef.current?.contains(e.target);
-      if (!clickedInsideNotif) setShowNotifMenu(false);
-      if (!clickedInsideUser) setShowUserMenu(false);
+      if (!e.target.closest('[data-notif-menu]')) setShowNotifMenu(false);
+      if (!e.target.closest('[data-user-menu]')) setShowUserMenu(false);
     };
     document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('touchstart', handleOutsideClick);
@@ -447,7 +443,7 @@ export default function Layout() {
             </button>
 
             {/* Notifications */}
-            <div className="relative" ref={notifRef}>
+            <div className="relative" data-notif-menu>
               <button
                 type="button"
                 aria-label="Notifications"
@@ -526,7 +522,7 @@ export default function Layout() {
             </div>
 
             {/* Desktop User Menu */}
-            <div className="relative" ref={userMenuRef}>
+            <div className="relative" data-user-menu>
               <button
                 type="button"
                 aria-expanded={showUserMenu}
@@ -645,7 +641,7 @@ export default function Layout() {
 
           <div className="flex items-center gap-3">
             {/* Mobile Notifications */}
-            <div className="relative" ref={notifRef}>
+            <div className="relative" data-notif-menu>
               <button
                 type="button"
                 aria-label="Notifications"
@@ -704,7 +700,7 @@ export default function Layout() {
             </div>
 
             {/* Mobile User Menu */}
-            <div className="relative">
+            <div className="relative" data-user-menu>
               <button
                 type="button"
                 aria-expanded={showUserMenu}
