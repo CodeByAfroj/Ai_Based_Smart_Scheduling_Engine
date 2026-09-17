@@ -194,6 +194,47 @@ async def query_endpoint(
                 # Offload CP-SAT auto scheduler to background task for instant response
                 background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
                 
+        elif isinstance(result, dict) and result.get("action") == "update_task":
+            params = result.get("params", {})
+            task_id = params.get("task_id")
+            if task_id:
+                from bson import ObjectId
+                query = {"$or": [{"_id": ObjectId(task_id) if ObjectId.is_valid(task_id) else task_id}, {"_id": task_id}], "user_id": user_id}
+                update_fields = {"updated_at": now_ist()}
+                if "name" in params: update_fields["name"] = params["name"]
+                if "status" in params: update_fields["status"] = params["status"]
+                if "fixed" in params: update_fields["fixed"] = params["fixed"]
+                if "duration_minutes" in params: update_fields["duration_minutes"] = params["duration_minutes"]
+                if "priority" in params: update_fields["priority"] = params["priority"]
+                if "earliest_start" in params: update_fields["earliest_start"] = params["earliest_start"]
+                if "deadline" in params: update_fields["deadline"] = params["deadline"]
+                
+                if "scheduled_start" in params: 
+                    new_start = params["scheduled_start"]
+                    update_fields["scheduled_start"] = new_start
+                    update_fields["earliest_start"] = new_start
+                    if "fixed" not in params:
+                        update_fields["fixed"] = True
+                    try:
+                        from datetime import timedelta
+                        ns_dt = datetime.fromisoformat(str(new_start))
+                        if "deadline" not in params:
+                            update_fields["deadline"] = (ns_dt + timedelta(days=1)).isoformat()
+                    except Exception:
+                        pass
+                await db["tasks"].update_one(query, {"$set": update_fields})
+                
+                try:
+                    from .notifications import notify_user
+                    user_email = (user or {}).get("email", "")
+                    background_tasks.add_task(
+                        notify_user, user_id, user_email, "Task Updated", "Updated task successfully via AI.", background_tasks
+                    )
+                except Exception as ne:
+                    pass
+
+                background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
+
         return result
     except Exception as e:
         print(f"Query endpoint error: {e}")

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
-import { Plus, Clock, Calendar as CalendarIcon, CheckCircle2, Circle, Trash2 } from 'lucide-react';
+import { Plus, Clock, Calendar as CalendarIcon, CheckCircle2, Circle, Trash2, Wand2, Lock } from 'lucide-react';
 import { localInputToIST, defaultLocalValue, formatIST, formatDateIST } from '../utils/time';
 
 export default function Tasks() {
@@ -29,6 +29,21 @@ export default function Tasks() {
   const handleReminderToggle = (mins) => {
     setReminders(prev => prev.includes(mins) ? prev.filter(m => m !== mins) : [...prev, mins]);
   };
+
+  const overlappingTask = useMemo(() => {
+    if (taskType !== 'fixed') return null;
+    if (!earliestStart || !duration) return null;
+    
+    const draftStart = new Date(earliestStart).getTime();
+    const draftEnd = draftStart + parseInt(duration) * 60000;
+    
+    return tasks.find(t => {
+      if (!t.fixed || t.status === 'completed' || t.status === 'missed') return false;
+      const tStart = new Date(t.earliest_start || t.scheduled_start).getTime();
+      const tEnd = tStart + (t.duration_minutes * 60000);
+      return draftStart < tEnd && draftEnd > tStart;
+    });
+  }, [taskType, earliestStart, duration, tasks]);
 
   const createTask = async (e) => {
     e.preventDefault();
@@ -61,6 +76,7 @@ export default function Tasks() {
     if (filter === 'pending') return task.status === 'pending';
     if (filter === 'scheduled') return task.status === 'scheduled';
     if (filter === 'completed') return task.status === 'completed';
+    if (filter === 'missed') return task.status === 'missed';
     if (filter === 'fixed') return task.fixed === true;
     return true;
   });
@@ -101,7 +117,7 @@ export default function Tasks() {
                         : 'border-[var(--border-subtle)] bg-[var(--bg-app)] text-[var(--text-muted)]'
                     }`}
                   >
-                    <p className="font-bold text-sm text-[var(--text-main)]">🤖 AI Flexible Task</p>
+                    <p className="font-bold text-sm text-[var(--text-main)] flex items-center gap-2"><Wand2 size={16} className="text-[var(--accent-base)]" /> AI Flexible Task</p>
                     <p className="text-xs text-[var(--text-muted)] mt-0.5">AI automatically picks the best time slot before deadline</p>
                   </button>
 
@@ -110,11 +126,11 @@ export default function Tasks() {
                     onClick={() => setTaskType('fixed')}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       taskType === 'fixed'
-                        ? 'border-amber-500 bg-amber-50 ring-2 ring-amber-500/20'
+                        ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/20'
                         : 'border-[var(--border-subtle)] bg-[var(--bg-app)] text-[var(--text-muted)]'
                     }`}
                   >
-                    <p className="font-bold text-sm text-[var(--text-main)]">🔒 Fixed Event / Meeting</p>
+                    <p className="font-bold text-sm text-[var(--text-main)] flex items-center gap-2"><Lock size={16} className="text-amber-500" /> Fixed Event / Meeting</p>
                     <p className="text-xs text-[var(--text-muted)] mt-0.5">Locked to exact start time. AI schedules other tasks around it</p>
                   </button>
                 </div>
@@ -188,11 +204,21 @@ export default function Tasks() {
                 </div>
               </div>
 
-              <div className="md:col-span-2 flex justify-end gap-3 mt-2">
-                <button type="button" onClick={toggleForm} className="btn-ghost py-2 px-4 text-sm">Cancel</button>
-                <button type="submit" className="btn-primary py-2 px-4 text-sm">
-                  {taskType === 'fixed' ? '🔒 Save Fixed Event' : '🤖 Create Flexible Task'}
-                </button>
+              <div className="md:col-span-2 flex flex-col items-end gap-3 mt-2">
+                {overlappingTask && (
+                  <div className="w-full bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+                    <span className="text-xl leading-none">⚠️</span>
+                    <div>
+                      <strong>Conflict Detected:</strong> This time slot overlaps with your existing fixed event "<strong>{overlappingTask.name}</strong>". Please select another time.
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-3 w-full justify-end">
+                  <button type="button" onClick={toggleForm} className="btn-ghost py-2 px-4 text-sm">Cancel</button>
+                  <button type="submit" disabled={!!overlappingTask} className="btn-primary py-2 px-4 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    {taskType === 'fixed' ? <span className="flex items-center justify-center gap-2"><Lock size={16} /> Save Fixed Event</span> : <span className="flex items-center justify-center gap-2"><Wand2 size={16} /> Create Flexible Task</span>}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -201,11 +227,12 @@ export default function Tasks() {
         {/* Backlog Filter Tabs */}
         <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
           {[
-            { id: 'all', label: `All Tasks (${tasks.length})` },
+                      { id: 'all', label: `All Tasks (${tasks.length})` },
             { id: 'pending', label: `Pending (${tasks.filter(t => t.status === 'pending').length})` },
             { id: 'scheduled', label: `Scheduled (${tasks.filter(t => t.status === 'scheduled').length})` },
             { id: 'completed', label: `Completed (${tasks.filter(t => t.status === 'completed').length})` },
-            { id: 'fixed', label: `🔒 Fixed Meetings (${tasks.filter(t => t.fixed).length})` }
+            { id: 'fixed', label: <span className="flex items-center gap-1.5"><Lock size={12} /> Fixed Meetings ({tasks.filter(t => t.fixed).length})</span> },
+            ...(tasks.some(t => t.status === 'missed') ? [{ id: 'missed', label: `⛔ Missed (${tasks.filter(t => t.status === 'missed').length})` }] : [])
           ].map(tab => (
             <button
               key={tab.id}
@@ -233,16 +260,28 @@ export default function Tasks() {
           ) : (
             <div className="divide-y divide-[var(--border-subtle)]">
               {filteredTasks.map(task => (
-                <div key={task.id} className={`p-4 flex items-center gap-4 hover:bg-[var(--bg-hover)] transition-colors ${task.status === 'completed' ? 'opacity-50' : ''}`}>
+                              <div key={task.id} className={`p-4 flex items-center gap-4 hover:bg-[var(--bg-hover)] transition-colors ${
+                  task.status === 'completed' ? 'opacity-50' :
+                  task.status === 'missed' ? 'opacity-60 bg-slate-50/50' : ''
+                }`}>
                   <button onClick={() => toggleStatus(task)} className="text-[var(--text-muted)] hover:text-[var(--accent-base)] transition-colors shrink-0">
-                    {task.status === 'completed' ? <CheckCircle2 size={22} className="text-green-500" /> : <Circle size={22} />}
+                    {task.status === 'completed' ? <CheckCircle2 size={22} className="text-green-500" /> :
+                     task.status === 'missed'    ? <Circle size={22} className="text-slate-300" /> :
+                     <Circle size={22} />}
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-semibold text-[var(--text-main)] truncate ${task.status === 'completed' ? 'line-through' : ''}`}>{task.name}</p>
+                    <p className={`font-semibold text-[var(--text-main)] truncate ${
+                      task.status === 'completed' || task.status === 'missed' ? 'line-through text-[var(--text-muted)]' : ''
+                    }`}>{task.name}</p>
                     <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)] mt-1">
                       <span className="flex items-center gap-1"><Clock size={12} /> {task.duration_minutes}m</span>
                       {!task.fixed && <span className="flex items-center gap-1"><CalendarIcon size={12} /> Deadline: {formatDateIST(task.deadline)}</span>}
-                      {task.fixed && (
+                      {task.status === 'missed' && (
+                        <span className="bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold whitespace-nowrap">
+                          ⛔ Missed — Auto-expired
+                        </span>
+                      )}
+                      {task.status !== 'missed' && task.fixed && (
                         <span className="bg-amber-50 text-amber-600 border border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold whitespace-nowrap shadow-sm">
                           Fixed Event ({formatIST(task.scheduled_start || task.earliest_start)})
                         </span>

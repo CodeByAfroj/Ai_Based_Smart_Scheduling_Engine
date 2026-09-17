@@ -72,12 +72,24 @@ class ChatErrorBoundary extends React.Component {
 export default function ChatButton() {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  React.useEffect(() => {
+    const handleClose = () => setIsChatOpen(false);
+    window.addEventListener('close_chat', handleClose);
+    return () => window.removeEventListener('close_chat', handleClose);
+  }, []);
+
   const toggleChat = () => {
-    setIsChatOpen((previous) => !previous);
+    setIsChatOpen((previous) => {
+      if (!previous) {
+        window.dispatchEvent(new Event('close_dropdowns'));
+      }
+      return !previous;
+    });
   };
 
   const openChat = () => {
     setIsChatOpen(true);
+    window.dispatchEvent(new Event('close_dropdowns'));
   };
 
   return (

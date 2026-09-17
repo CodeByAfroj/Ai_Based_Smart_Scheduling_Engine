@@ -73,6 +73,7 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
     """
     Computes a schedule based on the given tasks, deadlines, and fixed events.
     Returns the solver status and assigned start/end times.
+    Fault-tolerant: auto-expires missed fixed tasks so they never block the solver.
     """
     # Fetch user profile settings for working hours & peak/quiet hours
     from .database import get_user_collection
@@ -130,6 +131,57 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
                 predecessors=t.get("predecessors", [])
             ))
 
+    # ── Fault-tolerance: reset overdue tasks to pending so they can be rescheduled ──
+    now = now_ist()
+    survived_tasks = []
+    reset_task_names = []
+
+    for task in request.tasks:
+        deadline_dt = task.deadline if isinstance(task.deadline, datetime) else None
+        if deadline_dt is not None and deadline_dt.tzinfo is None:
+            deadline_dt = deadline_dt.replace(tzinfo=IST)
+        if deadline_dt is None:
+            try:
+                deadline_dt = datetime.fromisoformat(str(task.deadline))
+                if deadline_dt.tzinfo is None:
+                    deadline_dt = deadline_dt.replace(tzinfo=IST)
+            except Exception:
+                deadline_dt = None
+
+        is_fixed = getattr(task, 'fixed', False)
+
+        if is_fixed and deadline_dt and deadline_dt < now:
+            # Fixed task whose scheduled slot is entirely in the past
+            # → reset to pending + clear schedule so user can reschedule it
+            reset_task_names.append(task.name)
+            try:
+                if ObjectId.is_valid(task.id):
+                    query = {"$or": [{"_id": ObjectId(task.id)}, {"_id": task.id}], "user_id": user_id}
+                else:
+                    query = {"_id": task.id, "user_id": user_id}
+                await get_database()["tasks"].update_one(
+                    query,
+                    {"$set": {
+                        "status": "pending",
+                        "scheduled_start": None,
+                        "scheduled_end": None,
+                        "updated_at": now
+                    }}
+                )
+            except Exception as e:
+                print(f"[schedule] Failed to reset task {task.id} to pending: {e}")
+            # Exclude from solver — deadline has passed, needs user to reschedule
+            continue
+
+        if not is_fixed and deadline_dt and deadline_dt < now:
+            # Flexible task with past deadline → extend 24h so solver can still fit it
+            task.deadline = now + timedelta(hours=24)
+
+        survived_tasks.append(task)
+
+    request.tasks = survived_tasks
+    # ── End fault-tolerance ───────────────────────────────────────────────────
+
     request.working_hours = wh
     if not request.reference_time:
         request.reference_time = now_ist()
@@ -157,11 +209,19 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
                 }}
             )
 
+    # Build message including any auto-recovery info
+    if reset_task_names:
+        recovery_note = f" Reset {len(reset_task_names)} overdue task(s) to pending for rescheduling: {', '.join(reset_task_names)}."
+    else:
+        recovery_note = ""
+
+    base_msg = "Optimization finished." if status in ["OPTIMAL", "FEASIBLE"] else ("Partial schedule returned." if status == "PARTIAL" else "Failed to find a feasible schedule.")
+
     return ScheduleResponse(
         status=status,
         solve_time_ms=solve_time_ms,
         tasks=scheduled_tasks,
-        message="Optimization finished." if status in ["OPTIMAL", "FEASIBLE"] else ("Partial schedule returned." if status == "PARTIAL" else "Failed to find a feasible schedule.")
+        message=base_msg + recovery_note
     )
 
 @app.post("/reschedule", response_model=ScheduleResponse)
@@ -241,6 +301,47 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
                 resource_id=t.get("resource_id", "default"),
                 predecessors=t.get("predecessors", [])
             ))
+
+    # ── Fault-tolerance: reset overdue tasks to pending (same as /schedule) ──
+    now = now_ist()
+    survived_tasks = []
+    reset_task_names = []
+
+    for task in request.tasks:
+        deadline_dt = task.deadline if isinstance(task.deadline, datetime) else None
+        if deadline_dt is None:
+            try:
+                deadline_dt = datetime.fromisoformat(str(task.deadline))
+                if deadline_dt.tzinfo is None:
+                    deadline_dt = deadline_dt.replace(tzinfo=IST)
+            except Exception:
+                deadline_dt = None
+
+        is_fixed = getattr(task, 'fixed', False)
+        if is_fixed and deadline_dt and deadline_dt < now:
+            reset_task_names.append(task.name)
+            try:
+                if ObjectId.is_valid(task.id):
+                    query = {"$or": [{"_id": ObjectId(task.id)}, {"_id": task.id}], "user_id": user_id}
+                else:
+                    query = {"_id": task.id, "user_id": user_id}
+                await get_database()["tasks"].update_one(query, {"$set": {
+                    "status": "pending",
+                    "scheduled_start": None,
+                    "scheduled_end": None,
+                    "updated_at": now
+                }})
+            except Exception as e:
+                print(f"[reschedule] Failed to reset task {task.id} to pending: {e}")
+            continue
+
+        if not is_fixed and deadline_dt and deadline_dt < now:
+            task.deadline = now + timedelta(hours=24)
+
+        survived_tasks.append(task)
+
+    request.tasks = survived_tasks
+    # ── End fault-tolerance ───────────────────────────────────────────────────
 
     engine = SchedulerEngine(request, config=DEFAULT_SOLVER_CONFIG)
     if previous_schedule:

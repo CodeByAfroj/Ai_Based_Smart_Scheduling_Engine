@@ -77,7 +77,7 @@ def call_gemini_llm(messages: List[Dict[str, str]], timeout: float = 2.0) -> Opt
 
             headers = {"Content-Type": "application/json"}
 
-            with httpx.Client(timeout=timeout) as client:
+            with httpx.Client(timeout=timeout, follow_redirects=True) as client:
                 resp = client.post(url, headers=headers, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -123,7 +123,7 @@ def call_groq_llm(messages: List[Dict[str, str]], timeout: float = 2.5) -> Optio
                 "max_tokens": 250
             }
 
-            with httpx.Client(timeout=timeout) as client:
+            with httpx.Client(timeout=timeout, follow_redirects=True) as client:
                 resp = client.post(url, headers=headers, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -162,7 +162,7 @@ def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 5.0) -> Opt
             "temperature": 0.3,
             "max_tokens": 250
         }
-        with httpx.Client(timeout=timeout) as client:
+        with httpx.Client(timeout=timeout, follow_redirects=True) as client:
             resp = client.post(url, headers=headers, json=payload)
             if resp.status_code == 200:
                 data = resp.json()
@@ -197,6 +197,28 @@ def call_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 4.0)
 
     return None
 
+def call_background_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 8.0) -> Optional[str]:
+    """
+    Failover Chain: Ollama -> Groq -> Gemini
+    Prioritizes Ollama to save primary API rate limits for real-time chat/voice tasks.
+    """
+    # 1. Try Ollama First
+    res = call_ollama_llm(messages, timeout=timeout)
+    if res:
+        return res
+
+    # 2. Try Groq
+    res = call_groq_llm(messages, timeout=2.5)
+    if res:
+        return res
+
+    # 3. Try Gemini
+    res = call_gemini_llm(messages, timeout=2.0)
+    if res:
+        return res
+
+    return None
+
 def answer_user_question_contextual(question: str, user_tasks: List[Dict], user_profile: Dict, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
     """
     Human-like contextual AI Assistant with multi-provider failover.
@@ -206,13 +228,14 @@ def answer_user_question_contextual(question: str, user_tasks: List[Dict], user_
 
     task_summaries = []
     for t in user_tasks[:30]:
+        t_id = str(t.get("_id", ""))
         t_name = t.get("name", "Untitled")
         t_dur = t.get("duration_minutes", 30)
         t_status = t.get("status", "pending")
         t_start = t.get("scheduled_start", "Unscheduled")
         t_fixed = "Fixed Meeting" if t.get("fixed") else "Flexible Task"
         t_pri = t.get("priority", 1)
-        task_summaries.append(f"- [{t_status.upper()}] '{t_name}' ({t_dur} mins, Priority {t_pri}, {t_fixed}, Start: {t_start})")
+        task_summaries.append(f"- [ID: {t_id}] [{t_status.upper()}] '{t_name}' ({t_dur} mins, Priority {t_pri}, {t_fixed}, Start: {t_start})")
 
     tasks_str = "\n".join(task_summaries) if task_summaries else "No active tasks currently."
 
@@ -242,11 +265,12 @@ Current Workspace Tasks & Schedule:
 
 RESPONSE INSTRUCTIONS:
 1. Always maintain the TaskPulse project context boundary.
-2. CRITICAL TASK CREATION RULE:
-   - ONLY output a `create_task` JSON block if the user has specified an EXPLICIT task/meeting name in their message (e.g., "Schedule a 45 min team sync tomorrow at 10 AM with high priority").
-   - NEVER output a `create_task` JSON block for vague requests like "schedule a task for me", "add a task", or "make a meeting".
-   - If the request is vague or missing details, DO NOT create a task yet. Ask brief clarification questions regarding title, duration, start time, and priority.
-3. If a task creation JSON block is included, place it at the VERY END inside triple backticks:
+2. CRITICAL TASK ACTION RULES:
+   - ONLY output a `create_task` JSON block if the user has specified an EXPLICIT task/meeting name to create.
+   - ONLY output an `update_task` JSON block if the user explicitly asks to update, reschedule, or complete an existing task. You MUST use the exact ID provided in the task list.
+   - If the request is vague, ask brief clarification questions.
+3. If an action JSON block is included, place it at the VERY END inside triple backticks.
+Example `create_task` JSON:
 ```json
 {{
   "action": "create_task",
@@ -256,6 +280,19 @@ RESPONSE INSTRUCTIONS:
     "earliest_start": "YYYY-MM-DDTHH:MM:SS+05:30",
     "deadline": "YYYY-MM-DDTHH:MM:SS+05:30",
     "priority": 3,
+    "fixed": false
+  }}
+}}
+```
+Example `update_task` JSON:
+```json
+{{
+  "action": "update_task",
+  "params": {{
+    "task_id": "the-exact-task-id",
+    "name": "New Name (optional)",
+    "scheduled_start": "YYYY-MM-DDTHH:MM:SS+05:30 (optional)",
+    "status": "completed (optional)",
     "fixed": false
   }}
 }}

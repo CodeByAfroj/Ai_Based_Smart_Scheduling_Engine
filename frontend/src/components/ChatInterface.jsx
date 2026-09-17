@@ -146,6 +146,14 @@ export default function ChatInterface({ isChatOpen, openChat }) {
     return () => clearTimeout(timer);
   }, [messages, isLoading]);
 
+  // Scroll to the latest message every time the chat panel is opened
+  useEffect(() => {
+    if (isChatOpen) {
+      const timer = setTimeout(() => scrollToBottom('auto'), 80);
+      return () => clearTimeout(timer);
+    }
+  }, [isChatOpen]);
+
   // Save messages to local storage and sync ref whenever they change
   useEffect(() => {
     messagesRef.current = messages;
@@ -763,7 +771,7 @@ export default function ChatInterface({ isChatOpen, openChat }) {
       });
       speakIfEnabled(responseMessage.text);
 
-      if (queryData.task_created && fetchTasks) {
+      if ((queryData.task_created || queryData.action === 'update_task') && fetchTasks) {
         fetchTasks(true);
       }
     } catch (error) {
@@ -825,7 +833,6 @@ export default function ChatInterface({ isChatOpen, openChat }) {
   };
 
   const handleVoiceInput = async (text) => {
-    if (!isTwoWayModeRef.current) return;
     const transcript = text.trim();
 
     if (!transcript) return;
@@ -845,10 +852,6 @@ export default function ChatInterface({ isChatOpen, openChat }) {
   const startVoiceInput = async () => {
     // BARGE-IN: Instantly cancel/stop any ongoing AI speech when user interacts!
     cancelSpeech();
-
-    if (!isTwoWayModeRef.current) {
-      return;
-    }
 
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Voice input is not supported in your browser. Please use Chrome or Edge for voice features.');
@@ -887,11 +890,6 @@ export default function ChatInterface({ isChatOpen, openChat }) {
     }
 
     recognition.onresult = (event) => {
-      if (!isTwoWayModeRef.current) {
-        setIsListening(false);
-        try { recognition.stop(); recognition.abort(); } catch (e) { }
-        return;
-      }
       const transcript = event.results[0][0]?.transcript;
       setIsListening(false);
       if (transcript) {
@@ -940,9 +938,6 @@ export default function ChatInterface({ isChatOpen, openChat }) {
             <span className="hidden sm:inline">TaskPulse AI</span>
             <span className="sm:hidden">AI</span>
           </h3>
-          <div className="hidden md:flex items-center gap-2 text-[10px] text-[var(--text-muted)] bg-[var(--bg-app)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)] shrink-0">
-            <kbd className="font-mono bg-[var(--bg-panel)] px-1 rounded shadow-sm border border-[var(--border-subtle)]">Alt+V</kbd> to talk
-          </div>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -1042,19 +1037,27 @@ export default function ChatInterface({ isChatOpen, openChat }) {
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 0 1-14 0M12 18v4M8 22h8" /></svg>
         </button>
 
-        <input
-          type="text"
+        <textarea
+          rows={1}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+          }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              sendMessage();
+              if (!isLoading && input.trim()) {
+                sendMessage();
+                e.target.style.height = 'auto';
+              }
             }
           }}
           placeholder={isListening ? "Listening..." : "Message TaskPulse..."}
-          className={`flex-1 min-w-0 px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 text-sm transition-all bg-[var(--bg-app)] text-[var(--text-main)] placeholder-[var(--text-muted)] ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-500/10' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
+          className={`flex-1 min-w-0 px-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 text-sm transition-all bg-[var(--bg-app)] text-[var(--text-main)] placeholder-[var(--text-muted)] resize-none overflow-y-auto ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-500/10' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
             }`}
+          style={{ minHeight: '40px', maxHeight: '120px' }}
         />
 
         <button

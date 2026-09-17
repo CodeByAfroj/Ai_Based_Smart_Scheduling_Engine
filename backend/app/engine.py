@@ -146,9 +146,12 @@ class SchedulerEngine:
             self.task_vars[task.id] = (start_var, end_var, interval_var)
             all_intervals.append(interval_var)
 
+            is_fixed = getattr(task, 'fixed', False)
+
             # ── Working-hours & Quiet-hours constraints ────────────────────────
-            # Task must fit entirely within at least one working window and OUTSIDE quiet hours.
-            if working_windows:
+            # Only flexible tasks must fit entirely within working windows and OUTSIDE quiet hours.
+            # Fixed tasks are locked to user-specified times and bypass these bounds.
+            if working_windows and not is_fixed:
                 window_bools = []
                 for win_idx, (win_start, win_end) in enumerate(working_windows):
                     if win_end - win_start < duration:
@@ -163,27 +166,28 @@ class SchedulerEngine:
                     # Task MUST fit into at least one working window
                     self.model.AddBoolOr(window_bools)
 
-            # Explicitly forbid Quiet / Sleep Hours (e.g. 11 PM - 7 AM)
-            ref_day_start = self.ref_time.replace(hour=0, minute=0, second=0, microsecond=0)
-            ref_day_offset = int((ref_day_start - self.ref_time).total_seconds() // 60)
-            horizon_days = min(30, self.horizon_end // (24 * 60) + 2)
-
-            quiet_spans = []
-            for day_idx in range(-1, horizon_days + 1):
-                day_offset = ref_day_offset + day_idx * 24 * 60
-                q_start = day_offset + wh.quiet_start_hour * 60
-                q_end = day_offset + (wh.quiet_end_hour + 24) * 60 if wh.quiet_end_hour < wh.quiet_start_hour else day_offset + wh.quiet_end_hour * 60
-                if q_end > 0 and q_start < self.horizon_end:
-                    quiet_spans.append((q_start, q_end))
-
-            for q_idx, (q_start, q_end) in enumerate(quiet_spans):
-                # Ensure task interval [start_var, end_var] does NOT overlap with [q_start, q_end]
-                # Either end <= q_start OR start >= q_end
-                before_q = self.model.NewBoolVar(f'before_q_{task.id}_{q_idx}')
-                after_q = self.model.NewBoolVar(f'after_q_{task.id}_{q_idx}')
-                self.model.Add(end_var <= q_start).OnlyEnforceIf(before_q)
-                self.model.Add(start_var >= q_end).OnlyEnforceIf(after_q)
-                self.model.AddBoolOr([before_q, after_q])
+            if not is_fixed:
+                # Explicitly forbid Quiet / Sleep Hours (e.g. 11 PM - 7 AM)
+                ref_day_start = self.ref_time.replace(hour=0, minute=0, second=0, microsecond=0)
+                ref_day_offset = int((ref_day_start - self.ref_time).total_seconds() // 60)
+                horizon_days = min(30, self.horizon_end // (24 * 60) + 2)
+    
+                quiet_spans = []
+                for day_idx in range(-1, horizon_days + 1):
+                    day_offset = ref_day_offset + day_idx * 24 * 60
+                    q_start = day_offset + wh.quiet_start_hour * 60
+                    q_end = day_offset + (wh.quiet_end_hour + 24) * 60 if wh.quiet_end_hour < wh.quiet_start_hour else day_offset + wh.quiet_end_hour * 60
+                    if q_end > 0 and q_start < self.horizon_end:
+                        quiet_spans.append((q_start, q_end))
+    
+                for q_idx, (q_start, q_end) in enumerate(quiet_spans):
+                    # Ensure task interval [start_var, end_var] does NOT overlap with [q_start, q_end]
+                    # Either end <= q_start OR start >= q_end
+                    before_q = self.model.NewBoolVar(f'before_q_{task.id}_{q_idx}')
+                    after_q = self.model.NewBoolVar(f'after_q_{task.id}_{q_idx}')
+                    self.model.Add(end_var <= q_start).OnlyEnforceIf(before_q)
+                    self.model.Add(start_var >= q_end).OnlyEnforceIf(after_q)
+                    self.model.AddBoolOr([before_q, after_q])
 
             # Apply warm-start hints if available
             if self.config.enable_warm_start and task.id in self._prev_solution_hints:
@@ -276,8 +280,11 @@ class SchedulerEngine:
                     # Reward peak alignment (scaled by task priority)
                     objective_terms.append(any_peak * -2000 * max(1, task.priority))
 
-            # Penalise later start times heavily so tasks schedule as early as possible in active hours
-            objective_terms.append(start_var * 10.0)
+            # Penalise later start times heavily, scaled by task priority.
+            # Critical (1) gets a massive penalty for being delayed, forcing it to schedule early.
+            # Low (4) gets a minor penalty.
+            prio_mult = {1: 1000, 2: 300, 3: 50, 4: 10}.get(task.priority, 50)
+            objective_terms.append(start_var * prio_mult)
 
         if objective_terms:
             self.model.Minimize(sum(objective_terms))

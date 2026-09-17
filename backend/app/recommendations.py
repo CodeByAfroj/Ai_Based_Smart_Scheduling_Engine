@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 import jwt
 import os
 from .database import get_database, get_user_collection
+from .nlp import call_ollama_llm, call_llm_with_failover, call_background_llm_with_failover
 
 router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 security = HTTPBearer()
@@ -92,7 +93,33 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
             energy_level = "🟢 Active Working Window"
     else:
         energy_level = "🌙 Quiet / Rest Hours"
+
+    # SLEEP OVERRIDE: If outside working and peak hours, do not recommend a task.
+    if not is_work_time and not is_peak_time:
+        prompt = f"The user is a {profession}. It is their designated sleep/rest time. Generate a short 1-2 sentence personalized message advising them to stop their current activity (tailor the action to their specific profession - e.g. a student should close their books, an engineer should step away from the screen) and get some rest. Briefly state the health or cognitive benefit for their specific role. Be firm but warm. No quotes or introductory text."
+        sleep_msg = call_background_llm_with_failover([{"role": "user", "content": prompt}], timeout=25.0)
         
+        sleep_task = TaskRecommendation(
+            task_id="sleep_override",
+            name="Rest & Recharge",
+            duration_minutes=480, # 8 hours
+            priority=1,
+            score=100.0,
+            reason_badge="🌙 Rest/Sleep Required",
+            reason_detail=sleep_msg or f"It's outside your working hours. As a {profession}, it's crucial to step away and get some rest to maintain long-term productivity.",
+            recommended_time_slot="Right Now"
+        )
+        
+        return RecommendationResponse(
+            user_status="Rest Time",
+            current_energy_level="🌙 Quiet / Rest Hours",
+            recommended_next_task=sleep_task,
+            all_ranked_recommendations=[],
+            break_recommended=True,
+            message="It is currently your rest window."
+        )
+
+
     # 2. Fetch tasks. Recommendations apply to AI Flexible tasks (non-fixed).
     cursor = db["tasks"].find({"user_id": user_id, "status": {"$in": ["pending", "scheduled"]}})
     db_tasks = await cursor.to_list(length=100)
@@ -189,6 +216,13 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
     ranked_list.sort(key=lambda x: x.score, reverse=True)
     
     top_task = ranked_list[0] if ranked_list else None
+    
+    # LLM PERSONALIZATION: Generate contextual reasoning for the top task
+    if top_task and is_work_time:
+        prompt = f"The user is a {profession} ({chronotype}, {work_style} work style). The AI scheduling engine has recommended they do the task '{top_task.name}' for {top_task.duration_minutes} minutes right now. Generate a highly personalized, encouraging 1-2 sentence reason why doing this task right now is great for them, focusing on benefits. Keep it punchy. No quotes or introductory text."
+        custom_reason = call_ollama_llm([{"role": "user", "content": prompt}], timeout=25.0)
+        if custom_reason:
+            top_task.reason_detail = custom_reason.strip().replace('"', '')
     
     return RecommendationResponse(
         user_status="Optimal Focus Match Identified",

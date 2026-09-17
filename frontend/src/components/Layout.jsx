@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   LayoutGrid,
   CheckSquare,
@@ -13,9 +13,16 @@ import {
   LogOut,
   ChevronDown,
   AlertCircle,
+  Clock,
+  X as XIcon,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
+  ListTodo,
 } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTasks } from '../contexts/TaskContext';
 import ChatButton from './ChatButton';
 
 export default function Layout() {
@@ -34,7 +41,81 @@ export default function Layout() {
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
 
-  const notifiedIdsRef = useRef(new Set());
+  // Toast alerts (deadline / fixed-task)
+  const [toasts, setToasts] = useState([]);
+  // Active fixed-task banner (task that is due NOW and still pending)
+  const [activeFixedBanner, setActiveFixedBanner] = useState(null);
+  // Overdue triage
+  const [overdueTasks, setOverdueTasks] = useState([]);
+  const [showTriagePanel, setShowTriagePanel] = useState(false);
+  const [dismissedOverdueIds, setDismissedOverdueIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('tp_dismissed_overdue') || '[]')); }
+    catch { return new Set(); }
+  });
+
+  const { tasks, updateTask } = useTasks();
+
+  const notifiedIdsRef = useRef(
+    (() => { try { return new Set(JSON.parse(localStorage.getItem('tp_notified_ids') || '[]')); } catch { return new Set(); } })()
+  );
+  // Tracks which (taskId + threshold) combos have already been alerted — persisted across refreshes
+  const deadlineAlertedRef = useRef(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('tp_deadline_alerted') || '[]')); }
+    catch { return new Set(); }
+  });
+  // Initialize the ref value from the factory fn (useRef doesn't call functions)
+  if (deadlineAlertedRef.current instanceof Function) {
+    deadlineAlertedRef.current = deadlineAlertedRef.current();
+  }
+
+  // ── Toast helpers ────────────────────────────────────────────────────────
+  const pushToast = useCallback((toast) => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev.slice(-4), { id, ...toast }]); // max 5
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 8000);
+  }, []);
+
+  const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  // ── Overdue task detection ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!tasks || tasks.length === 0) return;
+    const detectOverdue = () => {
+      const now = Date.now();
+      const overdue = tasks.filter(t =>
+        t.status !== 'completed' &&
+        t.deadline &&
+        new Date(t.deadline).getTime() < now &&
+        !dismissedOverdueIds.has(t.id)
+      );
+      setOverdueTasks(overdue);
+      // Auto-open triage panel if there are new overdue tasks
+      if (overdue.length > 0) setShowTriagePanel(false); // reset so banner re-appears
+    };
+    detectOverdue();
+    const interval = setInterval(detectOverdue, 5 * 60 * 1000); // every 5 min
+    return () => clearInterval(interval);
+  }, [tasks, dismissedOverdueIds]);
+
+  // Reschedule: push deadline +24h from now
+  const rescheduleTask = (task) => {
+    const newDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const newStart = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // start in 30min
+    updateTask(task.id, { deadline: newDeadline, earliest_start: newStart, status: 'pending' });
+    dismissOverdueTask(task.id);
+    pushToast({ title: '🔄 Rescheduled', message: `"${task.name}" moved to tomorrow.`, urgent: false });
+  };
+
+  const dismissOverdueTask = (id) => {
+    setDismissedOverdueIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      localStorage.setItem('tp_dismissed_overdue', JSON.stringify([...next]));
+      return next;
+    });
+    setOverdueTasks(prev => prev.filter(t => t.id !== id));
+  };
+
 
   // Close menus when clicking/tapping anywhere outside — works on all screen sizes
   useEffect(() => {
@@ -42,11 +123,20 @@ export default function Layout() {
       if (!e.target.closest('[data-notif-menu]')) setShowNotifMenu(false);
       if (!e.target.closest('[data-user-menu]')) setShowUserMenu(false);
     };
+    
+    const handleCloseDropdowns = () => {
+      setShowNotifMenu(false);
+      setShowUserMenu(false);
+    };
+
     document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('touchstart', handleOutsideClick);
+    window.addEventListener('close_dropdowns', handleCloseDropdowns);
+    
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('touchstart', handleOutsideClick);
+      window.removeEventListener('close_dropdowns', handleCloseDropdowns);
     };
   }, []);
 
@@ -81,6 +171,7 @@ export default function Layout() {
               if (!notifiedIdsRef.current.has(n.id)) {
                 hasNewUnread = true;
                 notifiedIdsRef.current.add(n.id);
+                try { localStorage.setItem('tp_notified_ids', JSON.stringify([...notifiedIdsRef.current])); } catch (_) {}
                 triggerAudioAlert(n.title || 'Alert', n.message || '');
               }
             }
@@ -99,6 +190,88 @@ export default function Layout() {
 
     return () => clearInterval(intervalId);
   }, [token, API_BASE, profile?.notification_preference]);
+
+  // ── Deadline + Fixed-task alert engine ───────────────────────────────────
+  useEffect(() => {
+    if (!tasks || tasks.length === 0) return;
+
+    const checkDeadlines = () => {
+      const now = Date.now();
+
+      tasks.forEach(task => {
+        if (!task.deadline || task.status === 'completed') return;
+
+        const deadlineMs = new Date(task.deadline).getTime();
+        const msLeft = deadlineMs - now;
+        const minutesLeft = Math.floor(msLeft / 60000);
+
+        // Define urgency thresholds (in minutes)
+        const thresholds = [
+          { key: '1440', mins: 1440, label: '24 hours',  urgent: false },
+          { key: '120',  mins: 120,  label: '2 hours',   urgent: true  },
+          { key: '30',   mins: 30,   label: '30 minutes', urgent: true  },
+          { key: '0',    mins: 0,    label: 'RIGHT NOW',  urgent: true  },
+        ];
+
+        thresholds.forEach(({ key, mins, label, urgent }) => {
+          const alertKey = `${task.id}:${key}`;
+          // Fire when minutesLeft crosses from above to at-or-below threshold
+          if (minutesLeft <= mins + 2 && minutesLeft >= mins - 2 && !deadlineAlertedRef.current.has(alertKey)) {
+            deadlineAlertedRef.current.add(alertKey);
+            // Persist so alerts don't re-fire after page refresh
+            try { localStorage.setItem('tp_deadline_alerted', JSON.stringify([...deadlineAlertedRef.current])); } catch (_) {}
+
+            const title = urgent ? '⚠️ Deadline Approaching!' : '🔔 Deadline Reminder';
+            const body = mins === 0
+              ? `"${task.name}" deadline has arrived! Complete it now.`
+              : `"${task.name}" is due in ${label}. Deadline is approaching!`;
+
+            // In-app toast
+            pushToast({
+              title,
+              message: body,
+              urgent,
+              taskId: task.id,
+              taskName: task.name,
+              type: 'deadline',
+            });
+
+            // Native OS notification + audio
+            triggerAudioAlert(title, body);
+          }
+        });
+
+        // ── Fixed task "time is now" banner ─────────────────────────────
+        if (task.fixed && task.status !== 'completed' && task.earliest_start) {
+          const startMs = new Date(task.earliest_start).getTime();
+          const endMs   = task.deadline ? new Date(task.deadline).getTime() : startMs + (task.duration_minutes || 60) * 60000;
+          // Show banner from scheduled start to scheduled end
+          if (now >= startMs && now <= endMs) {
+            setActiveFixedBanner(task);
+          }
+        }
+      });
+
+      // Clear fixed banner if no fixed task is currently active
+      setActiveFixedBanner(prev => {
+        if (!prev) return null;
+        const stillActive = tasks.find(t =>
+          t.id === prev.id &&
+          t.status !== 'completed' &&
+          t.fixed &&
+          t.earliest_start &&
+          Date.now() >= new Date(t.earliest_start).getTime() &&
+          Date.now() <= (t.deadline ? new Date(t.deadline).getTime() : new Date(t.earliest_start).getTime() + (t.duration_minutes || 60) * 60000)
+        );
+        return stillActive || null;
+      });
+    };
+
+    checkDeadlines(); // run immediately
+    const interval = setInterval(checkDeadlines, 60000); // then every minute
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, pushToast]);
 
   const playHumanizedVoice = async (textToSpeak) => {
     if (!textToSpeak || !textToSpeak.trim()) return;
@@ -303,6 +476,234 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex">
+
+      {/* ── Toast Stack (top-right, stacked) ─────────────────────────── */}
+      <div className="fixed top-4 right-4 z-[99999] flex flex-col gap-2 max-w-[360px] w-full pointer-events-none">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-4 duration-300 ${
+              toast.urgent
+                ? 'bg-red-950/95 border-red-500/40 text-white'
+                : 'bg-[var(--bg-panel)]/95 border-[var(--border-subtle)] text-[var(--text-main)]'
+            }`}
+            style={{ animation: 'slideInRight 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}
+          >
+            <div className="shrink-0 mt-0.5">
+              {toast.urgent
+                ? <AlertTriangle size={18} className="text-red-400" />
+                : <Bell size={18} className="text-[var(--accent-base)]" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-0.5">{toast.title}</p>
+              <p className="text-sm leading-snug">{toast.message}</p>
+              {toast.taskId && (
+                <button
+                  onClick={() => { navigate('/tasks'); dismissToast(toast.id); }}
+                  className="mt-1.5 text-xs font-semibold text-[var(--accent-base)] hover:underline"
+                >
+                  View Task →
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => dismissToast(toast.id)}
+              className="shrink-0 opacity-60 hover:opacity-100 transition-opacity mt-0.5"
+            >
+              <XIcon size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Fixed Task "NOW" Banner ───────────────────────────────────── */}
+      {activeFixedBanner && (
+        <div className="fixed top-0 left-0 right-0 z-[99998] bg-gradient-to-r from-violet-700 via-purple-700 to-indigo-700 text-white shadow-xl">
+          <div className="max-w-5xl mx-auto flex items-center justify-between px-4 py-2.5 gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
+                <Clock size={14} className="text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled Task — Time Now</p>
+                <p className="text-sm font-bold leading-tight">
+                  ⚡ Complete your task: <span className="underline underline-offset-2">{activeFixedBanner.name}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  updateTask(activeFixedBanner.id, { status: 'completed' });
+                  setActiveFixedBanner(null);
+                }}
+                className="flex items-center gap-1.5 bg-white text-purple-800 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-purple-50 transition-colors"
+              >
+                <CheckCircle2 size={13} /> Mark Complete
+              </button>
+              <button
+                onClick={() => navigate('/tasks')}
+                className="text-xs font-semibold underline underline-offset-2 opacity-80 hover:opacity-100"
+              >
+                View Task
+              </button>
+              <button
+                onClick={() => setActiveFixedBanner(null)}
+                className="opacity-60 hover:opacity-100 ml-1"
+              >
+                <XIcon size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Overdue Task Triage Banner (bottom) ──────────────────────────── */}
+      {overdueTasks.length > 0 && !showTriagePanel && (
+        <div
+          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-6 left-4 z-[99990] pointer-events-auto"
+          style={{ animation: 'slideInRight 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}
+        >
+          <button
+            onClick={() => setShowTriagePanel(true)}
+            className="flex items-center gap-2.5 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2.5 rounded-xl shadow-2xl font-semibold text-sm transition-all hover:scale-105"
+          >
+            <div className="relative">
+              <ListTodo size={17} />
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-400 rounded-full text-[10px] font-bold flex items-center justify-center">
+                {overdueTasks.length}
+              </span>
+            </div>
+            {overdueTasks.length === 1 ? '1 Overdue Task' : `${overdueTasks.length} Overdue Tasks`} — Review
+          </button>
+        </div>
+      )}
+
+      {/* ── Overdue Task Triage Panel (slide-up modal) ──────────────────── */}
+      {showTriagePanel && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[99991] bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowTriagePanel(false)}
+          />
+          {/* Panel */}
+          <div
+            className="fixed bottom-0 left-0 right-0 z-[99992] bg-[var(--bg-panel)] rounded-t-2xl shadow-2xl border-t border-[var(--border-subtle)] max-h-[80vh] overflow-hidden flex flex-col"
+            style={{ animation: 'slideUpPanel 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <AlertTriangle size={16} className="text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-[var(--text-main)] text-base leading-tight">Overdue Tasks</h2>
+                  <p className="text-xs text-[var(--text-muted)]">{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''} past deadline — take action</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTriagePanel(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--bg-hover)] text-[var(--text-muted)] transition-colors"
+              >
+                <XIcon size={16} />
+              </button>
+            </div>
+
+            {/* Task list */}
+            <div className="overflow-y-auto flex-1 px-5 py-3 flex flex-col gap-3">
+              {overdueTasks.map(task => {
+                const overdueByMs = Date.now() - new Date(task.deadline).getTime();
+                const overdueHrs = Math.floor(overdueByMs / 3600000);
+                const overdueDays = Math.floor(overdueHrs / 24);
+                const overdueLabel = overdueDays > 0
+                  ? `${overdueDays}d ${overdueHrs % 24}h overdue`
+                  : `${overdueHrs}h overdue`;
+
+                return (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-3 bg-[var(--bg-hover)] border border-[var(--border-subtle)] rounded-xl px-4 py-3"
+                  >
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-[var(--text-main)] truncate">{task.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
+                          <AlertTriangle size={9} /> {overdueLabel}
+                        </span>
+                        {task.priority > 2 && (
+                          <span className="inline-flex text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">
+                            High Priority
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        title="Reschedule to tomorrow"
+                        onClick={() => rescheduleTask(task)}
+                        className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition-colors"
+                      >
+                        <RotateCcw size={11} /> Reschedule
+                      </button>
+                      <button
+                        title="Mark as completed"
+                        onClick={() => {
+                          updateTask(task.id, { status: 'completed' });
+                          dismissOverdueTask(task.id);
+                        }}
+                        className="flex items-center gap-1 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-colors"
+                      >
+                        <CheckCircle2 size={11} /> Done
+                      </button>
+                      <button
+                        title="Dismiss"
+                        onClick={() => dismissOverdueTask(task.id)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--border-subtle)] text-[var(--text-muted)] transition-colors"
+                      >
+                        <XIcon size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+              <button
+                onClick={() => {
+                  overdueTasks.forEach(t => rescheduleTask(t));
+                }}
+                className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:underline"
+              >
+                <RotateCcw size={14} /> Reschedule All
+              </button>
+              <button
+                onClick={() => {
+                  overdueTasks.forEach(t => {
+                    updateTask(t.id, { status: 'completed' });
+                    dismissOverdueTask(t.id);
+                  });
+                  setShowTriagePanel(false);
+                }}
+                className="flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:underline"
+              >
+                <CheckCircle2 size={14} /> Mark All Done
+              </button>
+              <button
+                onClick={() => setShowTriagePanel(false)}
+                className="text-sm text-[var(--text-muted)] hover:text-[var(--text-main)]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-64 flex-col bg-[var(--bg-app)] border-r border-[var(--border-subtle)] h-screen sticky top-0 shrink-0">
         <div className="p-6 flex items-center gap-3">
@@ -450,6 +851,7 @@ export default function Layout() {
                 aria-expanded={showNotifMenu}
                 className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors relative"
                 onClick={() => {
+                  window.dispatchEvent(new Event('close_chat'));
                   setShowNotifMenu((prev) => !prev);
                   setShowUserMenu(false);
                 }}
@@ -527,6 +929,7 @@ export default function Layout() {
                 type="button"
                 aria-expanded={showUserMenu}
                 onClick={() => {
+                  window.dispatchEvent(new Event('close_chat'));
                   setShowUserMenu((prev) => !prev);
                   setShowNotifMenu(false);
                 }}
@@ -647,6 +1050,7 @@ export default function Layout() {
                 aria-label="Notifications"
                 aria-expanded={showNotifMenu}
                 onClick={() => {
+                  window.dispatchEvent(new Event('close_chat'));
                   setShowNotifMenu((prev) => !prev);
                   setShowUserMenu(false);
                 }}
@@ -707,6 +1111,7 @@ export default function Layout() {
                 aria-label="Open user menu"
                 style={{ minHeight: 'unset' }}
                 onClick={() => {
+                  window.dispatchEvent(new Event('close_chat'));
                   setShowUserMenu((prev) => !prev);
                   setShowNotifMenu(false);
                 }}
