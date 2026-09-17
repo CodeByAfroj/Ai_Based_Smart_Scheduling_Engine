@@ -26,21 +26,21 @@ export function TrackingProvider({ children }) {
       accel_x: accelerationIncludingGravity?.x || 0,
       accel_y: accelerationIncludingGravity?.y || 0,
       accel_z: accelerationIncludingGravity?.z || 0,
-      gyro_x: rotationRate?.alpha || 0,
-      gyro_y: rotationRate?.beta || 0,
-      gyro_z: rotationRate?.gamma || 0,
+      gyro_x: rotationRate?.x || 0,
+      gyro_y: rotationRate?.y || 0,
+      gyro_z: rotationRate?.z || 0,
     });
   };
 
   const sendBuffer = async () => {
-    if (bufferRef.current.length < 5) { bufferRef.current = []; return; }
+    if (bufferRef.current.length < 50) { bufferRef.current = []; return; }
     const batch = [...bufferRef.current];
     bufferRef.current = [];
     try {
       const res = await fetch(`${API_BASE}/classify-activity`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ window_duration_sec: 2.5, readings: batch }),
+        body: JSON.stringify({ window_duration_sec: 5.0, readings: batch }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -57,7 +57,7 @@ export function TrackingProvider({ children }) {
   useEffect(() => {
     if (tracking) {
       window.addEventListener('devicemotion', handleMotion);
-      timerRef.current = setInterval(sendBuffer, 2500);
+      timerRef.current = setInterval(sendBuffer, 5000);
       localStorage.setItem('taskpulse_tracking', 'true');
     } else {
       window.removeEventListener('devicemotion', handleMotion);

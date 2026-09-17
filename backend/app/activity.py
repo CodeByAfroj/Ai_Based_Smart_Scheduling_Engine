@@ -74,6 +74,13 @@ def classify_activity(request: ClassifyRequest):
     
     window_data = np.array(data, dtype=np.float32)
     
+    # --- Normalization ---
+    # The UCI-HAR model was trained on pre-normalized signals. Apply per-channel
+    # z-score normalization to bring the raw browser data into a similar range.
+    mean = window_data.mean(axis=0, keepdims=True)
+    std = window_data.std(axis=0, keepdims=True) + 1e-8  # avoid div-by-zero
+    window_data = (window_data - mean) / std
+    
     # The PyTorch 1D CNN expects shape (Batch, Channels, Length) -> (1, 6, 128)
     expected_length = 128
     if window_data.shape[0] > expected_length:
@@ -110,6 +117,17 @@ def classify_activity(request: ClassifyRequest):
         
         pred_idx = np.argmax(probabilities)
         confidence = float(probabilities[pred_idx])
+        
+        # --- Uncertainty check: reject low-confidence or high-entropy predictions ---
+        CONFIDENCE_THRESHOLD = 0.60
+        # Entropy-based check: uniform dist = max entropy = log(n_classes)
+        entropy = float(-np.sum(probabilities * np.log(probabilities + 1e-12)))
+        max_entropy = float(np.log(len(probabilities)))
+        is_uncertain = confidence < CONFIDENCE_THRESHOLD or (entropy / max_entropy) > 0.60
+        
+        if is_uncertain:
+            print(f" -> Uncertain prediction (conf={confidence:.2f}, entropy_ratio={entropy/max_entropy:.2f}) — returning 'unknown'")
+            return ClassifyResponse(activity='unknown', busy=False, confidence=confidence)
         
         prediction_label = mapping.get(str(pred_idx), "unknown")
         
