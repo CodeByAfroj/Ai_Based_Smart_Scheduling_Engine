@@ -59,7 +59,7 @@ export default function Profile() {
 
       <div className="max-w-5xl mx-auto px-4 lg:px-10 py-8">
         {/* Profile Header */}
-        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 lg:p-8 mb-6 flex flex-col lg:flex-row gap-6 lg:items-start shadow-sm">
+        <div data-tour="profile-header" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 lg:p-8 mb-6 flex flex-col lg:flex-row gap-6 lg:items-start shadow-sm scroll-mt-24">
           <div className="relative shrink-0">
             <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-[var(--border-subtle)]">
               {picture ? (

@@ -92,7 +92,7 @@ export default function Schedule() {
     <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
       <div className="max-w-5xl mx-auto">
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div data-tour="schedule-header" className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 scroll-mt-24">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Schedule &amp; Timeline</h1>
             <p className="text-sm text-[var(--text-muted)]">AI-orchestrated time blocks based on your workload</p>

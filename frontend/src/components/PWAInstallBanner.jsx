@@ -53,7 +53,7 @@ export default function PWAInstallBanner() {
     sessionStorage.setItem('pwa-install-dismissed', 'true');
   };
 
-  if (!showBanner || isInstalled || dismissed) return null;
+  if (!showBanner || isInstalled || dismissed || (typeof document !== 'undefined' && document.documentElement.getAttribute('data-tour-active') === 'true')) return null;
 
   return (
     <div

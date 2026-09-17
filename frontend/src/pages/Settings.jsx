@@ -79,7 +79,7 @@ export default function Settings() {
         {/* LEFT COLUMN */}
         <div className="flex flex-col gap-6">
         {/* THEME */}
-        <section className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
+        <section data-tour="settings-theme" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
               <Sun size={16} />
@@ -117,7 +117,7 @@ export default function Settings() {
         </section>
 
         {/* NOTIFICATIONS */}
-        <section className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
+        <section data-tour="settings-notif" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-[var(--border-subtle)] flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-600 shrink-0">
               <Bell size={16} />

@@ -87,7 +87,7 @@ export default function Tasks() {
     <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
       <div className="max-w-5xl mx-auto">
 
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+        <div data-tour="tasks-header" className="flex items-center justify-between mb-8 flex-wrap gap-4 scroll-mt-24">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Tasks & Projects Studio</h1>
             <p className="text-sm text-[var(--text-muted)]">Manage your backlog, filter task modes, and feed the scheduling engine</p>

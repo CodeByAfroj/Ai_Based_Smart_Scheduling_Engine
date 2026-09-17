@@ -97,6 +97,7 @@ export default function ChatButton() {
       {/* Floating Chat Button - sits above mobile bottom nav */}
       <button
         type="button"
+        data-tour="ai-assistant"
         onClick={toggleChat}
         className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-6 w-14 h-14 rounded-full bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-200 z-[99999]"
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}

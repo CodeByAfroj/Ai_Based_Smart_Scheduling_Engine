@@ -91,7 +91,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[var(--bg-app)]">
 
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6" data-tour="dashboard-hero">
         
         {/* Profile Completion Banner (Full Width) */}
         {!notifDismissed && profileIncomplete && (
@@ -140,7 +140,7 @@ export default function Dashboard() {
 
             {/* AI Personalized Recommendation Card */}
             {loadingRec ? (
-              <div className="bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 rounded-2xl p-7 border border-indigo-500/20 relative overflow-hidden flex flex-col justify-between min-h-[264px]">
+              <div data-tour="ai-recommendation" className="bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 rounded-2xl p-7 border border-indigo-500/20 relative overflow-hidden flex flex-col justify-between min-h-[264px]">
                 <div className="relative z-10 flex justify-between items-start mb-4 flex-wrap gap-3">
                   <div className="flex gap-2.5">
                     <div className="h-7 bg-white/10 rounded-full w-40 animate-pulse"></div>
@@ -164,8 +164,8 @@ export default function Dashboard() {
                   <div className="h-9 bg-white/10 rounded-lg w-32 shrink-0 animate-pulse"></div>
                 </div>
               </div>
-            ) : recommendation && recTask ? (
-              <div className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] hover:border-indigo-400/50">
+            ) : activeTasks.length > 0 && recommendation && recTask && recTask.name !== 'Rest & Recharge' ? (
+              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] hover:border-indigo-400/50">
                 
                 {/* Background decorative elements */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors duration-500"></div>
@@ -205,10 +205,45 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500">
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(251,191,36,0.25)]">
+                        <Zap size={12} fill="currentColor" /> AI Engine Ready
+                      </span>
+                      <span className="bg-white/10 backdrop-blur-sm text-white/90 text-xs font-semibold px-3 py-1 rounded-full border border-white/10">
+                        Welcome to TaskPulse
+                      </span>
+                    </div>
+                    <span className="text-xs text-indigo-200/70 font-mono font-medium tracking-wider">Ready to Schedule</span>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Create Your First Task to Unlock AI Recommendations</h3>
+                  <p className="text-indigo-100/80 text-sm mb-6 leading-relaxed max-w-3xl">
+                    TaskPulse evaluates your real-time energy levels, deadlines, and chronotype to auto-recommend the single best task to work on right now.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10">
+                    <div className="flex flex-wrap items-center gap-4 text-xs w-full sm:w-auto">
+                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-amber-400"/> Quick Setup</span>
+                      <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
+                      <span className="bg-indigo-500/40 text-indigo-100 px-2.5 py-1 rounded-md font-semibold whitespace-nowrap border border-indigo-400/20">AI Flexible or Fixed</span>
+                    </div>
+                    <button onClick={() => navigate('/tasks')} className="w-full sm:w-auto justify-center bg-white text-indigo-950 hover:bg-indigo-50 font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl shrink-0">
+                      + Create First Task <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Today's Schedule from Real Data */}
-            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+            <div data-tour="today-timeline" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <Calendar size={16} className="text-[var(--accent-base)]" />
@@ -302,7 +337,7 @@ export default function Dashboard() {
           <div className="flex flex-col gap-6 lg:w-72 xl:w-80 lg:shrink-0">
             
             {/* Workspace Readiness */}
-            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
+            <div data-tour="workspace-readiness" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
               <div className="flex items-start justify-between mb-1">
                 <div>
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Account Setup</p>
@@ -369,7 +404,7 @@ export default function Dashboard() {
             </div>
 
             {/* Top Priority Action Items */}
-            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm flex flex-col flex-1 min-h-[300px]">
+            <div data-tour="priority-inbox" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm flex flex-col flex-1 min-h-[300px]">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                   <Zap size={16} className="text-amber-500" />

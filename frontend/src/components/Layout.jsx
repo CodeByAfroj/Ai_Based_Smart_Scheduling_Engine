@@ -19,11 +19,13 @@ import {
   AlertTriangle,
   RotateCcw,
   ListTodo,
+  HelpCircle,
 } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import ChatButton from './ChatButton';
+import UserGuideTour from './UserGuideTour';
 
 export default function Layout() {
   const location = useLocation();
@@ -475,7 +477,7 @@ export default function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] flex">
+    <div className="h-screen w-screen overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex">
 
       {/* ── Toast Stack (top-right, stacked) ─────────────────────────── */}
       <div className="fixed top-4 right-4 z-[99999] flex flex-col gap-2 max-w-[360px] w-full pointer-events-none">
@@ -705,7 +707,7 @@ export default function Layout() {
         </>
       )}
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col bg-[var(--bg-app)] border-r border-[var(--border-subtle)] h-screen sticky top-0 shrink-0">
+      <aside data-tour="sidebar-nav" className="hidden lg:flex w-64 flex-col bg-[var(--bg-app)] border-r border-[var(--border-subtle)] h-full shrink-0">
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-[var(--accent-base)] flex items-center justify-center text-white shrink-0">
             <svg
@@ -742,6 +744,7 @@ export default function Layout() {
                   <button
                     key={item.path}
                     type="button"
+                    data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
                     onClick={() => navigate(item.path)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
                       ? 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold'
@@ -775,6 +778,7 @@ export default function Layout() {
                   <button
                     key={item.path}
                     type="button"
+                    data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
                     onClick={() => navigate(item.path)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
                       ? 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold'
@@ -816,9 +820,9 @@ export default function Layout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Desktop Header */}
-        <header className="hidden lg:flex h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] px-8 items-center justify-between sticky top-0 z-40">
+        <header className="hidden lg:flex h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] px-8 items-center justify-between shrink-0 z-40">
           <div className="flex-1 max-w-xl">
             <div className="relative">
               <Search
@@ -924,7 +928,7 @@ export default function Layout() {
             </div>
 
             {/* Desktop User Menu */}
-            <div className="relative" data-user-menu>
+            <div className="relative" data-user-menu data-tour="user-menu">
               <button
                 type="button"
                 aria-expanded={showUserMenu}
@@ -995,6 +999,37 @@ export default function Layout() {
                       className="text-[var(--text-muted)]"
                     />
                     Settings
+                  </button>
+
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setShowUserMenu(false);
+                      localStorage.removeItem('taskpulse_tour_completed');
+                      if (window.startTaskPulseTour) {
+                        window.startTaskPulseTour();
+                      } else {
+                        window.dispatchEvent(new Event('start_user_tour'));
+                      }
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowUserMenu(false);
+                      localStorage.removeItem('taskpulse_tour_completed');
+                      if (window.startTaskPulseTour) {
+                        window.startTaskPulseTour();
+                      } else {
+                        window.dispatchEvent(new Event('start_user_tour'));
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors font-medium text-indigo-600 dark:text-indigo-400 cursor-pointer"
+                  >
+                    <HelpCircle
+                      size={15}
+                      className="text-indigo-500"
+                    />
+                    Replay User Guide
                   </button>
 
                   <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
@@ -1104,7 +1139,7 @@ export default function Layout() {
             </div>
 
             {/* Mobile User Menu */}
-            <div className="relative" data-user-menu>
+            <div className="relative" data-user-menu data-tour="user-menu">
               <button
                 type="button"
                 aria-expanded={showUserMenu}
@@ -1161,6 +1196,35 @@ export default function Layout() {
                     Settings
                   </button>
 
+                  <button
+                    type="button"
+                    style={{ minHeight: 'unset' }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setShowUserMenu(false);
+                      localStorage.removeItem('taskpulse_tour_completed');
+                      if (window.startTaskPulseTour) {
+                        window.startTaskPulseTour();
+                      } else {
+                        window.dispatchEvent(new Event('start_user_tour'));
+                      }
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowUserMenu(false);
+                      localStorage.removeItem('taskpulse_tour_completed');
+                      if (window.startTaskPulseTour) {
+                        window.startTaskPulseTour();
+                      } else {
+                        window.dispatchEvent(new Event('start_user_tour'));
+                      }
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] text-indigo-600 dark:text-indigo-400 font-medium cursor-pointer"
+                  >
+                    <HelpCircle size={15} className="text-indigo-500" />
+                    Replay User Guide
+                  </button>
+
                   <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
                     <button
                       type="button"
@@ -1180,20 +1244,6 @@ export default function Layout() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0 relative flex flex-col">
-          {readinessScore < 100 && location.pathname !== '/profile-setup' && (
-            <div className="bg-amber-500 text-white px-4 py-2.5 text-center text-sm font-semibold flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 z-30 sticky top-0 shadow-sm">
-              <div className="flex items-center gap-1.5">
-                <AlertCircle size={16} />
-                <span>Please complete your profile setup.</span>
-              </div>
-              <button
-                onClick={() => navigate('/profile-setup')}
-                className="underline hover:text-amber-100 transition-colors"
-              >
-                Set up now
-              </button>
-            </div>
-          )}
           <Outlet />
         </main>
 
@@ -1207,6 +1257,7 @@ export default function Layout() {
               <button
                 key={item.path}
                 type="button"
+                data-tour={`mob-nav-${item.path.slice(1) || 'dashboard'}`}
                 onClick={() => navigate(item.path)}
                 className={`flex flex-col items-center gap-1 ${isActive
                   ? 'text-[var(--accent-base)]'
@@ -1228,6 +1279,7 @@ export default function Layout() {
         </nav>
 
         <ChatButton />
+        <UserGuideTour />
       </div>
     </div>
   );
