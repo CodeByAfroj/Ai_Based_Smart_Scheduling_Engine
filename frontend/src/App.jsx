@@ -14,6 +14,7 @@ import Integrations from './pages/Integrations';
 import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import Layout from './components/Layout';
+import PWAInstallBanner from './components/PWAInstallBanner';
 
 function ProtectedRoute({ children }) {
   const { token, loading } = useAuth();
@@ -144,6 +145,7 @@ export default function App() {
           </TrackingProvider>
         </TaskProvider>
       </AuthProvider>
+      <PWAInstallBanner />
     </ThemeProvider>
   );
 }
