@@ -16,6 +16,7 @@ import Settings from './pages/Settings';
 import Layout from './components/Layout';
 import PWAInstallBanner from './components/PWAInstallBanner';
 
+
 function ProtectedRoute({ children }) {
   const { token, loading } = useAuth();
   if (loading) return (
