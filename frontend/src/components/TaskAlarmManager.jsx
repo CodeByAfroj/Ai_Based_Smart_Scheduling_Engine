@@ -15,12 +15,13 @@ export default function TaskAlarmManager() {
   const alarmIntervalRef = useRef(null);
   const vibrationIntervalRef = useRef(null);
 
-  // Load dismissed alarms from local storage
+  // Load dismissed alarms from local storage — stored as {taskId: targetTimeStr}
+  // This ensures if a task is rescheduled to a new time, its old dismissal is ignored
   const dismissedAlarmsRef = useRef(() => {
     try {
-      return new Set(JSON.parse(localStorage.getItem('tp_dismissed_alarms') || '[]'));
+      return JSON.parse(localStorage.getItem('tp_dismissed_alarms_v3') || '{}');
     } catch {
-      return new Set();
+      return {};
     }
   });
 
@@ -52,10 +53,12 @@ export default function TaskAlarmManager() {
         updateTask(activeAlarmTask.id, { status: 'completed' });
       }
       
-      const newSet = new Set(dismissedAlarmsRef.current);
-      newSet.add(activeAlarmTask.id);
-      dismissedAlarmsRef.current = newSet;
-      localStorage.setItem('tp_dismissed_alarms', JSON.stringify([...newSet]));
+      const targetTimeStr = activeAlarmTask.scheduled_start || activeAlarmTask.earliest_start || activeAlarmTask.deadline;
+      
+      const newMap = { ...dismissedAlarmsRef.current };
+      newMap[activeAlarmTask.id] = targetTimeStr;
+      dismissedAlarmsRef.current = newMap;
+      localStorage.setItem('tp_dismissed_alarms_v3', JSON.stringify(newMap));
       
       stopAlarm();
       setActiveAlarmTask(null);
@@ -171,28 +174,38 @@ export default function TaskAlarmManager() {
       if (activeAlarmTask) return;
       
       const now = Date.now();
+      console.log('[ALARM CHECK]', new Date(now).toLocaleTimeString(), `Checking ${tasks.length} tasks...`);
       
       const dueTask = tasks.find(t => {
         if (t.status === 'completed') return false;
         
-        // Use scheduled_end if the task has been auto-scheduled, otherwise fallback to deadline
-        const targetTimeStr = t.scheduled_end || t.deadline;
+        // Trigger when the task is supposed to START, not when it ends!
+        const targetTimeStr = t.scheduled_start || t.earliest_start || t.deadline;
         if (!targetTimeStr) return false;
         
         const targetTime = new Date(targetTimeStr).getTime();
+        const diff = now - targetTime;
         
-        // If the scheduled end time (or deadline) is passed, and we haven't dismissed it yet
-        // Also only trigger for things recently due (within last 24h) to avoid old backlog spamming
-        return targetTime <= now && (now - targetTime < 24 * 60 * 60 * 1000) && !dismissedAlarmsRef.current.has(t.id);
+        // It's only truly "dismissed" if the currently scheduled time matches the time we dismissed it for
+        const isDismissed = dismissedAlarmsRef.current[t.id] === targetTimeStr;
+        
+        console.log(`  [${t.name}] target=${new Date(targetTime).toLocaleTimeString()}, diff=${Math.round(diff/1000)}s, dismissed=${isDismissed}, status=${t.status}`);
+        
+        // If the start time is reached, and we haven't dismissed it yet
+        // Also only trigger for things recently started (within last 24h) to avoid old backlog spamming
+        return targetTime <= now && (now - targetTime < 24 * 60 * 60 * 1000) && !isDismissed;
       });
       
       if (dueTask) {
+        console.log('[ALARM TRIGGERED]', dueTask.name);
         triggerAlarm(dueTask);
+      } else {
+        console.log('[ALARM CHECK] No due tasks found');
       }
     };
     
     checkDeadlines();
-    const interval = setInterval(checkDeadlines, 10000);
+    const interval = setInterval(checkDeadlines, 5000); // Check every 5 seconds
     return () => clearInterval(interval);
   }, [tasks, activeAlarmTask, profile]);
 
@@ -218,7 +231,7 @@ export default function TaskAlarmManager() {
           </div>
 
           <h2 className="text-2xl font-black bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent mb-2 tracking-tight">
-            Deadline Reached!
+            Time to Start!
           </h2>
           <p className="text-red-100/90 font-medium text-lg px-4 leading-snug">
             {activeAlarmTask.name}
