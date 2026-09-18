@@ -104,12 +104,14 @@ export default function Settings() {
           const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
           
           let subscription = await registration.pushManager.getSubscription();
-          if (!subscription) {
-              subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: convertedVapidKey
-              });
+          if (subscription) {
+              // Unsubscribe from the old key first to avoid VAPID mismatch
+              await subscription.unsubscribe();
           }
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          });
           
           // Send to backend
           await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/notifications/subscribe`, {
