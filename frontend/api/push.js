@@ -45,17 +45,17 @@ export default async function handler(req, res) {
     
     const bodyStr = await getRawBody(req);
     
-    // const isValid = await receiver.verify({
-    //   signature: signature,
-    //   body: bodyStr,
-    // }).catch(err => {
-    //     console.error("Signature verification failed:", err);
-    //     return false;
-    // });
+    const isValid = await receiver.verify({
+      signature: signature,
+      body: bodyStr,
+    }).catch(err => {
+        console.error("Signature verification failed:", err);
+        return false;
+    });
     
-    // if (!isValid) {
-    //     return res.status(401).json({ error: 'Invalid signature' });
-    // }
+    if (!isValid) {
+        return res.status(401).json({ error: 'Invalid signature' });
+    }
 
     // 2. Parse the payload from QStash
     const reqBody = JSON.parse(bodyStr);

@@ -13,7 +13,7 @@ async def test_direct_push():
     db = client["scheduling_engine"]
     
     # Get the user's push subscription
-    user = await db["users"].find_one({"email": "lifecyle06@gmail.com"})
+    user = await db["users"].find_one({"email": "noreplybyusers@gmail.com"})
     if not user:
         print("User not found.")
         return
