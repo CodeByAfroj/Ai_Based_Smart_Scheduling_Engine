@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import {
   Bell, CheckCircle2, Clock, Calendar, ArrowRight,
-  Zap, BarChart3, ChevronRight, Play
+  Zap, BarChart3, ChevronRight, Play, Moon
 } from 'lucide-react';
 import { formatIST, formatDateIST, nowIST } from '../utils/time'
 
@@ -162,6 +162,37 @@ export default function Dashboard() {
                     <div className="h-4 bg-white/5 rounded w-40 hidden sm:block animate-pulse"></div>
                   </div>
                   <div className="h-9 bg-white/10 rounded-lg w-32 shrink-0 animate-pulse"></div>
+                </div>
+              </div>
+            ) : activeTasks.length > 0 && recommendation && recTask && recTask.name === 'Rest & Recharge' ? (
+              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(148,163,184,0.15)] border border-slate-500/30 relative overflow-hidden transition-all duration-500">
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-slate-500/20 rounded-full blur-3xl"></div>
+                
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="bg-gradient-to-r from-blue-400 to-blue-500 text-blue-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+                        <Moon size={12} fill="currentColor" /> Rest Time
+                      </span>
+                      <span className="bg-white/10 backdrop-blur-sm text-white/90 text-xs font-semibold px-3 py-1 rounded-full border border-white/10">
+                        {recommendation.current_energy_level}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="text-2xl font-black text-white mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">{recTask.name}</h3>
+                  <p className="text-slate-300 text-sm mb-6 leading-relaxed max-w-3xl">
+                    {recTask.reason_detail || "It's currently your designated sleep time. TaskPulse recommends taking this time to rest and recharge for maximum productivity tomorrow."}
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10">
+                    <div className="flex flex-wrap items-center gap-4 text-xs w-full sm:w-auto">
+                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-blue-400"/> {recTask.recommended_time_slot || "Overnight"}</span>
+                      <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
+                      <span className="bg-blue-500/20 text-blue-200 px-2.5 py-1 rounded-md font-semibold whitespace-nowrap border border-blue-400/20">{recTask.reason_badge || "Sleep Time"}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : activeTasks.length > 0 && recommendation && recTask && recTask.name !== 'Rest & Recharge' ? (
