@@ -169,6 +169,8 @@ export default function UserGuideTour() {
   const [isNavigating, setIsNavigating] = useState(false);
   const prevStepRef = useRef(-1);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
+  const [cardSize, setCardSize] = useState({ width: 320, height: 185 });
+  const [isMobileView, setIsMobileView] = useState(false);
   const [targetRect, setTargetRect] = useState(null);
   const [sidebarRect, setSidebarRect] = useState(null);
   const [arrowPath, setArrowPath] = useState(null);
@@ -258,8 +260,12 @@ export default function UserGuideTour() {
       elem = getVisibleElement(step.fallbackTarget);
     }
 
-    const isMobile = window.innerWidth < 768;
-    const cardWidth = Math.min(320, window.innerWidth - 32);
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    const cardWidth = Math.min(320, vw - 32);
     const cardHeight = isMobile ? 185 : 170;
 
     // If target is unmounted during route transition, retain previous rects for smooth gliding
@@ -271,7 +277,7 @@ export default function UserGuideTour() {
     const scrollContainer = elem.closest('main') || document.documentElement;
 
     // Smooth scroll target into view if out of viewport bounds
-    if (elemRect.top < 70 || elemRect.bottom > window.innerHeight - 30) {
+    if (elemRect.top < 70 || elemRect.bottom > vh - 30) {
       if (scrollContainer && scrollContainer.scrollTo) {
         const containerTop = scrollContainer.getBoundingClientRect().top;
         const targetScrollTop = scrollContainer.scrollTop + (elemRect.top - containerTop) - 16;
@@ -292,7 +298,6 @@ export default function UserGuideTour() {
     setTargetRect(computedTargetRect);
 
     // Sidebar/Bottom Nav Item Target (Desktop vs Mobile)
-    const isDesktop = window.innerWidth >= 1024;
     const navSelector = isDesktop ? step.sidebarTarget : step.mobSidebarTarget;
 
     if (navSelector) {
@@ -327,12 +332,12 @@ export default function UserGuideTour() {
     } else if (isMobile) {
       // Mobile specific layout adjustments
       const targetCenterY = elemRect.top + elemRect.height / 2;
-      left = Math.max(16, (window.innerWidth - cardWidth) / 2);
+      left = Math.max(16, (vw - cardWidth) / 2);
 
-      if (targetCenterY > window.innerHeight / 2) {
+      if (targetCenterY > vh / 2) {
         top = Math.max(16, elemRect.top - cardHeight - 35);
       } else {
-        top = Math.min(window.innerHeight - cardHeight - 75, elemRect.bottom + 35);
+        top = Math.min(vh - cardHeight - 75, elemRect.bottom + 35);
       }
     } else {
       // Desktop placement
@@ -362,15 +367,17 @@ export default function UserGuideTour() {
 
     // Viewport clamping
     if (left < 16) left = 16;
-    if (left + cardWidth > window.innerWidth - 16) {
-      left = window.innerWidth - cardWidth - 16;
+    if (left + cardWidth > vw - 16) {
+      left = vw - cardWidth - 16;
     }
-    if (top < 16) top = Math.min(window.innerHeight - cardHeight - 75, elemRect.bottom + 35);
-    if (top + cardHeight > window.innerHeight - 16) {
+    if (top < 16) top = Math.min(vh - cardHeight - 75, elemRect.bottom + 35);
+    if (top + cardHeight > vh - 16) {
       top = Math.max(16, elemRect.top - cardHeight - 35);
     }
 
     setCardPos({ top, left });
+    setCardSize({ width: cardWidth, height: cardHeight });
+    setIsMobileView(isMobile);
 
     // Arrow Path calculation from Card edge (x1, y1) to Target edge (x2, y2)
     const cardCenterX = left + cardWidth / 2;
@@ -634,9 +641,14 @@ export default function UserGuideTour() {
 
       {/* Floating Info Card */}
       <div
-        className={`fixed top-0 left-0 z-[1000001] w-[calc(100vw-32px)] sm:w-[325px] ${isNavigating ? 'transition-transform duration-300 ease-out' : ''}`}
+        className={`fixed top-0 z-[1000001] ${isNavigating ? 'transition-transform duration-300 ease-out' : ''}`}
         style={{
-          transform: `translate3d(${cardPos.left}px, ${cardPos.top}px, 0)`,
+          transform: `translate3d(${isMobileView ? 0 : cardPos.left}px, ${cardPos.top}px, 0)`,
+          left: '0',
+          right: isMobileView ? '0' : 'auto',
+          margin: isMobileView ? '0 auto' : '0',
+          width: isMobileView ? 'calc(100% - 32px)' : `${cardSize.width}px`,
+          maxWidth: '320px',
           willChange: 'transform',
         }}
       >
