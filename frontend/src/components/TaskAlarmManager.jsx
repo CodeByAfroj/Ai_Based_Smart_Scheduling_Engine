@@ -188,12 +188,15 @@ export default function TaskAlarmManager() {
         
         // It's only truly "dismissed" if the currently scheduled time matches the time we dismissed it for
         const isDismissed = dismissedAlarmsRef.current[t.id] === targetTimeStr;
+        const cond1 = targetTime <= now;
+        const cond2 = (now - targetTime < 24 * 60 * 60 * 1000);
+        const cond3 = !isDismissed;
         
-        console.log(`  [${t.name}] target=${new Date(targetTime).toLocaleTimeString()}, diff=${Math.round(diff/1000)}s, dismissed=${isDismissed}, status=${t.status}`);
+        console.log(`  [${t.name}] target=${new Date(targetTime).toLocaleTimeString()}, diff=${Math.round(diff/1000)}s, dismissed=${isDismissed}, status=${t.status} | c1:${cond1} c2:${cond2} c3:${cond3}`);
         
         // If the start time is reached, and we haven't dismissed it yet
         // Also only trigger for things recently started (within last 24h) to avoid old backlog spamming
-        return targetTime <= now && (now - targetTime < 24 * 60 * 60 * 1000) && !isDismissed;
+        return cond1 && cond2 && cond3;
       });
       
       if (dueTask) {

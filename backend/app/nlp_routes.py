@@ -150,11 +150,17 @@ async def query_endpoint(
                         pass
                 e_start = e_start_dt.isoformat()
 
+                from datetime import timedelta
                 if params.get("fixed"):
                     deadline = e_start
+                    status = "scheduled"
+                    scheduled_start = e_start_dt
+                    scheduled_end = e_start_dt + timedelta(minutes=params.get("duration_minutes", 30))
                 else:
-                    from datetime import timedelta
                     deadline = (e_start_dt + timedelta(days=2)).isoformat()
+                    status = "pending"
+                    scheduled_start = None
+                    scheduled_end = None
                 
                 import uuid
                 task_id = str(uuid.uuid4())
@@ -167,9 +173,13 @@ async def query_endpoint(
                     "deadline": deadline,
                     "priority": params.get("priority", 2),
                     "fixed": params.get("fixed", False),
-                    "status": "pending",
+                    "status": status,
                     "created_at": now_ist()
                 }
+                if scheduled_start:
+                    new_task["scheduled_start"] = scheduled_start
+                if scheduled_end:
+                    new_task["scheduled_end"] = scheduled_end
                 
                 await db["tasks"].insert_one(new_task)
                 result["created_task_id"] = task_id
