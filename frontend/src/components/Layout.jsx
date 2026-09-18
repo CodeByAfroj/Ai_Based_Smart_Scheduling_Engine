@@ -1244,7 +1244,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto pb-[calc(7.5rem+env(safe-area-inset-bottom))] lg:pb-0 relative flex flex-col">
+        <main className="flex-1 overflow-y-auto relative flex flex-col">
           <Outlet />
         </main>
 

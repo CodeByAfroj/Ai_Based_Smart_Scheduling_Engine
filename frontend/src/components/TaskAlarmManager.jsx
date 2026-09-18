@@ -62,39 +62,46 @@ export default function TaskAlarmManager() {
     }
   };
 
-  const playBeep = (ctx) => {
-    if (ctx.state === 'suspended') ctx.resume();
-    const osc = ctx.createOscillator();
-    const gainNode = ctx.createGain();
-    
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1);
-    
-    gainNode.gain.setValueAtTime(0, ctx.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.05);
-    gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+  const playBeep = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      // Sawtooth cuts through background noise much better on phone speakers
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+      osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.1); // E6 note
+      
+      gainNode.gain.setValueAtTime(0, ctx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 0.05); // MAX VOLUME
+      gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
 
-    osc.connect(gainNode);
-    gainNode.connect(ctx.destination);
-    
-    osc.start();
-    osc.stop(ctx.currentTime + 0.5);
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+      
+      // Clean up after beep
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+      }, 1000);
+    } catch (e) {
+      console.warn('Audio playback failed', e);
+    }
   };
 
   const startAlarmSound = () => {
-    if (!audioContextRef.current) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      audioContextRef.current = new AudioContext();
-    }
-    
     // Initial beep
-    playBeep(audioContextRef.current);
+    playBeep();
     
     // Loop every 1 second
     alarmIntervalRef.current = setInterval(() => {
-      playBeep(audioContextRef.current);
+      playBeep();
     }, 1000);
   };
 
@@ -132,6 +139,20 @@ export default function TaskAlarmManager() {
     
     stopAlarm(); // clear any existing
     
+    // Trigger OS-level notification if permitted (this guarantees system sound/vibrate)
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification('TaskPulse Reminder', {
+          body: `It's time for your task: ${task.name}`,
+          icon: '/favicon.ico', // fallback icon
+          requireInteraction: true
+        });
+      } catch (e) {
+        // Fallback for mobile Safari which requires Service Worker for notifications
+        console.warn('System notification failed, relying on in-app alerts', e);
+      }
+    }
+    
     if (pref === 'sound' || pref === 'text_and_sound') {
       startAlarmSound();
     } else if (pref === 'vibrate') {
@@ -153,12 +174,16 @@ export default function TaskAlarmManager() {
       
       const dueTask = tasks.find(t => {
         if (t.status === 'completed') return false;
-        if (!t.deadline) return false;
         
-        const deadlineTime = new Date(t.deadline).getTime();
-        // If deadline is passed, and we haven't dismissed it yet
+        // Use scheduled_end if the task has been auto-scheduled, otherwise fallback to deadline
+        const targetTimeStr = t.scheduled_end || t.deadline;
+        if (!targetTimeStr) return false;
+        
+        const targetTime = new Date(targetTimeStr).getTime();
+        
+        // If the scheduled end time (or deadline) is passed, and we haven't dismissed it yet
         // Also only trigger for things recently due (within last 24h) to avoid old backlog spamming
-        return deadlineTime <= now && (now - deadlineTime < 24 * 60 * 60 * 1000) && !dismissedAlarmsRef.current.has(t.id);
+        return targetTime <= now && (now - targetTime < 24 * 60 * 60 * 1000) && !dismissedAlarmsRef.current.has(t.id);
       });
       
       if (dueTask) {
@@ -174,40 +199,55 @@ export default function TaskAlarmManager() {
   if (!activeAlarmTask) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in duration-300 border border-red-500/30">
-        <div className="bg-red-50 dark:bg-red-500/10 p-6 flex flex-col items-center text-center border-b border-red-100 dark:border-red-500/20">
-          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-500 mb-4 animate-pulse">
-            <AlertCircle size={32} />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Animated Dark Overlay with Radial Glow */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-500/20 via-transparent to-transparent opacity-70 animate-pulse"></div>
+
+      {/* Glassmorphism Modal */}
+      <div className="relative w-full max-w-sm rounded-[32px] bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-2xl border border-white/10 shadow-[0_0_50px_-12px_rgba(239,68,68,0.4)] overflow-hidden animate-in fade-in zoom-in-95 duration-500 spring-wobble">
+        
+        <div className="relative p-8 flex flex-col items-center text-center">
+          {/* Animated Radar/Ping Effect Behind Icon */}
+          <div className="relative mb-8 mt-4">
+            <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" style={{ animationDuration: '2s' }}></div>
+            <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
+            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.6)]">
+              <AlertCircle size={40} className="text-white animate-pulse" />
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-1">Deadline Reached!</h2>
-          <p className="text-slate-700 dark:text-slate-300 font-medium text-lg">
+
+          <h2 className="text-2xl font-black bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent mb-2 tracking-tight">
+            Deadline Reached!
+          </h2>
+          <p className="text-red-100/90 font-medium text-lg px-4 leading-snug">
             {activeAlarmTask.name}
           </p>
         </div>
         
-        <div className="p-6 flex flex-col gap-3">
+        <div className="p-6 pt-2 flex flex-col gap-3">
           <button
             onClick={() => dismissCurrent(true)}
-            className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            className="group relative w-full py-4 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-2xl font-bold text-lg transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] hover:-translate-y-0.5 flex items-center justify-center gap-2 overflow-hidden"
           >
-            <CheckCircle2 size={20} />
-            Mark Done
+            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            <CheckCircle2 size={22} className="relative z-10" />
+            <span className="relative z-10">Mark Done</span>
           </button>
           
           <button
             onClick={() => dismissCurrent(false)}
-            className="w-full py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full py-4 px-4 bg-white/5 hover:bg-white/10 text-white/80 hover:text-white rounded-2xl font-medium transition-all flex items-center justify-center gap-2 border border-white/5 hover:border-white/10"
           >
             <X size={20} />
             Dismiss
           </button>
         </div>
         
-        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-xs text-slate-500 dark:text-slate-400 text-center flex items-center justify-center gap-1">
+        <div className="px-6 py-5 bg-black/40 border-t border-white/5">
+          <p className="text-[11px] text-white/40 text-center flex items-center justify-center gap-1.5 font-medium tracking-wide uppercase">
             <Settings size={12} />
-            Want silent notifications? Change this in <button onClick={() => { dismissCurrent(false); navigate('/settings'); }} className="text-indigo-500 hover:underline font-medium">Settings</button>
+            Want silent notifications? Change in <button onClick={() => { dismissCurrent(false); navigate('/settings'); }} className="text-indigo-400 hover:text-indigo-300 hover:underline">Settings</button>
           </p>
         </div>
       </div>

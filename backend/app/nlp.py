@@ -120,7 +120,7 @@ def call_groq_llm(messages: List[Dict[str, str]], timeout: float = 2.5) -> Optio
                 "model": model_name,
                 "messages": messages,
                 "temperature": 0.3,
-                "max_tokens": 250
+                "max_tokens": 500
             }
 
             with httpx.Client(timeout=timeout, follow_redirects=True) as client:
@@ -160,7 +160,7 @@ def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 5.0) -> Opt
             "model": get_ollama_model(),
             "messages": messages,
             "temperature": 0.3,
-            "max_tokens": 250
+            "max_tokens": 500
         }
         with httpx.Client(timeout=timeout, follow_redirects=True) as client:
             resp = client.post(url, headers=headers, json=payload)
@@ -175,29 +175,29 @@ def call_ollama_llm(messages: List[Dict[str, str]], timeout: float = 5.0) -> Opt
 
     return None
 
-def call_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 4.0) -> Optional[str]:
+def call_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 10.0) -> Optional[str]:
     """
     Failover Chain: Gemini -> Groq -> Ollama
     Automatically switches if rate limits (429) or errors occur.
     """
     # 1. Try Gemini
-    res = call_gemini_llm(messages, timeout=2.0)
+    res = call_gemini_llm(messages, timeout=8.0)
     if res:
         return res
 
     # 2. Try Groq
-    res = call_groq_llm(messages, timeout=2.5)
+    res = call_groq_llm(messages, timeout=8.0)
     if res:
         return res
 
     # 3. Try Ollama
-    res = call_ollama_llm(messages, timeout=4.0)
+    res = call_ollama_llm(messages, timeout=10.0)
     if res:
         return res
 
     return None
 
-def call_background_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 8.0) -> Optional[str]:
+def call_background_llm_with_failover(messages: List[Dict[str, str]], timeout: float = 12.0) -> Optional[str]:
     """
     Failover Chain: Ollama -> Groq -> Gemini
     Prioritizes Ollama to save primary API rate limits for real-time chat/voice tasks.
@@ -208,12 +208,12 @@ def call_background_llm_with_failover(messages: List[Dict[str, str]], timeout: f
         return res
 
     # 2. Try Groq
-    res = call_groq_llm(messages, timeout=2.5)
+    res = call_groq_llm(messages, timeout=8.0)
     if res:
         return res
 
     # 3. Try Gemini
-    res = call_gemini_llm(messages, timeout=2.0)
+    res = call_gemini_llm(messages, timeout=8.0)
     if res:
         return res
 

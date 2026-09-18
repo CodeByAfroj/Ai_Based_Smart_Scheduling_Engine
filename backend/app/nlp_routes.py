@@ -191,8 +191,8 @@ async def query_endpoint(
                 except Exception as ne:
                     print(f"Task notification error: {ne}")
 
-                # Offload CP-SAT auto scheduler to background task for instant response
-                background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
+                # Run CP-SAT auto scheduler synchronously for instant response
+                await async_auto_schedule_user_tasks(user_id)
                 
         elif isinstance(result, dict) and result.get("action") == "update_task":
             params = result.get("params", {})
@@ -233,7 +233,8 @@ async def query_endpoint(
                 except Exception as ne:
                     pass
 
-                background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
+                # Run CP-SAT auto scheduler synchronously for instant response
+                await async_auto_schedule_user_tasks(user_id)
 
         elif isinstance(result, dict) and result.get("action") == "delete_task":
             params = result.get("params", {})
@@ -253,7 +254,8 @@ async def query_endpoint(
                 except Exception as ne:
                     pass
 
-                background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
+                # Run CP-SAT auto scheduler synchronously for instant response
+                await async_auto_schedule_user_tasks(user_id)
 
         return result
     except Exception as e:

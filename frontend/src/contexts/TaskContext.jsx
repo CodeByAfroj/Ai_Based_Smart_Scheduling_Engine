@@ -77,15 +77,16 @@ export function TaskProvider({ children }) {
         });
 
         // Trigger scheduler asynchronously to assign time slot and refresh task state
-        const { nowIST } = await import('../utils/time');
-        fetch(`${API_BASE}/schedule`, {
+        fetch(`${API_BASE}/reschedule`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: nowIST() })
-        }).then(schedRes => {
+          body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() })
+        }).then(async (schedRes) => {
           if (schedRes.ok) {
             // Force fetch updated scheduled start/end times
-            fetchTasks(true);
+            await fetchTasks(true);
+          } else {
+            console.error('Auto-schedule failed with status:', schedRes.status);
           }
         }).catch(e => console.warn('Auto-schedule background warning:', e));
 
