@@ -66,8 +66,8 @@ export default async function handler(req, res) {
     }
 
     // 3. Configure Web Push with your VAPID Keys
-    const vapidPublic = process.env.VAPID_PUBLIC_KEY;
-    const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+    const vapidPublic = process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY;
+    const vapidPrivate = process.env.VAPID_PRIVATE_KEY || process.env.VITE_VAPID_PRIVATE_KEY;
     
     if (!vapidPublic || !vapidPrivate) {
         console.error("Missing VAPID keys in env");
