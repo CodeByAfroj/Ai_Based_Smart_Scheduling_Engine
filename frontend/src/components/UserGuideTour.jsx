@@ -166,10 +166,23 @@ function getVisibleElement(selector) {
 export default function UserGuideTour() {
   const { profile } = useAuth();
   const [activeStepIndex, setActiveStepIndex] = useState(-1);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const prevStepRef = useRef(-1);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
   const [targetRect, setTargetRect] = useState(null);
   const [sidebarRect, setSidebarRect] = useState(null);
   const [arrowPath, setArrowPath] = useState(null);
+
+  useEffect(() => {
+    if (activeStepIndex !== prevStepRef.current) {
+      setIsNavigating(true);
+      const timer = setTimeout(() => setIsNavigating(false), 400);
+      prevStepRef.current = activeStepIndex;
+      return () => clearTimeout(timer);
+    }
+  }, [activeStepIndex]);
+
+  const transitionClass = isNavigating ? 'transition-all duration-300 ease-out' : '';
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -496,7 +509,7 @@ export default function UserGuideTour() {
                 height={targetRect.height}
                 rx="16"
                 fill="black"
-                className="transition-all duration-500 ease-out"
+                className={transitionClass}
               />
             )}
 
@@ -509,7 +522,7 @@ export default function UserGuideTour() {
                 height={sidebarRect.height}
                 rx="10"
                 fill="black"
-                className="transition-all duration-500 ease-out"
+                className={transitionClass}
               />
             )}
           </mask>
@@ -526,7 +539,7 @@ export default function UserGuideTour() {
       {/* Primary Target Glowing Highlight Ring */}
       {targetRect && (
         <div
-          className="fixed rounded-2xl transition-all duration-500 ease-out pointer-events-none z-[999999]"
+          className={`fixed rounded-2xl pointer-events-none z-[999999] ${transitionClass}`}
           style={{
             top: `${targetRect.top}px`,
             left: `${targetRect.left}px`,
@@ -541,7 +554,7 @@ export default function UserGuideTour() {
       {/* Sidebar Nav Item Glowing Highlight Ring */}
       {sidebarRect && (
         <div
-          className="fixed rounded-xl transition-all duration-500 ease-out pointer-events-none z-[999999]"
+          className={`fixed rounded-xl pointer-events-none z-[999999] ${transitionClass}`}
           style={{
             top: `${sidebarRect.top}px`,
             left: `${sidebarRect.left}px`,
@@ -582,9 +595,6 @@ export default function UserGuideTour() {
               />
             </marker>
 
-            <filter id="arrowShadowFilter" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.5" />
-            </filter>
           </defs>
 
           {/* Slim Outer Halo */}
@@ -595,9 +605,8 @@ export default function UserGuideTour() {
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
-            filter="url(#arrowShadowFilter)"
-            className="transition-all duration-500 ease-out"
-            style={{ transition: 'd 500ms ease-out, stroke 300ms ease-out' }}
+            className={transitionClass}
+            style={isNavigating ? { transition: 'd 300ms ease-out, stroke 300ms ease-out' } : {}}
           />
 
           {/* Delicate Animated Thin Neon Thread Path */}
@@ -610,9 +619,8 @@ export default function UserGuideTour() {
             strokeLinejoin="round"
             fill="none"
             markerEnd="url(#loomLineArrow)"
-            filter="url(#arrowShadowFilter)"
-            className="transition-all duration-500 ease-out"
-            style={{ transition: 'd 500ms ease-out, stroke 300ms ease-out' }}
+            className={transitionClass}
+            style={isNavigating ? { transition: 'd 300ms ease-out, stroke 300ms ease-out' } : {}}
           />
 
           {/* Delicate Node Pin Dot */}
@@ -621,15 +629,14 @@ export default function UserGuideTour() {
             cy={arrowPath.y1}
             r="2.8"
             fill="#a855f7"
-            filter="url(#arrowShadowFilter)"
-            className="transition-all duration-500 ease-out"
+            className={transitionClass}
           />
         </svg>
       )}
 
       {/* Floating Info Card */}
       <div
-        className="fixed transition-all duration-500 ease-out z-[1000001] w-[calc(100vw-32px)] sm:w-[325px]"
+        className={`fixed z-[1000001] w-[calc(100vw-32px)] sm:w-[325px] ${transitionClass}`}
         style={{
           top: `${cardPos.top}px`,
           left: `${cardPos.left}px`,
