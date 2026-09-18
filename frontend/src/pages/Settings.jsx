@@ -11,6 +11,22 @@ import { useTasks } from '../contexts/TaskContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLiveTracking } from '../contexts/TrackingContext';
 
+// ── Helper ───────────────────────────────────────────────────────────────────
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 // ── Main Settings Page ────────────────────────────────────────────────────────
 export default function Settings() {
   const { profile, token, API_BASE, fetchProfile } = useAuth();
@@ -59,6 +75,50 @@ export default function Settings() {
       setTimeout(() => setSaved(false), 2500);
     } catch { /* silent */ } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePushToggle = async () => {
+    const newVal = !pushEnabled;
+    setPushEnabled(newVal);
+    
+    if (newVal && 'Notification' in window && 'serviceWorker' in navigator) {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          const registration = await navigator.serviceWorker.ready;
+          const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+          
+          if (!vapidPublicKey) {
+            console.error("VAPID public key not found in env.");
+            return;
+          }
+          
+          const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+          
+          let subscription = await registration.pushManager.getSubscription();
+          if (!subscription) {
+              subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey
+              });
+          }
+          
+          // Send to backend
+          await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/notifications/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(subscription)
+          });
+          
+          console.log('Push subscription successful');
+        } else {
+          setPushEnabled(false);
+          alert('Notification permission denied. Please enable in browser settings.');
+        }
+      } catch (err) {
+        console.error('Failed to subscribe to push notifications:', err);
+      }
     }
   };
 
@@ -141,7 +201,7 @@ export default function Settings() {
               </div>
               <button
                 style={{ minHeight: 'unset' }}
-                onClick={() => setPushEnabled(v => !v)}
+                onClick={handlePushToggle}
                 className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${pushEnabled ? 'bg-[var(--accent-base)]' : 'bg-slate-200'}`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${pushEnabled ? 'translate-x-5' : 'translate-x-0'}`} />

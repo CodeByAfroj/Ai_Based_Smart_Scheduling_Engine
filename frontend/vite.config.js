@@ -36,6 +36,9 @@ export default defineConfig({
       },
       devOptions: {
         enabled: true
+      },
+      workbox: {
+        importScripts: ['/push-sw.js']
       }
     })
   ],

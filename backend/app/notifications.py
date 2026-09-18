@@ -6,10 +6,27 @@ from email.mime.multipart import MIMEMultipart
 from fastapi import APIRouter, Depends, BackgroundTasks, Request
 from fastapi import APIRouter, Depends, BackgroundTasks, Request, HTTPException
 from sse_starlette.sse import EventSourceResponse
+from pydantic import BaseModel
 from .profile import get_current_user_id, JWT_SECRET
 import jwt
+from qstash.client import QStash
+from datetime import timezone
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+# QStash setup
+QSTASH_TOKEN = os.getenv("QSTASH_TOKEN")
+CLOUDFLARE_WORKER_URL = os.getenv("CLOUDFLARE_WORKER_URL", "https://push-notifier.example.workers.dev")
+
+if QSTASH_TOKEN:
+    qstash_client = QStash(QSTASH_TOKEN)
+else:
+    qstash_client = None
+
+class PushSubscription(BaseModel):
+    endpoint: str
+    keys: dict
+
 
 # Global dictionary to hold event queues for each connected user
 connected_clients = {}
@@ -84,6 +101,47 @@ async def save_notification_to_db(user_id: str, title: str, message: str, type: 
     }
     await db["notifications"].insert_one(doc)
     return doc
+
+def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_sub: dict):
+    if not qstash_client:
+        print("QStash client not initialized, skipping push scheduling.")
+        return
+
+    try:
+        # Calculate delay in seconds
+        import datetime
+        now = datetime.datetime.now(timezone.utc)
+        target = scheduled_time.astimezone(timezone.utc)
+        delay_seconds = int((target - now).total_seconds())
+
+        if delay_seconds <= 0:
+            delay_seconds = 1 # Immediate
+
+        qstash_client.publish(
+            url=CLOUDFLARE_WORKER_URL,
+            json={
+                "title": task_name,
+                "pushSubscription": push_sub
+            },
+            delay=delay_seconds
+        )
+        print(f"Scheduled Web Push for {task_name} at {target} via QStash")
+    except Exception as e:
+        print(f"Error scheduling push via QStash: {e}")
+
+@router.post("/subscribe")
+async def subscribe_push(sub: PushSubscription, user_id: str = Depends(get_current_user_id)):
+    from .database import get_user_collection
+    collection = get_user_collection()
+    
+    # Store subscription in user settings
+    await collection.update_one(
+        {"google_id": user_id},
+        {"$set": {"settings.push_subscription": sub.model_dump()}},
+        upsert=True
+    )
+    return {"success": True}
+
 
 async def notify_user(user_id: str, user_email: str, title: str, message: str, bg_tasks: BackgroundTasks, type: str = "alert"):
     """

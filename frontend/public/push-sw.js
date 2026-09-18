@@ -1,0 +1,40 @@
+self.addEventListener('push', function(event) {
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch(e) {
+      data = { body: event.data.text() };
+    }
+  }
+
+  const title = data.title || 'TaskPulse Reminder';
+  const options = {
+    body: data.body || 'You have a scheduled task starting now.',
+    icon: '/pwa-192x192.png',
+    badge: '/pwa-192x192.png',
+    vibrate: [500, 250, 500, 250, 500, 250, 500],
+    data: { url: data.url || '/' }
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(windowClients => {
+      // Check if there is already a window/tab open with the target URL
+      for (var i = 0; i < windowClients.length; i++) {
+        var client = windowClients[i];
+        if (client.url === event.notification.data.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // If not, open a new window/tab
+      if (clients.openWindow) {
+        return clients.openWindow(event.notification.data.url);
+      }
+    })
+  );
+});

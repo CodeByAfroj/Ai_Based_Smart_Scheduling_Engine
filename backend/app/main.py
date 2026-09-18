@@ -15,6 +15,7 @@ from .engine import SchedulerEngine, SolverConfig
 from .activity import router as activity_router
 from .nlp_routes import router as nlp_router
 from .recommendations import router as recommendations_router
+from .notifications import notify_user, schedule_push_via_qstash
 from fastapi import Depends
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -195,10 +196,18 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
     if solve_time_ms == 0:
         solve_time_ms = (t1 - t0) * 1000
 
-    # Save scheduled times back to DB
+        # Save scheduled times back to DB
     if status in ["OPTIMAL", "FEASIBLE", "PARTIAL"]:
+        user_info = await get_user_collection().find_one({"google_id": user_id})
+        push_sub = user_info.get("settings", {}).get("push_subscription") if user_info else None
+        
         for st in scheduled_tasks:
             query = {"$or": [{"_id": st.task_id}, {"_id": ObjectId(st.task_id)}], "user_id": user_id} if ObjectId.is_valid(st.task_id) else {"_id": st.task_id, "user_id": user_id}
+            
+            # Fetch task name to send in push
+            task_doc = await get_database()["tasks"].find_one(query)
+            task_name = task_doc.get("name", "Task") if task_doc else "Task"
+
             await get_database()["tasks"].update_one(
                 query,
                 {"$set": {
@@ -208,6 +217,10 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
                     "updated_at": now_ist()
                 }}
             )
+            
+            # Schedule push notification
+            if push_sub and st.start:
+                schedule_push_via_qstash(user_id, task_name, st.start, push_sub)
 
     # Build message including any auto-recovery info
     if reset_task_names:
