@@ -91,7 +91,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[var(--bg-app)]">
 
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6" data-tour="dashboard-hero">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6 pb-28 lg:pb-8" data-tour="dashboard-hero">
         
         {/* Profile Completion Banner (Full Width) */}
         {!notifDismissed && profileIncomplete && (
@@ -165,7 +165,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : activeTasks.length > 0 && recommendation && recTask && recTask.name !== 'Rest & Recharge' ? (
-              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(99,102,241,0.3)] hover:border-indigo-400/50">
+              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-[0_0_40px_rgba(99,102,241,0.18)] border border-indigo-500/35 relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(99,102,241,0.35)] hover:border-indigo-400/50">
                 
                 {/* Background decorative elements */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors duration-500"></div>
@@ -176,32 +176,51 @@ export default function Dashboard() {
                 </div>
 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(251,191,36,0.25)]">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2.5">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(251,191,36,0.25)] shrink-0">
                         <Zap size={12} fill="currentColor" /> AI Recommendation
                       </span>
-                      <span className="bg-white/10 backdrop-blur-sm text-white/90 text-xs font-semibold px-3 py-1 rounded-full border border-white/10">
+                      <span className="whitespace-nowrap inline-flex items-center text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg sm:rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white/90 shadow-sm max-w-full truncate">
                         {recommendation.current_energy_level}
                       </span>
                     </div>
-                    <span className="text-xs text-indigo-200/70 font-mono font-medium tracking-wider">Score: {recTask.score} pts</span>
+                    <span className="text-xs text-indigo-200/80 font-mono font-medium tracking-wider bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">Score: {recTask.score} pts</span>
                   </div>
 
                   <h3 className="text-2xl font-black text-white mb-2 tracking-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-indigo-200 transition-all duration-300">{recTask.name}</h3>
-                  <p className="text-indigo-100/80 text-sm mb-6 leading-relaxed max-w-3xl">{recTask.reason_detail}</p>
+                  <p className="text-indigo-100/85 text-sm mb-5 leading-relaxed max-w-3xl">{recTask.reason_detail}</p>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 group-hover:bg-white/10 transition-colors duration-300">
-                    <div className="flex flex-wrap items-center gap-4 text-xs w-full sm:w-auto">
-                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-amber-400"/> {recTask.duration_minutes} mins</span>
-                      <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
-                      <span className="bg-indigo-500/40 text-indigo-100 px-2.5 py-1 rounded-md font-semibold whitespace-nowrap border border-indigo-400/20">{recTask.reason_badge}</span>
-                      <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
-                      <span className="text-indigo-200/90 whitespace-nowrap">Recommended: <strong className="text-white">{recTask.recommended_time_slot}</strong></span>
+                  {/* Modern Glassmorphic Integrated Recommendation Footer */}
+                  <div className="pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center gap-2.5 text-xs">
+                      <span className="inline-flex items-center gap-1.5 font-bold text-white bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg">
+                        <Clock size={13} className="text-amber-400"/> {recTask.duration_minutes} mins
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-semibold text-indigo-100 bg-indigo-500/30 border border-indigo-400/25 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                        {recTask.reason_badge}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-indigo-200/90 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                        Slot: <strong className="text-white ml-1">{recTask.recommended_time_slot}</strong>
+                      </span>
                     </div>
-                    <button onClick={() => navigate('/schedule')} className="w-full sm:w-auto justify-center bg-white text-indigo-950 hover:bg-indigo-50 font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 shrink-0">
-                      Start Task <Play size={12} fill="currentColor" />
-                    </button>
+
+                    <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                      <button 
+                        onClick={() => updateTask(recTask.task_id, { status: 'completed' })}
+                        className="flex-1 sm:flex-none justify-center bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl border border-white/15 transition-all duration-200 flex items-center gap-1.5 shadow-sm"
+                        title="Mark complete in one tap"
+                      >
+                        <CheckCircle2 size={14} className="text-green-400" />
+                        <span className="hidden xs:inline">Mark</span> Done
+                      </button>
+                      <button 
+                        onClick={() => navigate('/schedule', { state: { focusTaskId: recTask.task_id } })} 
+                        className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-black text-xs px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] hover:-translate-y-0.5"
+                      >
+                        Start Focus <Play size={12} fill="currentColor" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

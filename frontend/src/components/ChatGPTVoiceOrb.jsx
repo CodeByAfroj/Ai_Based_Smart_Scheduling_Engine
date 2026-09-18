@@ -34,6 +34,14 @@ function createParticleTexture() {
  */
 function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) {
   const mountRef = useRef(null);
+  
+  // Use a ref to hold the latest state values so the animation loop can access them
+  // without triggering a complete teardown and rebuild of the WebGL context.
+  const stateRef = useRef({ isListening, isLoading, isSpeaking, micLevel });
+  
+  useEffect(() => {
+    stateRef.current = { isListening, isLoading, isSpeaking, micLevel };
+  }, [isListening, isLoading, isSpeaking, micLevel]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -209,14 +217,16 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const time = clock.getElapsedTime();
+      
+      const { isListening: currentIsListening, isLoading: currentIsLoading, isSpeaking: currentIsSpeaking, micLevel: currentMicLevel } = stateRef.current;
 
       // Audio reactivity & State modulation
-      if (isSpeaking) {
+      if (currentIsSpeaking) {
         targetDeform = 0.38 + Math.sin(time * 5.5) * 0.14;
-      } else if (isLoading) {
+      } else if (currentIsLoading) {
         targetDeform = 0.25 + Math.sin(time * 3.2) * 0.08;
-      } else if (isListening) {
-        targetDeform = 0.12 + micLevel * 0.50;
+      } else if (currentIsListening) {
+        targetDeform = 0.12 + currentMicLevel * 0.50;
       } else {
         targetDeform = 0.06; // Gentle breathing in calm idle state
       }
@@ -234,11 +244,14 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
         const phase = phaseOffsets[i];
 
         // Multi-frequency wave flow around surface
-        const wave1 = Math.sin(time * 1.7 + bx * 2.2 + phase) * 0.08;
-        const wave2 = Math.cos(time * 2.0 + by * 2.2 + phase) * 0.08;
-        const wave3 = Math.sin(time * 1.4 + bz * 2.2 + phase) * 0.06;
+        const wave1 = Math.sin(time * 2.2 + bx * 2.5 + phase) * 0.10;
+        const wave2 = Math.cos(time * 2.5 + by * 2.5 + phase) * 0.10;
+        const wave3 = Math.sin(time * 1.8 + bz * 2.5 + phase) * 0.08;
+        
+        // Add a chaotic high-frequency flutter when speaking
+        const flutter = currentDeformFactor > 0.2 ? Math.sin(time * 15.0 + phase * 5.0) * 0.02 * currentDeformFactor : 0;
 
-        const totalDeform = (wave1 + wave2 + wave3) * currentDeformFactor;
+        const totalDeform = (wave1 + wave2 + wave3 + flutter) * (currentDeformFactor * 1.2 + 0.3);
 
         const cx = bx * (1 + totalDeform);
         const cy = by * (1 + totalDeform);
@@ -259,12 +272,16 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
       geometry.attributes.color.needsUpdate = true;
 
       // Slow, serene rotation (no obvious planet spin)
-      const rotSpeed = 0.10 + currentDeformFactor * 0.15;
-      particleCloud.rotation.y = time * rotSpeed;
-      particleCloud.rotation.x = Math.sin(time * 0.12) * 0.12;
+      // Instead of a continuous spin that looks like it's just moving left/right,
+      // we use a subtle, multi-axis wobble and a very slow continuous rotation.
+      const rotSpeed = 0.02 + currentDeformFactor * 0.05; 
+      particleCloud.rotation.y = time * rotSpeed + Math.sin(time * 0.3) * 0.1;
+      particleCloud.rotation.x = Math.sin(time * 0.2) * 0.15 + Math.cos(time * 0.15) * 0.1;
+      particleCloud.rotation.z = Math.sin(time * 0.25) * 0.08;
 
-      strandGroup.rotation.y = time * (rotSpeed * 0.82);
-      strandGroup.rotation.z = Math.cos(time * 0.1) * 0.1;
+      strandGroup.rotation.y = time * (rotSpeed * 0.8) + Math.cos(time * 0.25) * 0.1;
+      strandGroup.rotation.x = Math.sin(time * 0.15) * 0.1;
+      strandGroup.rotation.z = Math.cos(time * 0.2) * 0.1;
 
       // Deform strand geometries subtly
       strandGroup.children.forEach((mesh, index) => {
@@ -274,7 +291,9 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
 
         for (let p = 0; p < strandPointsPerRing; p++) {
           const angle = (p / strandPointsPerRing) * Math.PI * 2;
-          const wave = Math.sin(angle * 3.2 + time * 2.2 + index) * 0.06 * (0.6 + currentDeformFactor);
+          // Increase wave complexity and scale for a more organic feel
+          const wave = Math.sin(angle * 4.0 + time * 3.0 + index) * 0.08 * (0.8 + currentDeformFactor * 1.5)
+                     + Math.cos(angle * 2.0 - time * 2.0) * 0.04 * currentDeformFactor;
           const sr = baseRadius * (0.98 + wave);
 
           const lx = Math.cos(angle) * sr;
@@ -321,7 +340,7 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
       strandMaterials.forEach(m => m.dispose());
       renderer.dispose();
     };
-  }, [isListening, isLoading, isSpeaking, micLevel]);
+  }, []); // Run only once on mount
 
   return <div ref={mountRef} className="w-full h-full relative" />;
 }

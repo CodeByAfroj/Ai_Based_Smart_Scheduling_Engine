@@ -268,6 +268,8 @@ RESPONSE INSTRUCTIONS:
 2. CRITICAL TASK ACTION RULES:
    - ONLY output a `create_task` JSON block if the user has specified an EXPLICIT task/meeting name to create.
    - ONLY output an `update_task` JSON block if the user explicitly asks to update, reschedule, or complete an existing task. You MUST use the exact ID provided in the task list.
+   - CRITICAL DELETION RULE: If the user asks to delete a task, you MUST FIRST ask for confirmation (e.g., "Are you sure you want to delete 'Task Name'? Say confirm or I agree."). DO NOT output the `delete_task` JSON block yet. 
+   - ONLY output a `delete_task` JSON block if the conversation history shows you just asked for confirmation AND the user's latest message is explicitly confirming ("yes", "confirm", "I agree", etc.). You MUST use the exact ID provided in the task list.
    - If the request is vague, ask brief clarification questions.
 3. If an action JSON block is included, place it at the VERY END inside triple backticks.
 Example `create_task` JSON:
@@ -294,6 +296,15 @@ Example `update_task` JSON:
     "scheduled_start": "YYYY-MM-DDTHH:MM:SS+05:30 (optional)",
     "status": "completed (optional)",
     "fixed": false
+  }}
+}}
+```
+Example `delete_task` JSON:
+```json
+{{
+  "action": "delete_task",
+  "params": {{
+    "task_id": "the-exact-task-id"
   }}
 }}
 ```

@@ -75,7 +75,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8 pb-28 lg:pb-8 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* LEFT COLUMN */}
         <div className="flex flex-col gap-6">
         {/* THEME */}

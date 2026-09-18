@@ -89,10 +89,10 @@ export default function Schedule() {
   if (loading) return <div className="p-10 text-center text-[var(--text-muted)]">Loading schedule...</div>;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10 pb-28 lg:pb-10">
       <div className="max-w-5xl mx-auto">
 
-        <div data-tour="schedule-header" className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 scroll-mt-24">
+        <div data-tour="schedule-header" className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 scroll-mt-24">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Schedule &amp; Timeline</h1>
             <p className="text-sm text-[var(--text-muted)]">AI-orchestrated time blocks based on your workload</p>
@@ -102,6 +102,19 @@ export default function Schedule() {
               ? <span className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Engine Running...</span>
               : <><Play size={18} fill="currentColor" /> Run Auto-Scheduler</>}
           </button>
+        </div>
+
+        {/* Educational Banner */}
+        <div className="bg-indigo-50 border border-indigo-200 dark:bg-indigo-500/10 dark:border-indigo-500/20 rounded-xl p-4 mb-8 flex gap-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+            <Zap size={16} />
+          </div>
+          <div>
+            <h3 className="font-bold text-indigo-900 dark:text-indigo-300 text-sm mb-1">Why run the Auto-Scheduler?</h3>
+            <p className="text-sm text-indigo-700/80 dark:text-indigo-400/80 leading-relaxed">
+              When you create a new task, it is added to your backlog. The <strong>Auto-Scheduler</strong> uses a Google CP-SAT AI engine to automatically analyze your working hours, existing fixed meetings, and task priorities to assign the absolute optimal time slots for your new tasks without double-booking. Run it whenever your workload changes!
+            </p>
+          </div>
         </div>
 
         {result && (

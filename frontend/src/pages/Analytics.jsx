@@ -41,7 +41,7 @@ const dayLabels = [];
   const maxDay = Math.max(...dayData, 1);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10 pb-28 lg:pb-10">
       <div className="max-w-5xl mx-auto">
 
         <div className="mb-8">

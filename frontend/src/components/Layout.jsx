@@ -26,6 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import ChatButton from './ChatButton';
 import UserGuideTour from './UserGuideTour';
+import TaskAlarmManager from './TaskAlarmManager';
 
 export default function Layout() {
   const location = useLocation();
@@ -1243,7 +1244,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0 relative flex flex-col">
+        <main className="flex-1 overflow-y-auto pb-[calc(7.5rem+env(safe-area-inset-bottom))] lg:pb-0 relative flex flex-col">
           <Outlet />
         </main>
 
@@ -1280,6 +1281,7 @@ export default function Layout() {
 
         <ChatButton />
         <UserGuideTour />
+        <TaskAlarmManager />
       </div>
     </div>
   );

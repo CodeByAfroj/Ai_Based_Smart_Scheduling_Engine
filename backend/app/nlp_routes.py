@@ -235,6 +235,26 @@ async def query_endpoint(
 
                 background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
 
+        elif isinstance(result, dict) and result.get("action") == "delete_task":
+            params = result.get("params", {})
+            task_id = params.get("task_id")
+            if task_id:
+                from bson import ObjectId
+                query = {"$or": [{"_id": ObjectId(task_id) if ObjectId.is_valid(task_id) else task_id}, {"_id": task_id}], "user_id": user_id}
+                
+                await db["tasks"].delete_one(query)
+                
+                try:
+                    from .notifications import notify_user
+                    user_email = (user or {}).get("email", "")
+                    background_tasks.add_task(
+                        notify_user, user_id, user_email, "Task Deleted", "Deleted task successfully via AI.", background_tasks
+                    )
+                except Exception as ne:
+                    pass
+
+                background_tasks.add_task(async_auto_schedule_user_tasks, user_id)
+
         return result
     except Exception as e:
         print(f"Query endpoint error: {e}")

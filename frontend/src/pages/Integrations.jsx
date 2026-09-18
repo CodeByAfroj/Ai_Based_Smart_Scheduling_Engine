@@ -96,7 +96,7 @@ export default function Integrations() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10">
+    <div className="min-h-screen bg-[var(--bg-app)] p-6 lg:p-10 pb-28 lg:pb-10">
       <div className="max-w-4xl mx-auto">
 
         <div className="flex  items-center justify-between mb-8 flex-wrap gap-4">

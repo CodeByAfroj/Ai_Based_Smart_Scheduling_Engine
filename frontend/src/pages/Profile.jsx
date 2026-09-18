@@ -57,7 +57,7 @@ export default function Profile() {
     <div className="min-h-screen bg-[var(--bg-app)]">
 
 
-      <div className="max-w-5xl mx-auto px-4 lg:px-10 py-8">
+      <div className="max-w-5xl mx-auto px-4 lg:px-10 py-8 pb-28 lg:pb-8">
         {/* Profile Header */}
         <div data-tour="profile-header" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 lg:p-8 mb-6 flex flex-col lg:flex-row gap-6 lg:items-start shadow-sm scroll-mt-24">
           <div className="relative shrink-0">
