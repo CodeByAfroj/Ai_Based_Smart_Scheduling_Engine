@@ -61,6 +61,16 @@ async def async_auto_schedule_user_tasks(user_id: str):
         st_status, scheduled_results, _ = engine.solve()
 
         if st_status in ["OPTIMAL", "FEASIBLE", "PARTIAL"]:
+            # Need to get user push subscription
+            push_sub = settings.get("push_subscription")
+            wants_push = settings.get("push_notifications", True)
+            
+            if wants_push and push_sub:
+                try:
+                    from .notifications import schedule_push_via_qstash
+                except ImportError:
+                    schedule_push_via_qstash = None
+
             for st_item in scheduled_results:
                 await db["tasks"].update_one(
                     {"_id": st_item.task_id, "user_id": user_id},
@@ -71,6 +81,19 @@ async def async_auto_schedule_user_tasks(user_id: str):
                         "updated_at": now_ist()
                     }}
                 )
+                
+                # Automatically push to QStash
+                if wants_push and push_sub and schedule_push_via_qstash:
+                    try:
+                        # find task name for notification payload
+                        task_name = "Task"
+                        for t in task_models:
+                            if t.id == st_item.task_id:
+                                task_name = t.name
+                                break
+                        schedule_push_via_qstash(user_id, task_name, st_item.start, push_sub)
+                    except Exception as q_err:
+                        print(f"Failed to auto-schedule push for {st_item.task_id}: {q_err}")
     except Exception as auto_sched_err:
         print(f"Auto schedule background task exception: {auto_sched_err}")
 
