@@ -28,3 +28,4 @@ requests
 pymongo
 sse-starlette
 edge-tts
+qstash
