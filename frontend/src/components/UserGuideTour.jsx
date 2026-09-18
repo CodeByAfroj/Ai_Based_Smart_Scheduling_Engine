@@ -539,10 +539,9 @@ export default function UserGuideTour() {
       {/* Primary Target Glowing Highlight Ring */}
       {targetRect && (
         <div
-          className={`fixed rounded-2xl pointer-events-none z-[999999] ${transitionClass}`}
+          className={`fixed top-0 left-0 rounded-2xl pointer-events-none z-[999999] ${transitionClass}`}
           style={{
-            top: `${targetRect.top}px`,
-            left: `${targetRect.left}px`,
+            transform: `translate3d(${targetRect.left}px, ${targetRect.top}px, 0)`,
             width: `${targetRect.width}px`,
             height: `${targetRect.height}px`,
             border: '2px solid rgba(129, 140, 248, 0.9)',
@@ -554,10 +553,9 @@ export default function UserGuideTour() {
       {/* Sidebar Nav Item Glowing Highlight Ring */}
       {sidebarRect && (
         <div
-          className={`fixed rounded-xl pointer-events-none z-[999999] ${transitionClass}`}
+          className={`fixed top-0 left-0 rounded-xl pointer-events-none z-[999999] ${transitionClass}`}
           style={{
-            top: `${sidebarRect.top}px`,
-            left: `${sidebarRect.left}px`,
+            transform: `translate3d(${sidebarRect.left}px, ${sidebarRect.top}px, 0)`,
             width: `${sidebarRect.width}px`,
             height: `${sidebarRect.height}px`,
             border: '2px solid rgba(129, 140, 248, 0.9)',
@@ -636,13 +634,13 @@ export default function UserGuideTour() {
 
       {/* Floating Info Card */}
       <div
-        className={`fixed z-[1000001] w-[calc(100vw-32px)] sm:w-[325px] ${transitionClass}`}
+        className={`fixed top-0 left-0 z-[1000001] w-[calc(100vw-32px)] sm:w-[325px] ${isNavigating ? 'transition-transform duration-300 ease-out' : ''}`}
         style={{
-          top: `${cardPos.top}px`,
-          left: `${cardPos.left}px`,
+          transform: `translate3d(${cardPos.left}px, ${cardPos.top}px, 0)`,
+          willChange: 'transform',
         }}
       >
-        <div className="bg-slate-950/95 backdrop-blur-2xl text-white rounded-[24px] shadow-[0_25px_80px_rgba(0,0,0,0.85)] p-5 border border-indigo-500/40 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+        <div className="bg-slate-950 sm:bg-slate-950/95 sm:backdrop-blur-2xl text-white rounded-[24px] shadow-2xl sm:shadow-[0_25px_80px_rgba(0,0,0,0.85)] p-5 border border-indigo-500/40 relative overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
           
           {/* Header */}
           <div className="flex items-center justify-between mb-2.5 gap-2">
