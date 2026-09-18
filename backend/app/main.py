@@ -219,7 +219,8 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
             )
             
             # Schedule push notification
-            if push_sub and st.start:
+            wants_push = user_info.get("settings", {}).get("push_notifications", True)
+            if push_sub and st.start and wants_push:
                 schedule_push_via_qstash(user_id, task_name, st.start, push_sub)
 
     # Build message including any auto-recovery info

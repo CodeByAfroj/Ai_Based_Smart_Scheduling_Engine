@@ -86,11 +86,18 @@ export default function Settings() {
       try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-          const registration = await navigator.serviceWorker.ready;
+          // Ensure SW is registered
+          let registration = await navigator.serviceWorker.getRegistration();
+          if (!registration) {
+             registration = await navigator.serviceWorker.register('/push-sw.js');
+          }
+          registration = await navigator.serviceWorker.ready;
+          
           const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
           
           if (!vapidPublicKey) {
             console.error("VAPID public key not found in env.");
+            setPushEnabled(false);
             return;
           }
           
@@ -118,6 +125,7 @@ export default function Settings() {
         }
       } catch (err) {
         console.error('Failed to subscribe to push notifications:', err);
+        setPushEnabled(false);
       }
     }
   };
