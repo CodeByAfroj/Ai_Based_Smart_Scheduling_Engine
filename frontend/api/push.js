@@ -1,6 +1,21 @@
 import webpush from 'web-push';
 import { Receiver } from "@upstash/qstash";
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+const getRawBody = async (req) => {
+    return new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => resolve(data));
+        req.on('error', reject);
+    });
+};
+
 export default async function handler(req, res) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -9,7 +24,6 @@ export default async function handler(req, res) {
 
   try {
     // 1. Verify QStash Signature (Security)
-    // In Vercel serverless functions, req.headers keys are lowercased
     const signature = req.headers['upstash-signature'];
     if (!signature) {
       console.error("Missing upstash-signature");
@@ -29,9 +43,7 @@ export default async function handler(req, res) {
       nextSigningKey,
     });
     
-    // We need to pass the raw body to verify, but Vercel parses JSON bodies automatically.
-    // Instead of raw body, Upstash allows verifying the stringified body if it matches.
-    const bodyStr = JSON.stringify(req.body);
+    const bodyStr = await getRawBody(req);
     
     // const isValid = await receiver.verify({
     //   signature: signature,
@@ -46,7 +58,8 @@ export default async function handler(req, res) {
     // }
 
     // 2. Parse the payload from QStash
-    const { title, pushSubscription } = req.body;
+    const reqBody = JSON.parse(bodyStr);
+    const { title, pushSubscription } = reqBody;
 
     if (!pushSubscription) {
       return res.status(400).json({ error: 'Missing pushSubscription' });
