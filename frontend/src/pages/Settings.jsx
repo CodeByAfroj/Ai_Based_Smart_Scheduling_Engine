@@ -28,7 +28,7 @@ function urlBase64ToUint8Array(base64String) {
 const Section = ({ title, children, footer }) => (
   <div className="mb-8">
     {title && <p className="px-4 text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{title}</p>}
-    <div className="bg-white dark:bg-[#1a1a1c] border-y sm:border sm:rounded-2xl border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
+    <div className="bg-white dark:bg-[#1a1a1c] border rounded-2xl border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
       {children}
     </div>
     {footer && <p className="px-4 text-[13px] text-slate-500 dark:text-slate-400 mt-2">{footer}</p>}
@@ -156,9 +156,9 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-black pb-28 pt-4 lg:pt-8">
-      <div className="max-w-2xl mx-auto sm:px-4">
+      <div className="max-w-2xl mx-auto px-4">
         
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6 px-4">Settings</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">Settings</h1>
 
         {/* Appearance */}
         <Section title="Appearance">
