@@ -120,7 +120,7 @@ export default function Layout() {
       pushToast({ title: 'Running AI Solver', message: `Calculating optimal focus slot for "${task.name}"...`, urgent: false });
       const newStart = new Date().toISOString();
       await updateTask(task.id, { status: 'pending', earliest_start: newStart });
-      
+
       const res = await fetch(`${API_BASE}/reschedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -155,7 +155,7 @@ export default function Layout() {
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(9, 0, 0, 0);
     const tomorrowEnd = new Date(tomorrow.getTime() + 4 * 60 * 60 * 1000);
-    
+
     await updateTask(task.id, {
       earliest_start: tomorrow.toISOString(),
       deadline: tomorrowEnd.toISOString(),
@@ -171,7 +171,7 @@ export default function Layout() {
     if (!localDateTimeVal) return;
     const targetDate = new Date(localDateTimeVal);
     const earliestStart = new Date().toISOString();
-    
+
     await updateTask(task.id, {
       earliest_start: earliestStart,
       deadline: targetDate.toISOString(),
@@ -208,7 +208,7 @@ export default function Layout() {
       if (!e.target.closest('[data-notif-menu]')) setShowNotifMenu(false);
       if (!e.target.closest('[data-user-menu]')) setShowUserMenu(false);
     };
-    
+
     const handleCloseDropdowns = () => {
       setShowNotifMenu(false);
       setShowUserMenu(false);
@@ -217,7 +217,7 @@ export default function Layout() {
     document.addEventListener('mousedown', handleOutsideClick);
     document.addEventListener('touchstart', handleOutsideClick);
     window.addEventListener('close_dropdowns', handleCloseDropdowns);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('touchstart', handleOutsideClick);
@@ -242,21 +242,21 @@ export default function Layout() {
         });
         if (!res.ok) return;
         const data = await res.json();
-        
+
         if (data.notifications) {
           const freshNotifications = data.notifications;
           setNotifications(freshNotifications.slice(0, 10));
-          
+
           let hasNewUnread = false;
-          
+
           for (const n of freshNotifications) {
             if (!n.is_read) {
               setHasUnread(true);
-              
+
               if (!notifiedIdsRef.current.has(n.id)) {
                 hasNewUnread = true;
                 notifiedIdsRef.current.add(n.id);
-                try { localStorage.setItem('tp_notified_ids', JSON.stringify([...notifiedIdsRef.current])); } catch (_) {}
+                try { localStorage.setItem('tp_notified_ids', JSON.stringify([...notifiedIdsRef.current])); } catch (_) { }
                 triggerAudioAlert(n.title || 'Alert', n.message || '');
               }
             }
@@ -292,10 +292,10 @@ export default function Layout() {
 
         // Define urgency thresholds (in minutes)
         const thresholds = [
-          { key: '1440', mins: 1440, label: '24 hours',  urgent: false },
-          { key: '120',  mins: 120,  label: '2 hours',   urgent: true  },
-          { key: '30',   mins: 30,   label: '30 minutes', urgent: true  },
-          { key: '0',    mins: 0,    label: 'RIGHT NOW',  urgent: true  },
+          { key: '1440', mins: 1440, label: '24 hours', urgent: false },
+          { key: '120', mins: 120, label: '2 hours', urgent: true },
+          { key: '30', mins: 30, label: '30 minutes', urgent: true },
+          { key: '0', mins: 0, label: 'RIGHT NOW', urgent: true },
         ];
 
         thresholds.forEach(({ key, mins, label, urgent }) => {
@@ -304,7 +304,7 @@ export default function Layout() {
           if (minutesLeft <= mins + 2 && minutesLeft >= mins - 2 && !deadlineAlertedRef.current.has(alertKey)) {
             deadlineAlertedRef.current.add(alertKey);
             // Persist so alerts don't re-fire after page refresh
-            try { localStorage.setItem('tp_deadline_alerted', JSON.stringify([...deadlineAlertedRef.current])); } catch (_) {}
+            try { localStorage.setItem('tp_deadline_alerted', JSON.stringify([...deadlineAlertedRef.current])); } catch (_) { }
 
             const title = urgent ? '⚠️ Deadline Approaching!' : '🔔 Deadline Reminder';
             const body = mins === 0
@@ -329,7 +329,7 @@ export default function Layout() {
         // ── Fixed task "time is now" banner ─────────────────────────────
         if (task.fixed && task.status !== 'completed' && task.earliest_start) {
           const startMs = new Date(task.earliest_start).getTime();
-          const endMs   = task.deadline ? new Date(task.deadline).getTime() : startMs + (task.duration_minutes || 60) * 60000;
+          const endMs = task.deadline ? new Date(task.deadline).getTime() : startMs + (task.duration_minutes || 60) * 60000;
           // Show banner from scheduled start to scheduled end
           if (now >= startMs && now <= endMs) {
             setActiveFixedBanner(task);
@@ -355,7 +355,7 @@ export default function Layout() {
     checkDeadlines(); // run immediately
     const interval = setInterval(checkDeadlines, 60000); // then every minute
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, pushToast]);
 
   const playHumanizedVoice = async (textToSpeak) => {
@@ -439,7 +439,7 @@ export default function Layout() {
       });
 
       setTimeout(() => {
-        ctx.close().catch(() => {});
+        ctx.close().catch(() => { });
       }, 800);
     } catch (e) {
       console.log('Chime playback error:', e);
@@ -553,44 +553,43 @@ export default function Layout() {
 
   if (hideNav) {
     return (
-      <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)]">
+      <div className="fixed inset-0 bg-[var(--bg-app)] text-[var(--text-main)] overflow-y-auto">
         <Outlet />
       </div>
     );
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex">
+    <div className="fixed inset-0 overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex">
 
       {/* ── Toast Stack (Dynamic Island Style) ─────────────────────────── */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-2 w-[92vw] max-w-[420px] pointer-events-none">
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`relative pointer-events-auto flex items-center gap-3 px-3.5 py-2.5 rounded-[28px] shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border backdrop-blur-2xl transition-all w-full overflow-hidden ${
-              toast.urgent
-                ? 'bg-black/90 border-red-500/30 text-white shadow-red-500/20'
-                : 'bg-black/90 border-white/10 text-white shadow-indigo-500/20'
-            }`}
-            style={{ 
+            className={`relative pointer-events-auto flex items-center gap-3 px-3.5 py-2.5 rounded-[28px] shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border backdrop-blur-2xl transition-all w-full overflow-hidden ${toast.urgent
+              ? 'bg-black/90 border-red-500/30 text-white shadow-red-500/20'
+              : 'bg-black/90 border-white/10 text-white shadow-indigo-500/20'
+              }`}
+            style={{
               animation: 'dynamicIsland 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
               transformOrigin: 'top center'
             }}
           >
             {/* Dynamic Island Ambient Glow */}
             <div className={`absolute -inset-4 opacity-15 blur-2xl rounded-full pointer-events-none ${toast.urgent ? 'bg-red-500' : 'bg-indigo-500'}`}></div>
-            
+
             <div className={`relative shrink-0 p-1.5 rounded-full ${toast.urgent ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
               {toast.urgent ? <AlertTriangle size={16} /> : <Bell size={16} />}
             </div>
-            
+
             <div className="relative flex-1 min-w-0 flex flex-col justify-center">
               <p className={`text-[10px] font-black uppercase tracking-wider leading-none mb-0.5 opacity-90 ${toast.urgent ? 'text-red-400' : 'text-slate-300'}`}>
                 {toast.title}
               </p>
               <p className="text-[13px] text-slate-100 font-medium leading-tight truncate pr-2">{toast.message}</p>
             </div>
-            
+
             {toast.taskId && (
               <button
                 onClick={() => { navigate(`/tasks#task-${toast.taskId}`); dismissToast(toast.id); }}
@@ -599,7 +598,7 @@ export default function Layout() {
                 View
               </button>
             )}
-            
+
             <button
               onClick={() => dismissToast(toast.id)}
               className="relative shrink-0 p-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white hover:bg-white/15 transition-all ml-1"
@@ -753,11 +752,10 @@ export default function Layout() {
                         <button
                           title="Reschedule options"
                           onClick={() => setActiveRescheduleTaskId(isMenuOpen ? null : task.id)}
-                          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
-                            isMenuOpen
-                              ? 'bg-indigo-600 text-white shadow-sm'
-                              : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
-                          }`}
+                          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${isMenuOpen
+                            ? 'bg-indigo-600 text-white shadow-sm'
+                            : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
+                            }`}
                         >
                           <RotateCcw size={12} />
                           <span>Reschedule</span>
@@ -1113,9 +1111,9 @@ export default function Layout() {
                       ))
                     )}
                   </div>
-                  
+
                   <div className="border-t border-white/10 bg-white/5 px-4 py-3 text-center">
-                    <button 
+                    <button
                       onClick={() => {
                         setShowNotifMenu(false);
                         navigate('/notifications');
@@ -1446,7 +1444,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto relative flex flex-col">
+        <main className="flex-1 overflow-y-auto relative block">
           <Outlet />
         </main>
 

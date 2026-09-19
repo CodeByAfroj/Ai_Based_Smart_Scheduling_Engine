@@ -60,7 +60,7 @@ export default function Dashboard() {
     const activeTasksString = tasks.filter(t => t.status !== 'completed').map(t => t.id).sort().join(',');
     const CACHE_KEY = `taskpulse_ai_rec_cache_${activeTasksString}`;
     const CACHE_TTL_MS = 5 * 60 * 1000;
-    
+
     try {
       const cachedString = sessionStorage.getItem(CACHE_KEY);
       if (cachedString) {
@@ -111,7 +111,7 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[var(--bg-app)]">
 
       <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6 pb-28 lg:pb-8" data-tour="dashboard-hero">
-        
+
         {/* Profile Completion Banner (Full Width) */}
         {!notifDismissed && profileIncomplete && (
           <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 mb-6 flex flex-col lg:flex-row gap-5 shadow-sm">
@@ -167,13 +167,13 @@ export default function Dashboard() {
                   </div>
                   <div className="h-4 bg-white/5 rounded w-24 animate-pulse mt-1.5"></div>
                 </div>
-                
+
                 <div className="relative z-10 mb-6 mt-2">
                   <div className="h-8 bg-white/10 rounded w-3/5 mb-4 animate-pulse"></div>
                   <div className="h-4 bg-white/5 rounded w-full mb-2.5 animate-pulse"></div>
                   <div className="h-4 bg-white/5 rounded w-4/5 animate-pulse"></div>
                 </div>
-                
+
                 <div className="relative z-10 h-16 bg-white/5 border border-white/5 rounded-xl w-full mt-auto flex items-center justify-between p-4">
                   <div className="flex gap-4 w-full">
                     <div className="h-4 bg-white/5 rounded w-20 animate-pulse"></div>
@@ -183,11 +183,11 @@ export default function Dashboard() {
                   <div className="h-9 bg-white/10 rounded-lg w-32 shrink-0 animate-pulse"></div>
                 </div>
               </div>
-            ) : recommendation && recTask && recTask.name === 'Rest & Recharge' ? (
+            ) : activeTasks.length > 0 && recommendation && recTask && recTask.name === 'Rest & Recharge' ? (
               <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(148,163,184,0.15)] border border-slate-500/30 relative overflow-hidden transition-all duration-500">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-slate-500/20 rounded-full blur-3xl"></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                     <div className="flex items-center gap-2.5">
@@ -207,7 +207,7 @@ export default function Dashboard() {
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10">
                     <div className="flex flex-wrap items-center gap-4 text-xs w-full sm:w-auto">
-                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-blue-400"/> {recTask.recommended_time_slot || "Overnight"}</span>
+                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-blue-400" /> {recTask.recommended_time_slot || "Overnight"}</span>
                       <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
                       <span className="bg-blue-500/20 text-blue-200 px-2.5 py-1 rounded-md font-semibold whitespace-nowrap border border-blue-400/20">{recTask.reason_badge || "Sleep Time"}</span>
                     </div>
@@ -216,11 +216,11 @@ export default function Dashboard() {
               </div>
             ) : activeTasks.length > 0 && recommendation && recTask && recTask.name !== 'Rest & Recharge' ? (
               <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-[0_0_40px_rgba(99,102,241,0.18)] border border-indigo-500/35 relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(99,102,241,0.35)] hover:border-indigo-400/50">
-                
+
                 {/* Background decorative elements */}
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors duration-500"></div>
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl group-hover:bg-purple-500/30 transition-colors duration-500"></div>
-                
+
                 <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
                   <Zap size={200} />
                 </div>
@@ -245,7 +245,7 @@ export default function Dashboard() {
                   <div className="pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-2.5 text-xs">
                       <span className="inline-flex items-center gap-1.5 font-bold text-white bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg">
-                        <Clock size={13} className="text-amber-400"/> {recTask.duration_minutes} mins
+                        <Clock size={13} className="text-amber-400" /> {recTask.duration_minutes} mins
                       </span>
                       <span className="inline-flex items-center gap-1 font-semibold text-indigo-100 bg-indigo-500/30 border border-indigo-400/25 px-3 py-1.5 rounded-lg whitespace-nowrap">
                         {recTask.reason_badge}
@@ -256,7 +256,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                      <button 
+                      <button
                         onClick={() => updateTask(recTask.task_id, { status: 'completed' })}
                         className="flex-1 sm:flex-none justify-center bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl border border-white/15 transition-all duration-200 flex items-center gap-1.5 shadow-sm"
                         title="Mark complete in one tap"
@@ -264,8 +264,8 @@ export default function Dashboard() {
                         <CheckCircle2 size={14} className="text-green-400" />
                         <span className="hidden xs:inline">Mark</span> Done
                       </button>
-                      <button 
-                        onClick={() => navigate('/schedule', { state: { focusTaskId: recTask.task_id } })} 
+                      <button
+                        onClick={() => navigate('/schedule', { state: { focusTaskId: recTask.task_id } })}
                         className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-black text-xs px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] hover:-translate-y-0.5"
                       >
                         Start Focus <Play size={12} fill="currentColor" />
@@ -278,7 +278,7 @@ export default function Dashboard() {
               <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                     <div className="flex items-center gap-2.5">
@@ -299,7 +299,7 @@ export default function Dashboard() {
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10">
                     <div className="flex flex-wrap items-center gap-4 text-xs w-full sm:w-auto">
-                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-amber-400"/> Quick Setup</span>
+                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-amber-400" /> Quick Setup</span>
                       <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
                       <span className="bg-indigo-500/40 text-indigo-100 px-2.5 py-1 rounded-md font-semibold whitespace-nowrap border border-indigo-400/20">AI Flexible or Fixed</span>
                     </div>
@@ -337,41 +337,37 @@ export default function Dashboard() {
                     const isCompleted = task.status === 'completed';
                     const isPast = isCompleted || now > end;
                     const isActive = !isCompleted && now >= start && now <= end;
-                    
+
                     return (
                       <div key={task.id} className="group flex items-start gap-4 p-3 hover:bg-[var(--bg-hover)] rounded-xl transition-all duration-300">
                         <div className="flex flex-col items-center pt-0.5">
                           {/* Timeline Dot */}
-                          <div className={`w-3 h-3 rounded-full border-[2.5px] shrink-0 transition-all duration-300 ${
-                            isActive ? 'bg-[var(--accent-base)] border-[var(--accent-base)] shadow-[0_0_10px_var(--accent-base)] scale-125' : 
+                          <div className={`w-3 h-3 rounded-full border-[2.5px] shrink-0 transition-all duration-300 ${isActive ? 'bg-[var(--accent-base)] border-[var(--accent-base)] shadow-[0_0_10px_var(--accent-base)] scale-125' :
                             isCompleted ? 'bg-green-500 border-green-500' :
-                            isPast ? 'bg-slate-400 border-slate-400 dark:bg-slate-500 dark:border-slate-500' : 
-                            'bg-[var(--bg-panel)] border-slate-300 dark:border-slate-600 group-hover:border-[var(--accent-base)]'
-                          }`} />
-                          
+                              isPast ? 'bg-slate-400 border-slate-400 dark:bg-slate-500 dark:border-slate-500' :
+                                'bg-[var(--bg-panel)] border-slate-300 dark:border-slate-600 group-hover:border-[var(--accent-base)]'
+                            }`} />
+
                           {/* Connecting Line */}
                           {i < todayTasks.length - 1 && (
-                            <div className={`w-0.5 h-full min-h-[2.5rem] my-1 rounded-full transition-colors ${
-                              isCompleted ? 'bg-green-500/40' : 
+                            <div className={`w-0.5 h-full min-h-[2.5rem] my-1 rounded-full transition-colors ${isCompleted ? 'bg-green-500/40' :
                               isPast ? 'bg-slate-400/40' :
-                              'bg-slate-200 dark:bg-slate-700/50 group-hover:bg-[var(--border-subtle)]'
-                            }`} />
+                                'bg-slate-200 dark:bg-slate-700/50 group-hover:bg-[var(--border-subtle)]'
+                              }`} />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-[11px] font-bold tracking-wide uppercase mb-1 transition-colors ${
-                            isActive ? 'text-[var(--accent-base)]' : 
+                          <p className={`text-[11px] font-bold tracking-wide uppercase mb-1 transition-colors ${isActive ? 'text-[var(--accent-base)]' :
                             isCompleted ? 'text-green-500' :
-                            isPast ? 'text-[var(--text-muted)]' : 
-                            'text-[var(--text-muted)]'
-                          }`}>
+                              isPast ? 'text-[var(--text-muted)]' :
+                                'text-[var(--text-muted)]'
+                            }`}>
                             {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })} – {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                           </p>
                           <div className="flex items-center gap-2">
-                            <p className={`text-sm font-bold truncate transition-colors ${
-                              isPast ? 'text-[var(--text-muted)] line-through decoration-[var(--text-muted)]/40' : 
+                            <p className={`text-sm font-bold truncate transition-colors ${isPast ? 'text-[var(--text-muted)] line-through decoration-[var(--text-muted)]/40' :
                               'text-[var(--text-main)] group-hover:text-[var(--accent-base)]'
-                            }`}>
+                              }`}>
                               {task.name}
                             </p>
                             {isCompleted && (
@@ -404,7 +400,7 @@ export default function Dashboard() {
 
           {/* RIGHT SIDEBAR */}
           <div className="flex flex-col gap-6 lg:w-72 xl:w-80 lg:shrink-0">
-            
+
             {/* Workspace Readiness */}
             <div data-tour="workspace-readiness" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
               <div className="flex items-start justify-between mb-1">
@@ -412,16 +408,15 @@ export default function Dashboard() {
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Account Setup</p>
                   <h3 className="font-bold text-[var(--text-main)]">Workspace Readiness</h3>
                 </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                  readinessScore === 100 ? 'bg-green-100 text-green-700' :
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${readinessScore === 100 ? 'bg-green-100 text-green-700' :
                   readinessScore >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                }`}>{readinessScore === 100 ? 'Complete' : readinessScore >= 50 ? 'Intermediate' : 'Getting Started'}</span>
+                  }`}>{readinessScore === 100 ? 'Complete' : readinessScore >= 50 ? 'Intermediate' : 'Getting Started'}</span>
               </div>
 
               <div className="flex items-center gap-4 my-5">
                 <div className="relative w-20 h-20 shrink-0">
                   <svg viewBox="0 0 80 80" className="w-20 h-20">
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="#e0e7ff" strokeWidth="7"/>
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="#e0e7ff" strokeWidth="7" />
                     <circle cx="40" cy="40" r="34" fill="none" stroke="#4338ca" strokeWidth="7"
                       strokeDasharray={213.6} strokeDashoffset={213.6 * (1 - readinessScore / 100)}
                       strokeLinecap="round" transform="rotate(-90 40 40)"
@@ -481,7 +476,7 @@ export default function Dashboard() {
                 </div>
                 <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Top {topPriorityTasks.length} Urgent</span>
               </div>
-              
+
               <div className="flex flex-col gap-3 flex-1">
                 {topPriorityTasks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full flex-1 py-6 opacity-80">
@@ -500,7 +495,7 @@ export default function Dashboard() {
                       <button onClick={() => updateTask(task.id, { status: 'completed' })} className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600 hover:text-green-500 transition-colors" title="Mark as complete">
                         <CheckCircle2 size={18} fill="currentColor" className="text-[var(--bg-panel)]" />
                       </button>
-                      
+
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-[var(--text-main)] truncate group-hover:text-[var(--accent-base)] transition-colors">{task.name}</p>
                         <div className="flex items-center flex-wrap gap-2 mt-1.5">

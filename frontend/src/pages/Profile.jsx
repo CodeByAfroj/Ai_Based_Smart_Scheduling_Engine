@@ -6,48 +6,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-// Reusable UI Components matching Settings.jsx
-const Section = ({ title, children, footer }) => (
-  <div className="mb-8">
-    {title && <p className="px-4 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">{title}</p>}
-    <div className="bg-[var(--bg-panel)] border rounded-2xl border-[var(--border-subtle)] overflow-hidden divide-y divide-[var(--border-subtle)] shadow-sm">
-      {children}
-    </div>
-    {footer && <p className="px-4 text-[13px] text-[var(--text-muted)] mt-2">{footer}</p>}
-  </div>
-);
-
-const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, isButton, badge }) => {
-  const Component = onClick ? 'button' : 'div';
-  return (
-    <Component 
-      onClick={onClick}
-      className={`w-full flex items-center gap-3.5 px-4 py-3 ${onClick ? 'cursor-pointer hover:bg-[var(--bg-hover)] active:bg-black/5 dark:active:bg-white/5 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''}`}
-    >
-      {!isButton && Icon && (
-        <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
-          <Icon size={16} />
-        </div>
-      )}
-      {!isButton && (
-        <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
-          <div className="flex items-center gap-2">
-            <p className="text-[15px] text-[var(--text-main)] leading-tight truncate">{title}</p>
-            {badge && <span className="bg-[var(--accent-light)] text-[var(--accent-base)] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">{badge}</span>}
-          </div>
-          {subtitle && <p className="text-[13px] text-[var(--text-muted)] leading-snug mt-0.5">{subtitle}</p>}
-        </div>
-      )}
-      {isButton && (
-        <div className="flex-1 text-center">
-          <p className="text-[15px] font-medium text-blue-600 dark:text-blue-500">{title}</p>
-        </div>
-      )}
-      {right && <div className="shrink-0 flex items-center">{right}</div>}
-    </Component>
-  );
-};
-
+import { Section, Row } from '../components/ui/LayoutBlocks';
 
 export default function Profile() {
   const { profile } = useAuth();
@@ -84,7 +43,7 @@ export default function Profile() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] pb-28 pt-4 lg:pt-8">
+    <div className="bg-[var(--bg-app)] pb-28 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-2xl mx-auto px-4">
         
         <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Profile</h1>
