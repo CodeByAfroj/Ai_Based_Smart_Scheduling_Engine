@@ -117,13 +117,13 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
         if delay_seconds <= 0:
             delay_seconds = 1 # Immediate
 
-        qstash_client.publish(
+        qstash_client.message.publish_json(
             url=CLOUDFLARE_WORKER_URL,
-            json={
+            body={
                 "title": task_name,
                 "pushSubscription": push_sub
             },
-            delay=delay_seconds
+            delay=f"{delay_seconds}s"
         )
         print(f"Scheduled Web Push for {task_name} at {target} via QStash")
     except Exception as e:
