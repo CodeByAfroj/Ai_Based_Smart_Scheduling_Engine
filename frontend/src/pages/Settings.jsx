@@ -27,11 +27,11 @@ function urlBase64ToUint8Array(base64String) {
 // UI Components for native look
 const Section = ({ title, children, footer }) => (
   <div className="mb-8">
-    {title && <p className="px-4 text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{title}</p>}
-    <div className="bg-white dark:bg-[#1a1a1c] border rounded-2xl border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
+    {title && <p className="px-4 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">{title}</p>}
+    <div className="bg-[var(--bg-panel)] border rounded-2xl border-[var(--border-subtle)] overflow-hidden divide-y divide-[var(--border-subtle)] shadow-sm">
       {children}
     </div>
-    {footer && <p className="px-4 text-[13px] text-slate-500 dark:text-slate-400 mt-2">{footer}</p>}
+    {footer && <p className="px-4 text-[13px] text-[var(--text-muted)] mt-2">{footer}</p>}
   </div>
 );
 
@@ -40,7 +40,7 @@ const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, isButton 
   return (
     <Component 
       onClick={onClick}
-      className={`w-full flex items-center gap-3.5 px-4 py-3 ${onClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''}`}
+      className={`w-full flex items-center gap-3.5 px-4 py-3 ${onClick ? 'cursor-pointer hover:bg-[var(--bg-hover)] active:bg-black/5 dark:active:bg-white/5 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''}`}
     >
       {!isButton && Icon && (
         <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
@@ -49,8 +49,8 @@ const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, isButton 
       )}
       {!isButton && (
         <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
-          <p className="text-[15px] text-slate-900 dark:text-slate-100 leading-tight truncate">{title}</p>
-          {subtitle && <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5 truncate">{subtitle}</p>}
+          <p className="text-[15px] text-[var(--text-main)] leading-tight truncate">{title}</p>
+          {subtitle && <p className="text-[13px] text-[var(--text-muted)] leading-snug mt-0.5 truncate">{subtitle}</p>}
         </div>
       )}
       {isButton && (
@@ -155,10 +155,10 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-black pb-28 pt-4 lg:pt-8">
+    <div className="min-h-screen bg-[var(--bg-app)] pb-28 pt-4 lg:pt-8">
       <div className="max-w-2xl mx-auto px-4">
         
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">Settings</h1>
+        <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Settings</h1>
 
         {/* Appearance */}
         <Section title="Appearance">
@@ -211,7 +211,7 @@ export default function Settings() {
             right={<Toggle checked={tracking} onChange={toggleTracking} />}
           />
           {tracking && (
-            <div className="px-4 py-3 bg-slate-50 dark:bg-white/5 border-t border-slate-200 dark:border-white/10 text-[13px]">
+            <div className="px-4 py-3 bg-[var(--bg-app)] border-t border-[var(--border-subtle)] text-[13px]">
               {trackError ? (
                 <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                   <AlertCircle size={14} /> {trackError}
@@ -219,15 +219,15 @@ export default function Settings() {
               ) : trackStatus ? (
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-semibold text-slate-700 dark:text-slate-200">Current Status: </span>
+                    <span className="font-semibold text-[var(--text-main)]">Current Status: </span>
                     <span className={trackStatus.busy ? 'text-orange-500 font-bold' : 'text-green-500 font-bold capitalize'}>
                       {trackStatus.activity}
                     </span>
                   </div>
-                  <span className="text-slate-500">{(trackStatus.confidence * 100).toFixed(0)}% accuracy</span>
+                  <span className="text-[var(--text-muted)]">{(trackStatus.confidence * 100).toFixed(0)}% accuracy</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-slate-500">
+                <div className="flex items-center gap-2 text-[var(--text-muted)]">
                   <RefreshCw size={14} className="animate-spin" /> Analyzing motion data...
                 </div>
               )}
