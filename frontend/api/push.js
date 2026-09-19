@@ -83,8 +83,12 @@ export default async function handler(req, res) {
     
     return res.status(200).json({ message: 'Push sent successfully' });
 
-  } catch (error) {
-    console.error('Error sending push:', error);
-    return res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error('Error sending push:', err);
+    return res.status(500).json({ 
+        error: err.message, 
+        statusCode: err.statusCode,
+        details: err.body
+    });
   }
 }
