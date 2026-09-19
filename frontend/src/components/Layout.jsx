@@ -26,7 +26,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import ChatButton from './ChatButton';
 import UserGuideTour from './UserGuideTour';
-import TaskAlarmManager from './TaskAlarmManager';
 
 export default function Layout() {
   const location = useLocation();
@@ -1281,7 +1280,6 @@ export default function Layout() {
 
         <ChatButton />
         <UserGuideTour />
-        <TaskAlarmManager />
       </div>
     </div>
   );

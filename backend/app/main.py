@@ -412,17 +412,10 @@ async def auto_shift(
     # Apply a 30-minute busy signal block to force shifting
     apply_busy_signal(request, True, now_ist() + timedelta(minutes=30))
     
-    # Send Notification
-    collection = get_user_collection()
-    user = await collection.find_one({"google_id": user_id})
-    email = user.get("email") if user else ""
-    
     await notify_user(
         user_id=user_id,
-        user_email=email,
         title="Auto-Shift Triggered",
-        message="You appear busy. Your schedule has been safely pushed back by 30 minutes to give you time.",
-        bg_tasks=bg_tasks
+        message="You appear busy. Your schedule has been safely pushed back by 30 minutes to give you time."
     )
     
     return await schedule(request, user_id)

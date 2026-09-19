@@ -210,19 +210,11 @@ async def query_endpoint(
                 if push_sub and wants_push and scheduled_start:
                     schedule_push_via_qstash(user_id, params.get("name", "New Task"), scheduled_start, push_sub)
 
-                # Dispatch real-time web push notification with task name
+                # Dispatch real-time web notification with task name
                 try:
                     from .notifications import notify_user
-                    user_email = (user or {}).get("email", "")
                     task_name = params.get("name", "New Task")
-                    background_tasks.add_task(
-                        notify_user,
-                        user_id,
-                        user_email,
-                        "Task Created",
-                        f"Scheduled '{task_name}' into your optimal focus window.",
-                        background_tasks
-                    )
+                    await notify_user(user_id, "Task Created", f"Scheduled '{task_name}' into your optimal focus window.")
                 except Exception as ne:
                     print(f"Task notification error: {ne}")
 
@@ -261,10 +253,7 @@ async def query_endpoint(
                 
                 try:
                     from .notifications import notify_user
-                    user_email = (user or {}).get("email", "")
-                    background_tasks.add_task(
-                        notify_user, user_id, user_email, "Task Updated", "Updated task successfully via AI.", background_tasks
-                    )
+                    await notify_user(user_id, "Task Updated", "Updated task successfully via AI.")
                 except Exception as ne:
                     pass
 
@@ -282,10 +271,7 @@ async def query_endpoint(
                 
                 try:
                     from .notifications import notify_user
-                    user_email = (user or {}).get("email", "")
-                    background_tasks.add_task(
-                        notify_user, user_id, user_email, "Task Deleted", "Deleted task successfully via AI.", background_tasks
-                    )
+                    await notify_user(user_id, "Task Deleted", "Deleted task successfully via AI.")
                 except Exception as ne:
                     pass
 

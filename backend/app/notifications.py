@@ -181,18 +181,13 @@ async def subscribe_push(sub: PushSubscription, user_id: str = Depends(get_curre
     return {"success": True}
 
 
-async def notify_user(user_id: str, user_email: str, title: str, message: str, bg_tasks: BackgroundTasks, type: str = "alert"):
+async def notify_user(user_id: str, title: str, message: str, type: str = "alert"):
     """
-    Helper function to dispatch both web and email notifications concurrently, and save to DB.
+    Helper function to save notification to DB and broadcast real-time SSE push.
+    Individual per-task email notifications are disabled to prevent email inbox clutter.
     """
     await save_notification_to_db(user_id, title, message, type)
-    
-    # 1. Dispatch Web Push instantly via SSE
     await dispatch_web_push(user_id, message, title)
-    
-    # 2. Dispatch Email via Background Task
-    if user_email:
-        bg_tasks.add_task(send_email_sync, user_email, title, message)
 
 @router.get("/stream")
 async def notification_stream(request: Request, token: str):
@@ -261,16 +256,10 @@ async def mark_notification_read(notification_id: str, user_id: str = Depends(ge
 # Example endpoint to trigger a manual test notification
 @router.post("/test")
 async def test_notification(
-    bg_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user_id),
 ):
-    from .database import get_user_collection
-    collection = get_user_collection()
-    user = await collection.find_one({"google_id": user_id})
-    email = user.get("email") if user else ""
-    
     title = "TaskPulse Alert"
     message = "Your notification channels and schedule alerts are fully active."
     
-    await notify_user(user_id, email, title, message, bg_tasks, type="alert")
+    await notify_user(user_id, title, message, type="alert")
     return {"message": "Test notification dispatched"}
