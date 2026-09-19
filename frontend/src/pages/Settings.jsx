@@ -24,6 +24,52 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+// UI Components for native look
+const Section = ({ title, children, footer }) => (
+  <div className="mb-8">
+    {title && <p className="px-4 text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{title}</p>}
+    <div className="bg-white dark:bg-[#1a1a1c] border-y sm:border sm:rounded-2xl border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
+      {children}
+    </div>
+    {footer && <p className="px-4 text-[13px] text-slate-500 dark:text-slate-400 mt-2">{footer}</p>}
+  </div>
+);
+
+const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, isButton }) => {
+  const Component = onClick ? 'button' : 'div';
+  return (
+    <Component 
+      onClick={onClick}
+      className={`w-full flex items-center gap-3.5 px-4 py-3 ${onClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''}`}
+    >
+      {!isButton && Icon && (
+        <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
+          <Icon size={16} />
+        </div>
+      )}
+      {!isButton && (
+        <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
+          <p className="text-[15px] text-slate-900 dark:text-slate-100 leading-tight truncate">{title}</p>
+          {subtitle && <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5 truncate">{subtitle}</p>}
+        </div>
+      )}
+      {isButton && (
+        <div className="flex-1 text-center">
+          <p className="text-[15px] font-medium text-blue-600 dark:text-blue-500">{title}</p>
+        </div>
+      )}
+      {right && <div className="shrink-0 flex items-center">{right}</div>}
+    </Component>
+  );
+};
+
+const Toggle = ({ checked, onChange }) => (
+  <label className="relative inline-flex items-center cursor-pointer">
+    <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only peer" />
+    <div className="w-[50px] h-[30px] bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[20px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-[26px] after:w-[26px] after:transition-all after:shadow-sm peer-checked:bg-green-500 dark:peer-checked:bg-green-500"></div>
+  </label>
+);
+
 export default function Settings() {
   const { profile, token, API_BASE, fetchProfile } = useAuth();
   const navigate = useNavigate();
@@ -107,52 +153,6 @@ export default function Settings() {
     setAlarmEnabled(val);
     saveNotifConfigs(notifPref, pushEnabled, val);
   };
-
-  // UI Components for native look
-  const Section = ({ title, children, footer }) => (
-    <div className="mb-8">
-      {title && <p className="px-4 text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{title}</p>}
-      <div className="bg-white dark:bg-[#1a1a1c] border-y sm:border sm:rounded-2xl border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
-        {children}
-      </div>
-      {footer && <p className="px-4 text-[13px] text-slate-500 dark:text-slate-400 mt-2">{footer}</p>}
-    </div>
-  );
-
-  const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, isButton }) => {
-    const Component = onClick ? 'button' : 'div';
-    return (
-      <Component 
-        onClick={onClick}
-        className={`w-full flex items-center gap-3.5 px-4 py-3 ${onClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''}`}
-      >
-        {!isButton && Icon && (
-          <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
-            <Icon size={16} />
-          </div>
-        )}
-        {!isButton && (
-          <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
-            <p className="text-[15px] text-slate-900 dark:text-slate-100 leading-tight truncate">{title}</p>
-            {subtitle && <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5 truncate">{subtitle}</p>}
-          </div>
-        )}
-        {isButton && (
-          <div className="flex-1 text-center">
-            <p className="text-[15px] font-medium text-blue-600 dark:text-blue-500">{title}</p>
-          </div>
-        )}
-        {right && <div className="shrink-0 flex items-center">{right}</div>}
-      </Component>
-    );
-  };
-
-  const Toggle = ({ checked, onChange }) => (
-    <label className="relative inline-flex items-center cursor-pointer">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only peer" />
-      <div className="w-[50px] h-[30px] bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-[20px] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 dark:after:border-slate-600 after:border after:rounded-full after:h-[26px] after:w-[26px] after:transition-all after:shadow-sm peer-checked:bg-green-500 dark:peer-checked:bg-green-500"></div>
-    </label>
-  );
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-black pb-28 pt-4 lg:pt-8">
