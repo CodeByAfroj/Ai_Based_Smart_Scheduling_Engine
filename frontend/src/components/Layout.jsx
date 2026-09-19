@@ -593,7 +593,7 @@ export default function Layout() {
             
             {toast.taskId && (
               <button
-                onClick={() => { navigate('/tasks'); dismissToast(toast.id); }}
+                onClick={() => { navigate(`/tasks#task-${toast.taskId}`); dismissToast(toast.id); }}
                 className="group relative shrink-0 flex items-center justify-center text-[10px] font-bold text-black bg-white hover:bg-slate-200 px-3 py-1.5 rounded-full transition-all"
               >
                 View

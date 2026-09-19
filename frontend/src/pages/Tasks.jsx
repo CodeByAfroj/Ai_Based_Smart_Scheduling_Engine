@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import { Plus, Clock, Calendar as CalendarIcon, CheckCircle2, Circle, Trash2, Wand2, Lock } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { localInputToIST, defaultLocalValue, formatIST, formatDateIST } from '../utils/time';
 
 export default function Tasks() {
@@ -16,6 +17,24 @@ export default function Tasks() {
       return next;
     });
   };
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash && !loadingTasks && tasks.length > 0) {
+      const id = location.hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.classList.add('bg-indigo-100', 'dark:bg-indigo-900/40', 'transition-all', 'duration-1000');
+          setTimeout(() => {
+            element.classList.remove('bg-indigo-100', 'dark:bg-indigo-900/40');
+          }, 2000);
+        }, 100);
+      }
+    }
+  }, [location.hash, loadingTasks, tasks.length]);
 
   // Form State
   const [name, setName] = useState('');
@@ -260,7 +279,7 @@ export default function Tasks() {
           ) : (
             <div className="divide-y divide-[var(--border-subtle)]">
               {filteredTasks.map(task => (
-                              <div key={task.id} className={`p-4 flex items-center gap-4 hover:bg-[var(--bg-hover)] transition-colors ${
+                <div id={`task-${task.id}`} key={task.id} className={`p-4 flex items-center gap-4 hover:bg-[var(--bg-hover)] transition-colors ${
                   task.status === 'completed' ? 'opacity-50' :
                   task.status === 'missed' ? 'opacity-60 bg-slate-50/50' : ''
                 }`}>
