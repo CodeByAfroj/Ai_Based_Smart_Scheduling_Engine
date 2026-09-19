@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Bell, Moon, Sun, Monitor, Vibrate, Volume2, VolumeX,
   MessageSquare, Activity, Play, Square, AlertCircle, RefreshCw,
-  ChevronRight, Zap, Smartphone, Settings as SettingsIcon
+  ChevronRight, Zap, Smartphone, Settings as SettingsIcon, CheckCircle2
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLiveTracking } from '../contexts/TrackingContext';
