@@ -203,12 +203,12 @@ async def query_endpoint(
                 result["created_task_id"] = task_id
                 result["task_created"] = True
 
-                # Immediately schedule QStash Push notification for start time
+                # Schedule QStash Push notification for confirmed scheduled start time
                 settings = (user or {}).get("settings", {})
                 push_sub = settings.get("push_subscription")
                 wants_push = settings.get("push_notifications", True)
-                if push_sub and wants_push and (scheduled_start or e_start_dt):
-                    schedule_push_via_qstash(user_id, params.get("name", "New Task"), scheduled_start or e_start_dt, push_sub)
+                if push_sub and wants_push and scheduled_start:
+                    schedule_push_via_qstash(user_id, params.get("name", "New Task"), scheduled_start, push_sub)
 
                 # Dispatch real-time web push notification with task name
                 try:

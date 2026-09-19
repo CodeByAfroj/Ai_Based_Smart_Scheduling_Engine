@@ -178,10 +178,12 @@ export default function TaskAlarmManager() {
       console.log('[ALARM CHECK]', new Date(now).toLocaleTimeString(), `Checking ${tasks.length} tasks...`);
       
       const dueTask = tasks.find(t => {
-        if (t.status === 'completed') return false;
+        if (t.status === 'completed' || t.status === 'missed') return false;
         
-        // Trigger when the task is supposed to START, not when it ends!
-        const targetTimeStr = t.scheduled_start || t.earliest_start || t.deadline;
+        // ONLY trigger alarm for scheduled tasks or fixed meetings!
+        if (t.status !== 'scheduled' && !t.fixed) return false;
+        
+        const targetTimeStr = t.scheduled_start || (t.fixed ? t.earliest_start : null);
         if (!targetTimeStr) return false;
         
         const targetTime = new Date(targetTimeStr).getTime();
@@ -190,13 +192,10 @@ export default function TaskAlarmManager() {
         // It's only truly "dismissed" if the currently scheduled time matches the time we dismissed it for
         const isDismissed = dismissedAlarmsRef.current[t.id] === targetTimeStr;
         const cond1 = targetTime <= now;
-        const cond2 = (now - targetTime < 24 * 60 * 60 * 1000);
+        // Trigger within a tight 15-minute start window (0 to 15m after scheduled_start)
+        const cond2 = diff >= 0 && diff < 15 * 60 * 1000;
         const cond3 = !isDismissed;
         
-        console.log(`  [${t.name}] target=${new Date(targetTime).toLocaleTimeString()}, diff=${Math.round(diff/1000)}s, dismissed=${isDismissed}, status=${t.status} | c1:${cond1} c2:${cond2} c3:${cond3}`);
-        
-        // If the start time is reached, and we haven't dismissed it yet
-        // Also only trigger for things recently started (within last 24h) to avoid old backlog spamming
         return cond1 && cond2 && cond3;
       });
       

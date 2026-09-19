@@ -79,11 +79,11 @@ async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_
                 val = val.astimezone(IST)
     # Schedule push notification via QStash if user has push subscription
     user = await get_user_collection().find_one({"google_id": user_id})
-    if user:
+    if user and task_doc.get("status") not in ["completed", "missed"]:
         settings = user.get("settings", {})
         push_sub = settings.get("push_subscription")
         wants_push = settings.get("push_notifications", True)
-        target_time = task_doc.get("scheduled_start") or task_doc.get("earliest_start") or task_doc.get("preferred_start_after")
+        target_time = task_doc.get("scheduled_start") or task_doc.get("earliest_start")
         reminders_list = task_doc.get("reminders") or data.reminders
         if push_sub and wants_push and target_time:
             schedule_push_via_qstash(user_id, data.name, target_time, push_sub, reminders=reminders_list)
@@ -105,20 +105,32 @@ async def update_task(task_id: str, data: TaskUpdate, user_id: str = Depends(get
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
         
-    # Schedule push notification for updated task
+    # Fetch updated task document
     updated_doc = await collection.find_one(query)
+    if updated_doc:
+        updated_doc["id"] = str(updated_doc.pop("_id"))
+        for field in ["scheduled_start", "scheduled_end", "earliest_start", "deadline", "created_at", "updated_at"]:
+            val = updated_doc.get(field)
+            if isinstance(val, datetime):
+                if val.tzinfo is None:
+                    val = val.replace(tzinfo=timezone.utc).astimezone(IST)
+                else:
+                    val = val.astimezone(IST)
+                updated_doc[field] = val.isoformat()
+
+    # Schedule push notification ONLY for pending/scheduled tasks
     user = await get_user_collection().find_one({"google_id": user_id})
-    if updated_doc and user:
+    if updated_doc and user and updated_doc.get("status") not in ["completed", "missed"]:
         settings = user.get("settings", {})
         push_sub = settings.get("push_subscription")
         wants_push = settings.get("push_notifications", True)
-        target_time = updated_doc.get("scheduled_start") or updated_doc.get("earliest_start") or updated_doc.get("preferred_start_after")
+        target_time = updated_doc.get("scheduled_start") or updated_doc.get("earliest_start")
         reminders_list = updated_doc.get("reminders")
         if push_sub and wants_push and target_time:
             task_name = updated_doc.get("name", "Task")
             schedule_push_via_qstash(user_id, task_name, target_time, push_sub, reminders=reminders_list)
 
-    return {"message": "Task updated"}
+    return {"message": "Task updated", "task": updated_doc}
 
 @router.delete("/{task_id}")
 async def delete_task(task_id: str, user_id: str = Depends(get_current_user_id)):

@@ -150,8 +150,8 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
         # 2. Schedule main start-time notification
         delay_seconds = int((target - now).total_seconds())
         if delay_seconds <= 0:
-            print(f"⚠️ [QSTASH] Scheduled time {target} is in the past. Triggering immediately (1s).")
-            delay_seconds = 1
+            print(f"⚠️ [QSTASH] Scheduled time {target} is in the past ({abs(delay_seconds)}s ago). Skipping push scheduling.")
+            return
 
         qstash_client.message.publish_json(
             url=CLOUDFLARE_WORKER_URL,

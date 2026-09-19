@@ -107,14 +107,26 @@ export function TaskProvider({ children }) {
     });
 
     try {
-      await fetch(`${API_BASE}/tasks/${id}`, {
+      const res = await fetch(`${API_BASE}/tasks/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(updates)
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.task) {
+          setTasks(prev => {
+            const updated = prev.map(t => t.id === id ? { ...t, ...data.task } : t);
+            localStorage.setItem('taskpulse_tasks', JSON.stringify(updated));
+            return updated;
+          });
+        }
+      } else {
+        console.error('Failed to update task on backend', res.status);
+        fetchTasks(true);
+      }
     } catch (err) {
       console.error('Error updating task:', err);
-      // In a production app, we'd roll back here on failure
       fetchTasks(true);
     }
   };
