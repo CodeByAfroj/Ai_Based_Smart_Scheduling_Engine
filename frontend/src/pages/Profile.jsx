@@ -43,7 +43,7 @@ export default function Profile() {
   ];
 
   return (
-    <div className="bg-[var(--bg-app)] pb-28 pt-4 lg:pt-8 min-h-full">
+    <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-2xl mx-auto px-4">
         
         <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Profile</h1>

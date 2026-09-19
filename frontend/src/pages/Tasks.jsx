@@ -104,7 +104,7 @@ export default function Tasks() {
   if (loadingTasks && tasks.length === 0) return <div className="p-10 text-center text-[var(--text-muted)]">Loading tasks...</div>;
 
   return (
-    <div className="bg-[var(--bg-app)] pb-32 pt-4 lg:pt-8 min-h-full">
+    <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-2xl mx-auto px-4">
 
         <div data-tour="tasks-header" className="flex items-center justify-between mb-6 scroll-mt-24">
