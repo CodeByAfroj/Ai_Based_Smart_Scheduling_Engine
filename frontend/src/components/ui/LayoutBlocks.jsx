@@ -2,11 +2,11 @@ import React from 'react';
 
 export const Section = ({ title, children, footer, className = '' }) => (
   <div className={`mb-8 ${className}`}>
-    {title && <p className="px-4 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">{title}</p>}
+    {title && <div className="px-4 text-[13px] font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-2">{title}</div>}
     <div className="bg-[var(--bg-panel)] border rounded-2xl border-[var(--border-subtle)] overflow-hidden divide-y divide-[var(--border-subtle)] shadow-sm">
       {children}
     </div>
-    {footer && <p className="px-4 text-[13px] text-[var(--text-muted)] mt-2">{footer}</p>}
+    {footer && <div className="px-4 text-[13px] text-[var(--text-muted)] mt-2">{footer}</div>}
   </div>
 );
 
@@ -26,16 +26,16 @@ export const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, is
       {!isButton && (
         <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
           <div className="flex items-center gap-2">
-            <p className="text-[15px] text-[var(--text-main)] leading-tight truncate">{title}</p>
+            <div className="text-[15px] text-[var(--text-main)] leading-tight truncate">{title}</div>
             {badge && <span className="bg-[var(--accent-light)] text-[var(--accent-base)] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">{badge}</span>}
           </div>
-          {subtitle && <p className="text-[13px] text-[var(--text-muted)] leading-snug mt-0.5">{subtitle}</p>}
+          {subtitle && <div className="text-[13px] text-[var(--text-muted)] leading-snug mt-0.5">{subtitle}</div>}
           {children && <div className="mt-1">{children}</div>}
         </div>
       )}
       {isButton && (
         <div className="flex-1 text-center">
-          <p className="text-[15px] font-medium text-[var(--accent-base)]">{title}</p>
+          <div className="text-[15px] font-medium text-[var(--accent-base)]">{title}</div>
         </div>
       )}
       {right && <div className="shrink-0 flex items-center">{right}</div>}
