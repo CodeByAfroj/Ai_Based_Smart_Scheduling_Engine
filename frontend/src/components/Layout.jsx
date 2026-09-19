@@ -1090,20 +1090,25 @@ export default function Layout() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-5 py-3.5 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors ${notification.read
+                          className={`px-4 py-3 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors ${notification.read
                             ? 'hover:bg-white/5'
                             : 'bg-indigo-500/10 hover:bg-indigo-500/20'
                             }`}
                           onClick={() => setShowNotifMenu(false)}
                         >
-                          <p className="text-[13px] font-bold text-slate-100 flex items-center gap-2">
-                            {!notification.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>}
-                            {notification.title || 'Alert'}
-                          </p>
-
-                          <p className="text-[12px] text-slate-300 mt-1 leading-snug font-medium pl-3.5">
-                            {notification.message || ''}
-                          </p>
+                          <div className="flex items-start gap-3">
+                            <div className={`shrink-0 mt-0.5 p-1.5 rounded-full ${!notification.read ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-slate-400'}`}>
+                              <Bell size={14} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[10px] font-black uppercase tracking-wider leading-none mb-1 opacity-90 ${!notification.read ? 'text-indigo-400' : 'text-slate-400'}`}>
+                                {notification.title || 'Alert'}
+                              </p>
+                              <p className={`text-[12px] leading-snug truncate pr-2 ${!notification.read ? 'text-slate-100 font-medium' : 'text-slate-300'}`}>
+                                {notification.message || ''}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       ))
                     )}
@@ -1302,14 +1307,22 @@ export default function Layout() {
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-5 py-3.5 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors ${notification.read ? 'hover:bg-white/5' : 'bg-indigo-500/10 hover:bg-indigo-500/20'}`}
+                          className={`px-4 py-3 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors ${notification.read ? 'hover:bg-white/5' : 'bg-indigo-500/10 hover:bg-indigo-500/20'}`}
                           onClick={() => setShowNotifMenu(false)}
                         >
-                          <p className="text-[13px] font-bold text-slate-100 flex items-center gap-2">
-                            {!notification.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>}
-                            {notification.title || 'Alert'}
-                          </p>
-                          <p className="text-[12px] text-slate-300 mt-1 leading-snug font-medium pl-3.5">{notification.message || ''}</p>
+                          <div className="flex items-start gap-3">
+                            <div className={`shrink-0 mt-0.5 p-1.5 rounded-full ${!notification.read ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-slate-400'}`}>
+                              <Bell size={14} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-[10px] font-black uppercase tracking-wider leading-none mb-1 opacity-90 ${!notification.read ? 'text-indigo-400' : 'text-slate-400'}`}>
+                                {notification.title || 'Alert'}
+                              </p>
+                              <p className={`text-[12px] leading-snug truncate pr-2 ${!notification.read ? 'text-slate-100 font-medium' : 'text-slate-300'}`}>
+                                {notification.message || ''}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       ))
                     )}
