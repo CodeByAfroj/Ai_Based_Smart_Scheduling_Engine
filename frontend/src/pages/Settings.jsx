@@ -38,6 +38,14 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    if (profile) {
+      if (profile.notification_preference) setNotifPref(profile.notification_preference);
+      if (profile.push_notifications !== undefined) setPushEnabled(profile.push_notifications);
+      if (profile.alarm_enabled !== undefined) setAlarmEnabled(profile.alarm_enabled);
+    }
+  }, [profile]);
+
   const { theme, applyTheme } = useTheme();
   const { tracking, error: trackError, status: trackStatus, toggle: toggleTracking } = useLiveTracking();
 
