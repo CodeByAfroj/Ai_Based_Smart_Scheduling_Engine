@@ -1064,9 +1064,9 @@ export default function Layout() {
               </button>
 
               {showNotifMenu && (
-                <div className="absolute right-0 top-10 w-80 max-w-[90vw] bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
-                    <p className="font-semibold text-sm text-[var(--text-main)]">
+                <div className="absolute right-0 top-12 w-[340px] max-w-[90vw] bg-black/90 backdrop-blur-2xl border border-white/10 rounded-[28px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] z-50 overflow-hidden text-white animate-in slide-in-from-top-2 duration-300">
+                  <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+                    <p className="font-bold text-sm tracking-wide">
                       Notifications
                     </p>
 
@@ -1074,7 +1074,7 @@ export default function Layout() {
                       <button
                         type="button"
                         onClick={markAllRead}
-                        className="text-xs text-[var(--accent-base)] hover:underline"
+                        className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider"
                       >
                         Mark all read
                       </button>
@@ -1083,24 +1083,25 @@ export default function Layout() {
 
                   <div className="max-h-80 overflow-y-auto">
                     {notifications.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-[var(--text-muted)] text-center">
+                      <p className="px-5 py-8 text-sm text-slate-400 text-center font-medium">
                         No notifications yet.
                       </p>
                     ) : (
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 cursor-pointer ${notification.read
-                            ? ''
-                            : 'bg-[var(--bg-hover)]'
+                          className={`px-5 py-3.5 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors ${notification.read
+                            ? 'hover:bg-white/5'
+                            : 'bg-indigo-500/10 hover:bg-indigo-500/20'
                             }`}
                           onClick={() => setShowNotifMenu(false)}
                         >
-                          <p className="text-sm font-semibold text-[var(--text-main)]">
+                          <p className="text-[13px] font-bold text-slate-100 flex items-center gap-2">
+                            {!notification.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>}
                             {notification.title || 'Alert'}
                           </p>
 
-                          <p className="text-xs text-[var(--text-muted)] mt-1">
+                          <p className="text-[12px] text-slate-300 mt-1 leading-snug font-medium pl-3.5">
                             {notification.message || ''}
                           </p>
                         </div>
@@ -1108,13 +1109,13 @@ export default function Layout() {
                     )}
                   </div>
                   
-                  <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-hover)] px-4 py-2 text-center">
+                  <div className="border-t border-white/10 bg-white/5 px-4 py-3 text-center">
                     <button 
                       onClick={() => {
                         setShowNotifMenu(false);
                         navigate('/notifications');
                       }}
-                      className="text-sm font-medium text-[var(--accent-base)] hover:underline"
+                      className="text-[12px] font-bold text-indigo-400 hover:text-white transition-colors"
                     >
                       View all Reminders & Alerts
                     </button>
@@ -1285,36 +1286,39 @@ export default function Layout() {
               </button>
 
               {showNotifMenu && (
-                <div className="fixed right-4 top-16 w-80 max-w-[calc(100vw-2rem)] bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-[9999] overflow-hidden">
-                  <div className="px-4 py-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
-                    <p className="font-semibold text-sm text-[var(--text-main)]">Notifications</p>
+                <div className="fixed right-4 top-16 w-[340px] max-w-[calc(100vw-2rem)] bg-black/90 backdrop-blur-2xl border border-white/10 rounded-[28px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] z-[9999] overflow-hidden text-white animate-in slide-in-from-top-2 duration-300">
+                  <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+                    <p className="font-bold text-sm tracking-wide">Notifications</p>
                     {notifications.length > 0 && (
-                      <button type="button" onClick={markAllRead} style={{ minHeight: 'unset' }} className="text-xs text-[var(--accent-base)] hover:underline">
+                      <button type="button" onClick={markAllRead} style={{ minHeight: 'unset' }} className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider">
                         Mark all read
                       </button>
                     )}
                   </div>
                   <div className="max-h-72 overflow-y-auto">
                     {notifications.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-[var(--text-muted)] text-center">No notifications yet.</p>
+                      <p className="px-5 py-8 text-sm text-slate-400 text-center font-medium">No notifications yet.</p>
                     ) : (
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 cursor-pointer ${notification.read ? '' : 'bg-[var(--bg-hover)]'}`}
+                          className={`px-5 py-3.5 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors ${notification.read ? 'hover:bg-white/5' : 'bg-indigo-500/10 hover:bg-indigo-500/20'}`}
                           onClick={() => setShowNotifMenu(false)}
                         >
-                          <p className="text-sm font-semibold text-[var(--text-main)]">{notification.title || 'Alert'}</p>
-                          <p className="text-xs text-[var(--text-muted)] mt-1">{notification.message || ''}</p>
+                          <p className="text-[13px] font-bold text-slate-100 flex items-center gap-2">
+                            {!notification.read && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>}
+                            {notification.title || 'Alert'}
+                          </p>
+                          <p className="text-[12px] text-slate-300 mt-1 leading-snug font-medium pl-3.5">{notification.message || ''}</p>
                         </div>
                       ))
                     )}
                   </div>
-                  <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-hover)] px-4 py-2 text-center">
+                  <div className="border-t border-white/10 bg-white/5 px-4 py-3 text-center">
                     <button
                       style={{ minHeight: 'unset' }}
                       onClick={() => { setShowNotifMenu(false); navigate('/notifications'); }}
-                      className="text-sm font-medium text-[var(--accent-base)] hover:underline"
+                      className="text-[12px] font-bold text-indigo-400 hover:text-white transition-colors"
                     >
                       View all Reminders & Alerts
                     </button>
