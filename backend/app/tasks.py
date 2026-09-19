@@ -7,9 +7,10 @@ import uuid
 IST = ZoneInfo("Asia/Kolkata")
 def now_ist(): return datetime.now(IST)
 from pydantic import BaseModel
-from .database import get_database
+from .database import get_database, get_user_collection
 from .auth import JWT_SECRET
 from .profile import get_current_user_id
+from .notifications import schedule_push_via_qstash
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -76,8 +77,16 @@ async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_
                 val = val.replace(tzinfo=timezone.utc).astimezone(IST)
             else:
                 val = val.astimezone(IST)
-            task_doc[field] = val.isoformat()
-            
+    # Schedule push notification via QStash if user has push subscription
+    user = await get_user_collection().find_one({"google_id": user_id})
+    if user:
+        settings = user.get("settings", {})
+        push_sub = settings.get("push_subscription")
+        wants_push = settings.get("push_notifications", True)
+        target_time = data.preferred_start_after or data.earliest_start
+        if push_sub and wants_push and target_time:
+            schedule_push_via_qstash(user_id, data.name, target_time, push_sub)
+
     return {"message": "Task created", "task": task_doc}
 
 from bson import ObjectId

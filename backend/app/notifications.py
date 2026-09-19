@@ -104,13 +104,19 @@ async def save_notification_to_db(user_id: str, title: str, message: str, type: 
 
 def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_sub: dict):
     if not qstash_client:
-        print("QStash client not initialized, skipping push scheduling.")
+        print("⚠️ [PUSH] QStash client not initialized, skipping push scheduling.")
+        return
+
+    if not push_sub:
+        print(f"⚠️ [PUSH] User {user_id} has no push subscription in database. Web Push skipped.")
         return
 
     try:
         # Calculate delay in seconds
         import datetime
         now = datetime.datetime.now(timezone.utc)
+        if isinstance(scheduled_time, str):
+            scheduled_time = datetime.datetime.fromisoformat(scheduled_time)
         target = scheduled_time.astimezone(timezone.utc)
         delay_seconds = int((target - now).total_seconds())
 
@@ -125,9 +131,9 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
             },
             delay=f"{delay_seconds}s"
         )
-        print(f"Scheduled Web Push for {task_name} at {target} via QStash")
+        print(f"✅ [QSTASH] Scheduled Web Push for '{task_name}' at {target} (delay: {delay_seconds}s) -> {CLOUDFLARE_WORKER_URL}")
     except Exception as e:
-        print(f"Error scheduling push via QStash: {e}")
+        print(f"❌ [QSTASH ERROR] Error scheduling push via QStash: {e}")
 
 @router.post("/subscribe")
 async def subscribe_push(sub: PushSubscription, user_id: str = Depends(get_current_user_id)):
