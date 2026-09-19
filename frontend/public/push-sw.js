@@ -11,8 +11,8 @@ self.addEventListener('push', function(event) {
   const title = data.title || 'TaskPulse Reminder';
   const options = {
     body: data.body || 'You have a scheduled task starting now.',
-    icon: '/pwa-192x192.png',
-    badge: '/pwa-192x192.png',
+    icon: data.icon || (self.location.origin + '/pwa-192x192.png'),
+    badge: data.badge || (self.location.origin + '/pwa-192x192.png'),
     vibrate: [500, 250, 500, 250, 500, 250, 500],
     data: { url: data.url || '/' }
   };

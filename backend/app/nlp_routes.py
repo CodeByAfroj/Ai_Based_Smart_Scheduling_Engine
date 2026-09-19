@@ -169,8 +169,8 @@ async def query_endpoint(
                 e_start = e_start_dt.isoformat()
 
                 from datetime import timedelta
-                if params.get("fixed"):
-                    deadline = e_start
+                if params.get("fixed") or params.get("earliest_start"):
+                    deadline = (e_start_dt + timedelta(hours=2)).isoformat() if not params.get("fixed") else e_start
                     status = "scheduled"
                     scheduled_start = e_start_dt
                     scheduled_end = e_start_dt + timedelta(minutes=params.get("duration_minutes", 30))
@@ -202,6 +202,13 @@ async def query_endpoint(
                 await db["tasks"].insert_one(new_task)
                 result["created_task_id"] = task_id
                 result["task_created"] = True
+
+                # Immediately schedule QStash Push notification for start time
+                settings = (user or {}).get("settings", {})
+                push_sub = settings.get("push_subscription")
+                wants_push = settings.get("push_notifications", True)
+                if push_sub and wants_push and (scheduled_start or e_start_dt):
+                    schedule_push_via_qstash(user_id, params.get("name", "New Task"), scheduled_start or e_start_dt, push_sub)
 
                 # Dispatch real-time web push notification with task name
                 try:
