@@ -16,7 +16,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 # QStash setup
 QSTASH_TOKEN = os.getenv("QSTASH_TOKEN")
-CLOUDFLARE_WORKER_URL = os.getenv("CLOUDFLARE_WORKER_URL", "https://push-notifier.example.workers.dev")
+CLOUDFLARE_WORKER_URL = "https://ai-based-smart-scheduling-engine.vercel.app/api/push"
 
 if QSTASH_TOKEN:
     qstash_client = QStash(QSTASH_TOKEN)
