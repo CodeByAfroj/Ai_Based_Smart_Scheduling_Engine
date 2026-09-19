@@ -107,7 +107,7 @@ async def save_notification_to_db(user_id: str, title: str, message: str, type: 
     await db["notifications"].insert_one(doc)
     return doc
 
-def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_sub: dict):
+def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_sub: dict, reminders: list = None):
     if not qstash_client:
         print("⚠️ [PUSH] QStash client not initialized, skipping push scheduling.")
         return
@@ -123,15 +123,32 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
             scheduled_time = datetime.datetime.fromisoformat(scheduled_time)
         
         if scheduled_time.tzinfo is None:
-            # Naive datetimes from Motor/MongoDB BSON dates are in UTC
             target = scheduled_time.replace(tzinfo=timezone.utc)
         else:
             target = scheduled_time.astimezone(timezone.utc)
 
+        # 1. Schedule prior reminder notifications (e.g. 5m, 10m, 30m before)
+        if reminders and isinstance(reminders, list):
+            for m in reminders:
+                try:
+                    mins = int(m)
+                    rem_target = target - datetime.timedelta(minutes=mins)
+                    rem_delay = int((rem_target - now).total_seconds())
+                    if rem_delay > 0:
+                        qstash_client.message.publish_json(
+                            url=CLOUDFLARE_WORKER_URL,
+                            body={
+                                "title": f"⏰ Reminder ({mins}m before): {task_name}",
+                                "pushSubscription": push_sub
+                            },
+                            delay=f"{rem_delay}s"
+                        )
+                        print(f"✅ [QSTASH REMINDER] Scheduled {mins}m prior alert for '{task_name}' (delay: {rem_delay}s)")
+                except Exception as r_err:
+                    print(f"Error scheduling reminder {m}m: {r_err}")
+
+        # 2. Schedule main start-time notification
         delay_seconds = int((target - now).total_seconds())
-
-        print(f"🕒 [QSTASH CALC] Task: '{task_name}' | Now UTC: {now.strftime('%H:%M:%S')} | Target UTC: {target.strftime('%H:%M:%S')} | Delay: {delay_seconds}s ({delay_seconds/60:.2f}m)")
-
         if delay_seconds <= 0:
             print(f"⚠️ [QSTASH] Scheduled time {target} is in the past. Triggering immediately (1s).")
             delay_seconds = 1
@@ -139,12 +156,12 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
         qstash_client.message.publish_json(
             url=CLOUDFLARE_WORKER_URL,
             body={
-                "title": task_name,
+                "title": f"🚀 Task Starting: {task_name}",
                 "pushSubscription": push_sub
             },
             delay=f"{delay_seconds}s"
         )
-        print(f"✅ [QSTASH] Scheduled Web Push for '{task_name}' at {target} (delay: {delay_seconds}s) -> {CLOUDFLARE_WORKER_URL}")
+        print(f"✅ [QSTASH] Scheduled Main Web Push for '{task_name}' at {target} (delay: {delay_seconds}s) -> {CLOUDFLARE_WORKER_URL}")
     except Exception as e:
         print(f"❌ [QSTASH ERROR] Error scheduling push via QStash: {e}")
 

@@ -12,7 +12,7 @@ self.addEventListener('push', function(event) {
   const options = {
     body: data.body || 'You have a scheduled task starting now.',
     icon: data.icon || (self.location.origin + '/pwa-192x192.png'),
-    badge: data.badge || (self.location.origin + '/pwa-192x192.png'),
+    badge: data.badge || (self.location.origin + '/badge.png'),
     vibrate: [500, 250, 500, 250, 500, 250, 500],
     data: { url: data.url || '/' }
   };

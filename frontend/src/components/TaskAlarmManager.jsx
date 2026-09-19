@@ -227,10 +227,10 @@ export default function TaskAlarmManager() {
         <div className="relative p-8 flex flex-col items-center text-center">
           {/* Animated Radar/Ping Effect Behind Icon */}
           <div className="relative mb-8 mt-4">
-            <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" style={{ animationDuration: '2s' }}></div>
-            <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
-            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.6)]">
-              <AlertCircle size={40} className="text-white animate-pulse" />
+            <div className="absolute inset-0 rounded-full bg-indigo-500/30 animate-ping" style={{ animationDuration: '2s' }}></div>
+            <div className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping" style={{ animationDuration: '2s', animationDelay: '1s' }}></div>
+            <div className="relative w-20 h-20 rounded-2xl bg-slate-950 p-1 flex items-center justify-center border border-white/20 shadow-[0_0_30px_rgba(99,102,241,0.6)] overflow-hidden">
+              <img src="/logo.png" alt="TaskPulse" className="w-full h-full object-cover" />
             </div>
           </div>
 

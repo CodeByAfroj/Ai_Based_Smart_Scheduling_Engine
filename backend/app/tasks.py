@@ -84,8 +84,9 @@ async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_
         push_sub = settings.get("push_subscription")
         wants_push = settings.get("push_notifications", True)
         target_time = task_doc.get("scheduled_start") or task_doc.get("earliest_start") or task_doc.get("preferred_start_after")
+        reminders_list = task_doc.get("reminders") or data.reminders
         if push_sub and wants_push and target_time:
-            schedule_push_via_qstash(user_id, data.name, target_time, push_sub)
+            schedule_push_via_qstash(user_id, data.name, target_time, push_sub, reminders=reminders_list)
 
     return {"message": "Task created", "task": task_doc}
 
@@ -112,9 +113,10 @@ async def update_task(task_id: str, data: TaskUpdate, user_id: str = Depends(get
         push_sub = settings.get("push_subscription")
         wants_push = settings.get("push_notifications", True)
         target_time = updated_doc.get("scheduled_start") or updated_doc.get("earliest_start") or updated_doc.get("preferred_start_after")
+        reminders_list = updated_doc.get("reminders")
         if push_sub and wants_push and target_time:
             task_name = updated_doc.get("name", "Task")
-            schedule_push_via_qstash(user_id, task_name, target_time, push_sub)
+            schedule_push_via_qstash(user_id, task_name, target_time, push_sub, reminders=reminders_list)
 
     return {"message": "Task updated"}
 

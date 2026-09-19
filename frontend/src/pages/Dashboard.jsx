@@ -49,6 +49,23 @@ export default function Dashboard() {
   const [recommendation, setRecommendation] = useState(null);
   const [loadingRec, setLoadingRec] = useState(false);
 
+  if (loading && (!tasks || tasks.length === 0)) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center justify-center p-6 text-center">
+        <div className="relative mb-6">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 via-blue-500 to-amber-400 p-1 animate-pulse shadow-xl shadow-blue-500/20">
+            <div className="w-full h-full bg-slate-950 rounded-[22px] flex items-center justify-center overflow-hidden">
+              <img src="/logo.png" alt="TaskPulse" className="w-16 h-16 object-contain animate-pulse" />
+            </div>
+          </div>
+          <div className="absolute -inset-2 rounded-full border-2 border-indigo-500/30 animate-ping opacity-20 pointer-events-none" />
+        </div>
+        <h2 className="text-xl font-bold text-[var(--text-main)] mb-1">Loading TaskPulse Dashboard...</h2>
+        <p className="text-xs text-[var(--text-muted)] animate-pulse">Syncing smart schedule engine...</p>
+      </div>
+    );
+  }
+
   useEffect(() => {
     if (!token) return;
 
