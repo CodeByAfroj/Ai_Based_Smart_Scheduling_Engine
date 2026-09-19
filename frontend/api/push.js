@@ -74,7 +74,7 @@ export default async function handler(req, res) {
     // 4. Send the Push Notification
     const payload = JSON.stringify({
       title: title || 'TaskPulse Alert',
-      body: `Reminder: It's time to start '${title || 'your scheduled task'}'!`,
+      body: reqBody.body || `It's time to start '${title || 'your scheduled task'}'!`,
       icon: 'https://ai-based-smart-scheduling-engine.vercel.app/pwa-192x192.png',
       badge: 'https://ai-based-smart-scheduling-engine.vercel.app/badge.png',
       url: '/'

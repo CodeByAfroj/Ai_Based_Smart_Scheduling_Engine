@@ -122,8 +122,10 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
         if isinstance(scheduled_time, str):
             scheduled_time = datetime.datetime.fromisoformat(scheduled_time)
         
+        from zoneinfo import ZoneInfo
+        IST = ZoneInfo("Asia/Kolkata")
         if scheduled_time.tzinfo is None:
-            target = scheduled_time.replace(tzinfo=timezone.utc)
+            target = scheduled_time.replace(tzinfo=IST).astimezone(timezone.utc)
         else:
             target = scheduled_time.astimezone(timezone.utc)
 
