@@ -76,14 +76,19 @@ def send_email_sync(to_email: str, subject: str, body: str):
         msg['Subject'] = subject
         msg.attach(MIMEText(body, 'html'))
         
-        server = smtplib.SMTP(smtp_server, int(smtp_port))
-        server.starttls()
+        port = int(smtp_port)
+        if port == 465:
+            server = smtplib.SMTP_SSL(smtp_server, port, timeout=10)
+        else:
+            server = smtplib.SMTP(smtp_server, port, timeout=10)
+            server.starttls()
+            
         server.login(smtp_user, smtp_pass)
         server.send_message(msg)
         server.quit()
-        print(f"Email successfully sent to {to_email}")
+        print(f"📧 Email successfully sent to {to_email}")
     except Exception as e:
-        print(f"Failed to send email to {to_email}: {str(e)}")
+        print(f"⚠️ Failed to send email to {to_email}: {str(e)}")
 
 async def save_notification_to_db(user_id: str, title: str, message: str, type: str = "alert"):
     from .database import get_database
