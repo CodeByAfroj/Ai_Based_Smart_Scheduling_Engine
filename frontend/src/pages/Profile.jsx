@@ -2,14 +2,57 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Clock, Zap, Calendar,
-  SlidersHorizontal, ShieldCheck, Target, User as UserIcon, Settings
+  SlidersHorizontal, ShieldCheck, Target, User as UserIcon, Settings,
+  ChevronRight
 } from 'lucide-react';
 
+// Reusable UI Components matching Settings.jsx
+const Section = ({ title, children, footer }) => (
+  <div className="mb-8">
+    {title && <p className="px-4 text-[13px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">{title}</p>}
+    <div className="bg-white dark:bg-[#1a1a1c] border rounded-2xl border-slate-200 dark:border-white/10 overflow-hidden divide-y divide-slate-100 dark:divide-white/5 shadow-sm">
+      {children}
+    </div>
+    {footer && <p className="px-4 text-[13px] text-slate-500 dark:text-slate-400 mt-2">{footer}</p>}
+  </div>
+);
+
+const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, isButton, badge }) => {
+  const Component = onClick ? 'button' : 'div';
+  return (
+    <Component 
+      onClick={onClick}
+      className={`w-full flex items-center gap-3.5 px-4 py-3 ${onClick ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/5 active:bg-slate-100 dark:active:bg-white/10 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''}`}
+    >
+      {!isButton && Icon && (
+        <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
+          <Icon size={16} />
+        </div>
+      )}
+      {!isButton && (
+        <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
+          <div className="flex items-center gap-2">
+            <p className="text-[15px] text-slate-900 dark:text-slate-100 leading-tight truncate">{title}</p>
+            {badge && <span className="bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">{badge}</span>}
+          </div>
+          {subtitle && <p className="text-[13px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">{subtitle}</p>}
+        </div>
+      )}
+      {isButton && (
+        <div className="flex-1 text-center">
+          <p className="text-[15px] font-medium text-blue-600 dark:text-blue-500">{title}</p>
+        </div>
+      )}
+      {right && <div className="shrink-0 flex items-center">{right}</div>}
+    </Component>
+  );
+};
+
+
 export default function Profile() {
-  const { profile, readinessScore } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
 
-  // Use real data from Google Auth + saved settings
   const name = profile?.name || 'Your Name';
   const email = profile?.email || '';
   const picture = profile?.picture || null;
@@ -20,22 +63,10 @@ export default function Profile() {
   const timezone = profile?.timezone || 'Not set';
   const workStart = profile?.work_start || '09:30 AM';
   const workEnd = profile?.work_end || '06:30 PM';
-  // Sleep / quiet hours are dynamically all non-active working hours
   const sleepStart = workEnd;
   const sleepEnd = workStart;
   const categories = profile?.categories || [];
   
-  const pushNotif = profile?.push_notifications ?? true;
-  const notifPref = profile?.notification_preference || 'text_and_sound';
-
-  const prefLabel = {
-    'text_and_sound': 'Web Push + Sound Chime (No Voice)',
-    'voice': 'Web Push + Neural AI Voice Aloud',
-    'sound': 'Sound Chime Only (No popup)',
-    'vibrate': 'Vibration / Phone Haptic Only',
-    'silent': 'Silent / Visual Only'
-  }[notifPref] || 'Web Push + Sound Chime (No Voice)';
-
   const chronotype = profile?.chronotype || 'morning';
   const peakStart = profile?.peak_start || '09:00 AM';
   const peakEnd = profile?.peak_end || '01:00 PM';
@@ -45,136 +76,94 @@ export default function Profile() {
   const weekendPref = profile?.weekend_preference === 'flex_work' ? 'Flex Work Allowed' : 'Strict Rest Mode';
 
   const schedulingRules = [
-    { icon: Clock, label: 'Core Active Working Hours', value: `${workStart} – ${workEnd}`, color: 'text-[var(--accent-base)]', desc: 'Calendar automatically restricts tasks to your standard active work day.' },
-    { icon: Zap, label: `Peak Focus Window (${chronotype.toUpperCase()})`, value: `${peakStart} – ${peakEnd}`, color: 'text-amber-600 dark:text-amber-500', desc: 'High & Critical priority tasks are prioritized into this peak energy block.' },
-    { icon: UserIcon, label: 'Daily Rhythm & Biometrics', value: `Wake: ${wakeUpTime} | Sleep: ${sleepTime}`, color: 'text-purple-600 dark:text-purple-400', desc: 'Used by AI Recommendation engine to calculate focus scores & avoid fatigue.' },
-    { icon: Target, label: 'Break & Weekend Policy', value: `${breakInterval}m Focus Max | ${weekendPref}`, color: 'text-emerald-600 dark:text-emerald-500', desc: 'Enforces micro-breaks and protects weekend rest days.' },
-    { icon: Calendar, label: 'Quiet / Sleep Hours (Non-Active)', value: `${sleepStart} – ${sleepEnd}`, color: 'text-[var(--text-muted)]', desc: 'All hours outside active working window are strictly reserved for sleep & rest.' },
+    { icon: Clock, label: 'Core Active Working Hours', value: `${workStart} – ${workEnd}`, color: 'bg-indigo-500', desc: 'Calendar automatically restricts tasks to your standard active work day.' },
+    { icon: Zap, label: `Peak Focus Window (${chronotype.toUpperCase()})`, value: `${peakStart} – ${peakEnd}`, color: 'bg-amber-500', desc: 'High & Critical priority tasks are prioritized into this peak energy block.' },
+    { icon: UserIcon, label: 'Daily Rhythm & Biometrics', value: `Wake: ${wakeUpTime} | Sleep: ${sleepTime}`, color: 'bg-purple-500', desc: 'Used by AI Recommendation engine to calculate focus scores & avoid fatigue.' },
+    { icon: Target, label: 'Break & Weekend Policy', value: `${breakInterval}m Focus Max | ${weekendPref}`, color: 'bg-emerald-500', desc: 'Enforces micro-breaks and protects weekend rest days.' },
+    { icon: Calendar, label: 'Quiet / Sleep Hours (Non-Active)', value: `${sleepStart} – ${sleepEnd}`, color: 'bg-slate-500', desc: 'All hours outside active working window are strictly reserved for sleep & rest.' },
   ];
 
-
   return (
-    <div className="min-h-screen bg-[var(--bg-app)]">
+    <div className="min-h-screen bg-slate-100 dark:bg-black pb-28 pt-4 lg:pt-8">
+      <div className="max-w-2xl mx-auto px-4">
+        
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">Profile</h1>
 
-
-      <div className="max-w-5xl mx-auto px-4 lg:px-10 py-8 pb-28 lg:pb-8">
-        {/* Profile Header */}
-        <div data-tour="profile-header" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 lg:p-8 mb-6 flex flex-col lg:flex-row gap-6 lg:items-start shadow-sm scroll-mt-24">
+        {/* Profile Card Block */}
+        <div className="bg-white dark:bg-[#1a1a1c] border rounded-2xl border-slate-200 dark:border-white/10 overflow-hidden shadow-sm mb-8 flex flex-col sm:flex-row items-center sm:items-start p-6 gap-5">
           <div className="relative shrink-0">
-            <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-[var(--border-subtle)]">
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-slate-100 dark:border-white/10">
               {picture ? (
                 <img src={picture} alt={name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold">{name.charAt(0)}</div>
               )}
             </div>
-            <span className="absolute bottom-0 right-0 w-5 h-5 bg-green-400 rounded-full border-2 border-[var(--bg-panel)]"></span>
+            <span className="absolute bottom-0 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-[#1a1a1c]"></span>
           </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-col lg:flex-row lg:items-start gap-3 mb-3">
-              <div>
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold text-[var(--text-main)]">{name}</h1>
-                  <span className="bg-[var(--accent-base)] text-white text-[10px] font-bold px-2 py-0.5 rounded">Verified User</span>
-                </div>
-                <div className="flex items-center gap-4 text-[var(--text-muted)] text-sm mb-1 mt-2">
-                  <span className="flex items-center gap-1.5"><UserIcon size={14} /> {profession}</span>
-                  <span className="flex items-center gap-1.5"><Target size={14} /> {age}{age !== 'Age not set' && ' yrs old'}</span>
-                </div>
-              </div>
+          
+          <div className="flex-1 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1 justify-center sm:justify-start">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">{name}</h2>
+              <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider hidden sm:inline-block">Verified User</span>
             </div>
-            <p className="text-sm text-[var(--text-muted)] mb-4">{email}</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="flex items-center gap-1 text-xs font-semibold text-[var(--accent-base)] bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">{email}</p>
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-500/20">
                 <CheckCircle2 size={12} /> Google Auth Synced
               </span>
-              <span className="flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100">
-                <Zap size={12} /> Live Event Stream
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-100 dark:border-indigo-500/20">
+                <ShieldCheck size={12} /> {profession} ({age}{age !== 'Age not set' && 'y'})
               </span>
             </div>
           </div>
-
-          <div className="flex flex-row lg:flex-col gap-3 shrink-0">
-            <button onClick={() => navigate('/profile-setup')} className="btn-primary text-sm py-2.5 px-4 flex items-center gap-2">
-              <SlidersHorizontal size={16} /> Edit Work Hours & Preferences
-            </button>
-            <button onClick={() => navigate('/settings')} className="btn-ghost text-sm py-2.5 px-4 flex items-center gap-2">
-              <Settings size={16} /> App Settings
-            </button>
-          </div>
         </div>
 
-        {/* Main Content Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          
-          {/* LEFT COLUMN */}
-          <div className="flex flex-col gap-6">
-            {/* Work Style & Time Zone */}
-            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-indigo-100 text-[var(--accent-base)] p-2 rounded-lg"><Clock size={18} /></div>
-                  <h2 className="font-bold text-[var(--text-main)]">AI Scheduling Profile</h2>
-                </div>
-              </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[var(--bg-app)] p-5 rounded-xl border border-[var(--border-subtle)]">
-                <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">Work Style Preference</p>
-                <p className="text-sm text-[var(--text-main)] leading-relaxed font-medium">
-                  {workStyle}
-                </p>
-              </div>
-              <div className="bg-[var(--bg-app)] p-5 rounded-xl border border-[var(--border-subtle)] flex flex-col justify-center">
-                <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Current Timezone</p>
-                <p className="font-bold text-[var(--text-main)] text-xl mb-1">{timezone}</p>
-                <p className="text-sm text-[var(--text-muted)]">Core hours: {workStart} – {workEnd}</p>
-              </div>
-            </div>
-            </div>
+        {/* Configuration Actions */}
+        <Section>
+          <Row 
+            icon={SlidersHorizontal} iconColor="bg-blue-500" title="Edit Work Hours & Preferences" 
+            onClick={() => navigate('/profile-setup')}
+            right={<ChevronRight size={20} className="text-slate-400" />}
+          />
+          <Row 
+            icon={Settings} iconColor="bg-slate-600" title="App Settings" 
+            onClick={() => navigate('/settings')}
+            right={<ChevronRight size={20} className="text-slate-400" />}
+          />
+        </Section>
 
-            {/* Categories */}
-            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-[var(--text-main)]">Task Categories</h2>
-              </div>
-              {categories.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat, i) => (
-                    <span key={i} className="px-3 py-1.5 rounded-lg bg-[var(--accent-light)] text-[var(--accent-base)] text-xs font-semibold">{cat}</span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-[var(--text-muted)]">No task categories configured.</p>
-              )}
-            </div>
-          </div>
+        {/* AI Scheduling Profile */}
+        <Section title="AI Scheduling Profile">
+          <Row 
+            icon={Target} iconColor="bg-indigo-500" 
+            title="Work Style" 
+            subtitle={workStyle}
+          />
+          <Row 
+            icon={Clock} iconColor="bg-emerald-500" 
+            title="Timezone" 
+            subtitle={timezone}
+          />
+          <Row 
+            icon={Zap} iconColor="bg-orange-500" 
+            title="Task Categories" 
+            subtitle={categories.length > 0 ? categories.join(', ') : 'No categories configured'}
+          />
+        </Section>
 
-          {/* RIGHT COLUMN */}
-          <div className="flex flex-col gap-6">
-            {/* Scheduling Rules */}
-            <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="bg-amber-100 text-amber-600 p-2 rounded-lg"><SlidersHorizontal size={18} /></div>
-                <h2 className="font-bold text-[var(--text-main)]">Scheduling Rules</h2>
-              </div>
-              <div className="flex flex-col gap-3">
-                {schedulingRules.map((rule, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)]">
-                    <div className="flex items-center gap-2 mb-1">
-                      <rule.icon size={14} className="text-[var(--text-muted)]" />
-                      <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">{rule.label}</p>
-                    </div>
-                    <p className={`font-bold text-sm mb-1 ${rule.color}`}>{rule.value}</p>
-                    <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">{rule.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Scheduling Rules */}
+        <Section title="Scheduling Rules">
+          {schedulingRules.map((rule, i) => (
+            <Row 
+              key={i}
+              icon={rule.icon} iconColor={rule.color} 
+              title={rule.label} subtitle={`${rule.value} — ${rule.desc}`}
+            />
+          ))}
+        </Section>
 
-            </div>
-          </div>
-        </div>
       </div>
+    </div>
   );
 }

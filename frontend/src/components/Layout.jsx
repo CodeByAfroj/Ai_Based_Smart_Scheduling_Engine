@@ -1291,34 +1291,34 @@ export default function Layout() {
               </button>
 
               {showNotifMenu && (
-                <div className="fixed right-4 top-16 w-[340px] max-w-[calc(100vw-2rem)] bg-black/90 backdrop-blur-2xl border border-white/10 rounded-[28px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] z-[9999] overflow-hidden text-white animate-in slide-in-from-top-2 duration-300">
-                  <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+                <div className="fixed right-4 top-16 w-[340px] max-w-[calc(100vw-2rem)] bg-[var(--bg-panel)] backdrop-blur-2xl border border-[var(--border-subtle)] rounded-[28px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.2)] dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] z-[9999] overflow-hidden text-[var(--text-main)] animate-in slide-in-from-top-2 duration-300">
+                  <div className="px-5 py-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-app)]/50">
                     <p className="font-bold text-sm tracking-wide">Notifications</p>
                     {notifications.length > 0 && (
-                      <button type="button" onClick={markAllRead} style={{ minHeight: 'unset' }} className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider">
+                      <button type="button" onClick={markAllRead} style={{ minHeight: 'unset' }} className="text-[11px] font-semibold text-[var(--accent-base)] hover:opacity-80 transition-opacity uppercase tracking-wider">
                         Mark all read
                       </button>
                     )}
                   </div>
                   <div className="max-h-72 overflow-y-auto">
                     {notifications.length === 0 ? (
-                      <p className="px-5 py-8 text-sm text-slate-400 text-center font-medium">No notifications yet.</p>
+                      <p className="px-5 py-8 text-sm text-[var(--text-muted)] text-center font-medium">No notifications yet.</p>
                     ) : (
                       notifications.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-4 py-3 border-b border-white/5 last:border-b-0 cursor-pointer transition-colors ${notification.read ? 'hover:bg-white/5' : 'bg-indigo-500/10 hover:bg-indigo-500/20'}`}
+                          className={`px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 cursor-pointer transition-colors ${notification.read ? 'hover:bg-[var(--bg-hover)]' : 'bg-[var(--accent-light)] hover:bg-[var(--accent-hover)]/10'}`}
                           onClick={() => setShowNotifMenu(false)}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`shrink-0 mt-0.5 p-1.5 rounded-full ${!notification.read ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-slate-400'}`}>
+                            <div className={`shrink-0 mt-0.5 p-1.5 rounded-full ${!notification.read ? 'bg-[var(--accent-base)] text-white' : 'bg-[var(--bg-hover)] text-[var(--text-muted)]'}`}>
                               <Bell size={14} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className={`text-[10px] font-black uppercase tracking-wider leading-none mb-1 opacity-90 ${!notification.read ? 'text-indigo-400' : 'text-slate-400'}`}>
+                              <p className={`text-[10px] font-black uppercase tracking-wider leading-none mb-1 ${!notification.read ? 'text-[var(--accent-base)]' : 'text-[var(--text-muted)]'}`}>
                                 {notification.title || 'Alert'}
                               </p>
-                              <p className={`text-[12px] leading-snug truncate pr-2 ${!notification.read ? 'text-slate-100 font-medium' : 'text-slate-300'}`}>
+                              <p className={`text-[12px] leading-snug truncate pr-2 ${!notification.read ? 'text-[var(--text-main)] font-semibold' : 'text-[var(--text-muted)]'}`}>
                                 {notification.message || ''}
                               </p>
                             </div>
@@ -1327,11 +1327,12 @@ export default function Layout() {
                       ))
                     )}
                   </div>
-                  <div className="border-t border-white/10 bg-white/5 px-4 py-3 text-center">
+                  <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-app)]/50 px-4 py-3 text-center">
                     <button
+                      type="button"
                       style={{ minHeight: 'unset' }}
                       onClick={() => { setShowNotifMenu(false); navigate('/notifications'); }}
-                      className="text-[12px] font-bold text-indigo-400 hover:text-white transition-colors"
+                      className="text-[12px] font-bold text-[var(--accent-base)] hover:opacity-80 transition-opacity"
                     >
                       View all Reminders & Alerts
                     </button>
