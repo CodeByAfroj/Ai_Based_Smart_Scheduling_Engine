@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle2, Clock, Zap, Calendar,
   SlidersHorizontal, ShieldCheck, Target, User as UserIcon, Settings,
-  ChevronRight
+  ChevronRight, Sparkles, Mail
 } from 'lucide-react';
 
 import { Section, Row } from '../components/ui/LayoutBlocks';
@@ -18,14 +18,14 @@ export default function Profile() {
   const profession = profile?.profession || 'Profession not set';
   const age = profile?.age || 'Age not set';
   const workStyle = profile?.work_style || 'Work style not defined yet. Update your profile settings to train the AI model.';
-  
+
   const timezone = profile?.timezone || 'Not set';
   const workStart = profile?.work_start || '09:30 AM';
   const workEnd = profile?.work_end || '06:30 PM';
   const sleepStart = workEnd;
   const sleepEnd = workStart;
   const categories = profile?.categories || [];
-  
+
   const chronotype = profile?.chronotype || 'morning';
   const peakStart = profile?.peak_start || '09:00 AM';
   const peakEnd = profile?.peak_end || '01:00 PM';
@@ -45,79 +45,103 @@ export default function Profile() {
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Profile</h1>
 
-        {/* Profile Card Block */}
-        <div className="bg-[var(--bg-panel)] border rounded-2xl border-[var(--border-subtle)] overflow-hidden shadow-sm mb-8 flex flex-col sm:flex-row items-center sm:items-start p-6 gap-5">
-          <div className="relative shrink-0">
-            <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-purple-500 border-2 border-[var(--bg-panel)]">
-              {picture ? (
-                <img src={picture} alt={name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold">{name.charAt(0)}</div>
-              )}
-            </div>
-            <span className="absolute bottom-0 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-[#1a1a1c]"></span>
+        {/* Header Title */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--text-main)] mb-1">User Profile</h1>
+            <p className="text-sm text-[var(--text-muted)]">Your personal identity, work style context, and scheduling parameters</p>
           </div>
-          
-          <div className="flex-1 text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1 justify-center sm:justify-start">
-              <h2 className="text-xl font-bold text-[var(--text-main)]">{name}</h2>
-              <span className="bg-[var(--accent-base)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider hidden sm:inline-block">Verified User</span>
+        </div>
+
+        {/* Profile Card Header Block */}
+        <div className="bg-[var(--bg-panel)] border rounded-2xl border-[var(--border-subtle)] overflow-hidden shadow-sm mb-8 p-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div className="relative shrink-0">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 border-4 border-[var(--bg-panel)] shadow-md">
+                {picture ? (
+                  <img src={picture} alt={name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white text-4xl font-bold">{name.charAt(0)}</div>
+                )}
+              </div>
+              <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[var(--bg-panel)] shadow-sm" />
             </div>
-            <p className="text-sm text-[var(--text-muted)] mb-3">{email}</p>
-            <div className="flex flex-wrap justify-center sm:justify-start gap-2">
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-100 dark:border-emerald-500/20">
-                <CheckCircle2 size={12} /> Google Auth Synced
-              </span>
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-100 dark:border-indigo-500/20">
-                <ShieldCheck size={12} /> {profession} ({age}{age !== 'Age not set' && 'y'})
-              </span>
+
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1 justify-center sm:justify-start">
+                <h2 className="text-2xl font-bold text-[var(--text-main)] truncate">{name}</h2>
+                <span className="bg-[var(--accent-light)] text-[var(--accent-base)] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider self-center sm:self-auto border border-[var(--accent-base)]/20">
+                  Verified User
+                </span>
+              </div>
+              <p className="text-sm text-[var(--text-muted)] mb-3 flex items-center justify-center sm:justify-start gap-1.5">
+                <Mail size={14} /> {email}
+              </p>
+              
+              <div className="flex flex-wrap justify-center sm:justify-start gap-2 pt-1">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                  <CheckCircle2 size={13} /> Google Auth Synced
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--accent-base)] bg-[var(--accent-light)] px-3 py-1 rounded-full border border-[var(--accent-base)]/20">
+                  <ShieldCheck size={13} /> {profession} {age && age !== 'Age not set' ? `(${age}y)` : ''}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Configuration Actions */}
-        <Section>
-          <Row 
-            icon={SlidersHorizontal} iconColor="bg-blue-500" title="Edit Work Hours & Preferences" 
+        <Section title="Quick Actions">
+          <Row
+            icon={SlidersHorizontal} iconColor="bg-indigo-600" 
+            title="Edit Work Hours & Preferences"
+            subtitle={<span className="hidden sm:block">Customize timezones, core working windows, chronotype biometrics, and task categories</span>}
             onClick={() => navigate('/profile-setup')}
-            right={<ChevronRight size={20} className="text-slate-400" />}
+            right={<ChevronRight size={18} className="text-[var(--text-muted)]" />}
           />
-          <Row 
-            icon={Settings} iconColor="bg-slate-600" title="App Settings" 
+          <Row
+            icon={Settings} iconColor="bg-slate-600" 
+            title="App Settings"
+            subtitle={<span className="hidden sm:block">Configure app theme, data storage, and engine connection preferences</span>}
             onClick={() => navigate('/settings')}
-            right={<ChevronRight size={20} className="text-slate-400" />}
+            right={<ChevronRight size={18} className="text-[var(--text-muted)]" />}
           />
         </Section>
 
         {/* AI Scheduling Profile */}
         <Section title="AI Scheduling Profile">
-          <Row 
-            icon={Target} iconColor="bg-indigo-500" 
-            title="Work Style" 
+          <Row
+            icon={Target} iconColor="bg-indigo-500"
+            title="Work Style Preference"
             subtitle={workStyle}
           />
-          <Row 
-            icon={Clock} iconColor="bg-emerald-500" 
-            title="Timezone" 
+          <Row
+            icon={Clock} iconColor="bg-emerald-500"
+            title="Timezone & Region"
             subtitle={timezone}
           />
-          <Row 
-            icon={Zap} iconColor="bg-orange-500" 
-            title="Task Categories" 
+          <Row
+            icon={Zap} iconColor="bg-amber-500"
+            title="Active Task Categories"
             subtitle={categories.length > 0 ? categories.join(', ') : 'No categories configured'}
           />
         </Section>
 
-        {/* Scheduling Rules */}
-        <Section title="Scheduling Rules">
+        {/* Active Scheduling Rules */}
+        <Section title="Active Scheduling Rules & Constraints">
           {schedulingRules.map((rule, i) => (
-            <Row 
+            <Row
               key={i}
-              icon={rule.icon} iconColor={rule.color} 
-              title={rule.label} subtitle={`${rule.value} — ${rule.desc}`}
+              icon={rule.icon} 
+              iconColor={rule.color}
+              title={rule.label} 
+              subtitle={
+                <div>
+                  <span className="font-semibold text-[var(--text-main)] block mb-0.5">{rule.value}</span>
+                  <span className="hidden sm:block">{rule.desc}</span>
+                </div>
+              }
             />
           ))}
         </Section>

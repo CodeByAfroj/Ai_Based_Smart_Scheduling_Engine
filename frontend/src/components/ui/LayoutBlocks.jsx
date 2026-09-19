@@ -16,20 +16,20 @@ export const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, is
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
-      className={`w-full flex items-center gap-3.5 px-4 py-3 ${onClick ? 'cursor-pointer hover:bg-[var(--bg-hover)] active:bg-black/5 dark:active:bg-white/5 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''} ${className}`}
+      className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 ${onClick ? 'cursor-pointer hover:bg-[var(--bg-hover)] active:bg-black/5 dark:active:bg-white/5 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''} ${className}`}
     >
       {!isButton && Icon && (
-        <div className={`w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
           <Icon size={16} />
         </div>
       )}
       {!isButton && (
-        <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
-          <div className="flex items-center gap-2">
-            <div className="text-[15px] text-[var(--text-main)] leading-tight truncate">{title}</div>
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="text-[15px] font-medium text-[var(--text-main)] leading-snug">{title}</div>
             {badge && <span className="bg-[var(--accent-light)] text-[var(--accent-base)] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">{badge}</span>}
           </div>
-          {subtitle && <div className="text-[13px] text-[var(--text-muted)] leading-snug mt-0.5">{subtitle}</div>}
+          {subtitle && <div className="text-[13px] text-[var(--text-muted)] leading-relaxed mt-0.5">{subtitle}</div>}
           {children && <div className="mt-1">{children}</div>}
         </div>
       )}
@@ -38,7 +38,11 @@ export const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, is
           <div className="text-[15px] font-medium text-[var(--accent-base)]">{title}</div>
         </div>
       )}
-      {right && <div className="shrink-0 flex items-center">{right}</div>}
+      {right && (
+        <div className="shrink-0 flex items-center justify-end ml-1">
+          {right}
+        </div>
+      )}
     </div>
   );
 };

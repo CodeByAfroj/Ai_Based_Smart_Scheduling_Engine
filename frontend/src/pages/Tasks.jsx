@@ -53,10 +53,10 @@ export default function Tasks() {
   const overlappingTask = useMemo(() => {
     if (taskType !== 'fixed') return null;
     if (!earliestStart || !duration) return null;
-    
+
     const draftStart = new Date(earliestStart).getTime();
     const draftEnd = draftStart + parseInt(duration) * 60000;
-    
+
     return tasks.find(t => {
       if (!t.fixed || t.status === 'completed' || t.status === 'missed') return false;
       const tStart = new Date(t.earliest_start || t.scheduled_start).getTime();
@@ -105,7 +105,7 @@ export default function Tasks() {
 
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto px-4">
 
         <div data-tour="tasks-header" className="flex items-center justify-between mb-6 scroll-mt-24">
           <h1 className="text-3xl font-bold text-[var(--text-main)]">Tasks</h1>
@@ -124,11 +124,10 @@ export default function Tasks() {
                   <button
                     type="button"
                     onClick={() => setTaskType('flexible')}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      taskType === 'flexible'
+                    className={`p-3 rounded-xl border text-left transition-all ${taskType === 'flexible'
                         ? 'border-[var(--accent-base)] bg-[var(--accent-light)] ring-2 ring-[var(--accent-base)]/20'
                         : 'border-[var(--border-subtle)] bg-[var(--bg-app)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'
-                    }`}
+                      }`}
                   >
                     <p className="font-bold text-sm text-[var(--text-main)] flex items-center gap-1.5"><Wand2 size={16} className="text-[var(--accent-base)]" /> Flexible</p>
                     <p className="text-[11px] text-[var(--text-muted)] mt-1">AI auto-schedules</p>
@@ -137,11 +136,10 @@ export default function Tasks() {
                   <button
                     type="button"
                     onClick={() => setTaskType('fixed')}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      taskType === 'fixed'
+                    className={`p-3 rounded-xl border text-left transition-all ${taskType === 'fixed'
                         ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/20'
                         : 'border-[var(--border-subtle)] bg-[var(--bg-app)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'
-                    }`}
+                      }`}
                   >
                     <p className="font-bold text-sm text-[var(--text-main)] flex items-center gap-1.5"><Lock size={16} className="text-amber-500" /> Fixed</p>
                     <p className="text-[11px] text-[var(--text-muted)] mt-1">Exact meeting time</p>
@@ -204,11 +202,10 @@ export default function Tasks() {
                     <div
                       key={mins}
                       onClick={() => handleReminderToggle(mins)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors border ${
-                        reminders.includes(mins)
+                      className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors border ${reminders.includes(mins)
                           ? 'bg-[var(--accent-base)] text-white border-[var(--accent-base)]'
                           : 'bg-[var(--bg-app)] text-[var(--text-muted)] border-[var(--border-subtle)]'
-                      }`}
+                        }`}
                     >
                       {mins}m before
                     </div>
@@ -249,11 +246,10 @@ export default function Tasks() {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id)}
-              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap transition-colors ${
-                filter === tab.id
+              className={`px-4 py-1.5 rounded-full text-[13px] font-semibold whitespace-nowrap transition-colors ${filter === tab.id
                   ? 'bg-[var(--accent-base)] text-white'
                   : 'bg-[var(--bg-panel)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:bg-[var(--bg-hover)]'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -286,27 +282,27 @@ export default function Tasks() {
               >
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[var(--text-muted)] mt-1">
                   <span className="flex items-center gap-1 bg-[var(--bg-app)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"><Clock size={10} /> {task.duration_minutes}m</span>
-                  
+
                   {!task.fixed && <span className="flex items-center gap-1 bg-[var(--bg-app)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"><CalendarIcon size={10} /> {formatDateIST(task.deadline)}</span>}
-                  
+
                   {task.status === 'missed' && (
                     <span className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-md uppercase tracking-wide">
                       ⛔ Missed
                     </span>
                   )}
-                  
+
                   {task.status !== 'missed' && task.fixed && (
                     <span className="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-md uppercase tracking-wide flex items-center gap-1">
                       <Lock size={10} /> Fixed ({formatIST(task.scheduled_start || task.earliest_start)})
                     </span>
                   )}
-                  
+
                   {!task.fixed && task.status === 'scheduled' && task.scheduled_start && (
                     <span className="bg-indigo-50 dark:bg-indigo-500/10 text-[var(--accent-base)] px-2 py-0.5 rounded-md uppercase tracking-wide flex items-center gap-1">
                       <Zap size={10} /> {formatIST(task.scheduled_start)} IST
                     </span>
                   )}
-                  
+
                   {task.priority >= 3 && (
                     <span className="bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-md uppercase tracking-wide">
                       High Priority
