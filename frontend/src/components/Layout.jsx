@@ -562,38 +562,48 @@ export default function Layout() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex">
 
-      {/* ── Toast Stack (top-right, stacked) ─────────────────────────── */}
-      <div className="fixed top-4 right-4 z-[99999] flex flex-col gap-2 max-w-[360px] w-full pointer-events-none">
+      {/* ── Toast Stack (Dynamic Island Style) ─────────────────────────── */}
+      <div className="fixed top-2 sm:top-6 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-3 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[360px] max-w-[420px] pointer-events-none">
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md animate-in slide-in-from-right-4 duration-300 ${
+            className={`relative pointer-events-auto flex items-start gap-4 px-5 py-4 rounded-[32px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)] border backdrop-blur-2xl transition-all w-full overflow-hidden ${
               toast.urgent
-                ? 'bg-red-950/95 border-red-500/40 text-white'
-                : 'bg-[var(--bg-panel)]/95 border-[var(--border-subtle)] text-[var(--text-main)]'
+                ? 'bg-black/85 border-red-500/40 text-white shadow-red-500/10'
+                : 'bg-black/85 border-white/10 text-white shadow-indigo-500/10'
             }`}
-            style={{ animation: 'slideInRight 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}
+            style={{ 
+              animation: 'dynamicIsland 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+              transformOrigin: 'top center'
+            }}
           >
-            <div className="shrink-0 mt-0.5">
-              {toast.urgent
-                ? <AlertTriangle size={18} className="text-red-400" />
-                : <Bell size={18} className="text-[var(--accent-base)]" />}
+            {/* Dynamic Island Ambient Glow */}
+            <div className={`absolute -inset-4 opacity-20 blur-2xl rounded-[40px] pointer-events-none ${toast.urgent ? 'bg-red-500' : 'bg-indigo-500'}`}></div>
+            
+            <div className={`relative shrink-0 mt-0.5 p-2.5 rounded-full backdrop-blur-md ${toast.urgent ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+              {toast.urgent ? <AlertTriangle size={20} /> : <Bell size={20} />}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wide opacity-70 mb-0.5">{toast.title}</p>
-              <p className="text-sm leading-snug">{toast.message}</p>
+            
+            <div className="relative flex-1 min-w-0 pt-1">
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 opacity-90 ${toast.urgent ? 'text-red-400' : 'text-slate-300'}`}>
+                {toast.title}
+              </p>
+              <p className="text-sm text-slate-100 font-medium leading-relaxed mb-2.5 pr-2">{toast.message}</p>
+              
               {toast.taskId && (
                 <button
                   onClick={() => { navigate('/tasks'); dismissToast(toast.id); }}
-                  className="mt-1.5 text-xs font-semibold text-[var(--accent-base)] hover:underline"
+                  className="group inline-flex items-center gap-1.5 text-[11px] font-bold text-black bg-white hover:bg-slate-200 px-3.5 py-1.5 rounded-full transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]"
                 >
-                  View Task →
+                  View Task
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </button>
               )}
             </div>
+            
             <button
               onClick={() => dismissToast(toast.id)}
-              className="shrink-0 opacity-60 hover:opacity-100 transition-opacity mt-0.5"
+              className="relative shrink-0 p-2 rounded-full bg-white/5 text-slate-400 hover:text-white hover:bg-white/15 transition-all mt-1"
             >
               <XIcon size={14} />
             </button>
@@ -907,19 +917,8 @@ export default function Layout() {
       {/* Desktop Sidebar */}
       <aside data-tour="sidebar-nav" className="hidden lg:flex w-64 flex-col bg-[var(--bg-app)] border-r border-[var(--border-subtle)] h-full shrink-0">
         <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[var(--accent-base)] flex items-center justify-center text-white shrink-0">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.1)] overflow-hidden border border-[var(--border-subtle)]">
+            <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
           </div>
 
           <span className="font-bold text-lg leading-tight text-[var(--text-main)]">
@@ -1249,19 +1248,8 @@ export default function Layout() {
         {/* Mobile Header */}
         <header className="lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 bg-[var(--bg-panel)]/80 backdrop-blur-md z-40 border-b border-[var(--border-subtle)]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[var(--accent-base)] flex items-center justify-center text-white shrink-0">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.1)] overflow-hidden border border-[var(--border-subtle)] shrink-0">
+              <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
             </div>
 
             <div className="flex flex-col">

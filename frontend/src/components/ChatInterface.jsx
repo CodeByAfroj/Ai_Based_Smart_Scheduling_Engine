@@ -944,7 +944,9 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
       <div className="bg-[var(--bg-panel)] rounded-t-xl shadow-lg border border-[var(--border-subtle)] flex items-center justify-between px-3 sm:px-4 py-2 gap-2 overflow-hidden">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <h3 className="text-[var(--text-main)] font-semibold flex items-center gap-1.5 text-sm shrink-0">
-            <Zap className="h-4 w-4 text-[var(--accent-base)]" />
+            <div className="w-5 h-5 rounded overflow-hidden bg-white shrink-0 border border-[var(--border-subtle)] shadow-sm">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
             <span className="hidden sm:inline">TaskPulse AI</span>
             <span className="sm:hidden">AI</span>
           </h3>

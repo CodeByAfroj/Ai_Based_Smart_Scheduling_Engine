@@ -420,8 +420,8 @@ export default function ChatGPTVoiceOrb({
       {/* 1. Header Bar */}
       <div className="w-full px-8 py-5 flex items-center justify-between z-20 pointer-events-auto">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 shadow-md">
-            <Zap className="w-4 h-4 text-indigo-400" />
+          <div className="w-8 h-8 rounded-xl bg-white border border-[var(--border-subtle)] flex items-center justify-center shadow-md overflow-hidden shrink-0">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
           <div className="flex items-center gap-2.5">
             <span className="text-sm font-semibold tracking-wide text-slate-200">

@@ -36,10 +36,8 @@ export default function Login() {
       <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-[var(--bg-panel)] to-[var(--bg-hover)] border-r border-[var(--border-subtle)] p-12 flex-col justify-between">
         <div>
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-[var(--accent-base)] flex items-center justify-center text-white shadow-lg">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg overflow-hidden border border-[var(--border-subtle)]">
+              <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
             </div>
             <span className="font-bold text-2xl text-[var(--text-main)]">TaskPulse</span>
           </div>
@@ -97,10 +95,8 @@ export default function Login() {
           
           {/* Mobile Header (Hidden on Desktop) */}
           <div className="lg:hidden flex flex-col items-center text-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-[var(--accent-base)] flex items-center justify-center text-white shadow-lg mb-4">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
+            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-lg mb-4 overflow-hidden border border-[var(--border-subtle)]">
+              <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
             </div>
             <h1 className="text-2xl font-bold text-[var(--text-main)] mb-2">TaskPulse</h1>
             <p className="text-sm text-[var(--text-muted)]">Autonomous Schedule Engine</p>
