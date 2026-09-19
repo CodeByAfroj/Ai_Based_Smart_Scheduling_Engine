@@ -3,10 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import {
-  Bell, CheckCircle2, Clock, Calendar, ArrowRight,
+  Bell, CheckCircle2, Circle, Clock, Calendar, ArrowRight,
   Zap, BarChart3, ChevronRight, Play, Moon
 } from 'lucide-react';
 import { formatIST, formatDateIST, nowIST } from '../utils/time'
+import { Section, Row } from '../components/ui/LayoutBlocks';
 
 export default function Dashboard() {
   const { profile, readinessScore, token } = useAuth();
@@ -402,120 +403,108 @@ export default function Dashboard() {
           <div className="flex flex-col gap-6 lg:w-72 xl:w-80 lg:shrink-0">
 
             {/* Workspace Readiness */}
-            <div data-tour="workspace-readiness" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm">
-              <div className="flex items-start justify-between mb-1">
-                <div>
-                  <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Account Setup</p>
-                  <h3 className="font-bold text-[var(--text-main)]">Workspace Readiness</h3>
-                </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${readinessScore === 100 ? 'bg-green-100 text-green-700' :
-                  readinessScore >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                  }`}>{readinessScore === 100 ? 'Complete' : readinessScore >= 50 ? 'Intermediate' : 'Getting Started'}</span>
-              </div>
-
-              <div className="flex items-center gap-4 my-5">
-                <div className="relative w-20 h-20 shrink-0">
-                  <svg viewBox="0 0 80 80" className="w-20 h-20">
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="#e0e7ff" strokeWidth="7" />
-                    <circle cx="40" cy="40" r="34" fill="none" stroke="#4338ca" strokeWidth="7"
+            <Section>
+              <div data-tour="workspace-readiness" className="p-5 flex items-center justify-between gap-4">
+                <div className="relative w-16 h-16 shrink-0">
+                  <svg viewBox="0 0 80 80" className="w-16 h-16">
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border-subtle)" strokeWidth="8" />
+                    <circle cx="40" cy="40" r="34" fill="none" stroke={readinessScore === 100 ? '#22c55e' : '#6366f1'} strokeWidth="8"
                       strokeDasharray={213.6} strokeDashoffset={213.6 * (1 - readinessScore / 100)}
                       strokeLinecap="round" transform="rotate(-90 40 40)"
                       style={{ transition: 'stroke-dashoffset 0.5s ease' }}
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-bold text-[var(--text-main)]">{readinessScore}%</span>
+                    <span className="text-[13px] font-black text-[var(--text-main)]">{readinessScore}%</span>
                   </div>
                 </div>
-                <div>
-                  {readinessScore < 100 && (
-                    <>
-                      <p className="text-green-600 font-bold text-sm mb-1">+{Math.round((100 - readinessScore) * 0.35)}% efficiency boost available</p>
-                      <p className="text-xs text-[var(--text-muted)] leading-snug">Complete notifications, calendar sync, and work hour boundaries.</p>
-                    </>
-                  )}
-                  {readinessScore === 100 && (
-                    <p className="text-green-600 font-bold text-sm">All systems configured! ✓</p>
-                  )}
+                <div className="flex-1">
+                  <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Account Setup</p>
+                  <h3 className="font-bold text-[15px] text-[var(--text-main)] leading-tight mb-1">Workspace Readiness</h3>
+                  <p className={`text-[12px] font-semibold leading-snug ${readinessScore === 100 ? 'text-green-500' : 'text-indigo-500'}`}>
+                    {readinessScore === 100 ? 'All systems configured! ✓' : `+${Math.round((100 - readinessScore) * 0.35)}% efficiency boost available`}
+                  </p>
                 </div>
               </div>
-
               {readinessScore < 100 && (
-                <button onClick={() => navigate('/profile-setup')} className="btn-primary w-full text-sm py-3 flex items-center justify-center gap-2 shadow-sm">
-                  Complete Profile & Preferences <ChevronRight size={16} />
-                </button>
+                <Row 
+                  isButton 
+                  title="Complete Profile & Preferences" 
+                  onClick={() => navigate('/profile-setup')} 
+                  className="bg-[var(--bg-app)] hover:bg-[var(--bg-hover)] text-[14px] font-semibold text-[var(--text-main)] border-t border-[var(--border-subtle)]"
+                />
               )}
-            </div>
+            </Section>
 
             {/* Stats Row - Real Data */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-4 text-center shadow-sm">
-                <div className="flex items-center justify-center gap-1 text-green-600 mb-2">
-                  <CheckCircle2 size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Completed</span>
+            <Section>
+              <div className="grid grid-cols-2 divide-x divide-[var(--border-subtle)]">
+                <div className="p-4 text-center">
+                  <div className="flex justify-center mb-1.5">
+                    <CheckCircle2 size={16} className="text-emerald-500" />
+                  </div>
+                  <p className="text-3xl font-black text-[var(--text-main)] tracking-tight">{completedTasks.length}</p>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">Tasks</p>
                 </div>
-                <p className="text-2xl font-extrabold text-[var(--text-main)]">{completedTasks.length}</p>
-                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Tasks</p>
-              </div>
-              <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-4 text-center shadow-sm">
-                <div className="flex items-center justify-center gap-1 text-[var(--accent-base)] mb-2">
-                  <BarChart3 size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Focus Time</span>
+                <div className="p-4 text-center">
+                  <div className="flex justify-center mb-1.5">
+                    <BarChart3 size={16} className="text-indigo-500" />
+                  </div>
+                  <p className="text-3xl font-black text-[var(--text-main)] tracking-tight">{(totalFocusMinutes / 60).toFixed(1)}<span className="text-xl text-[var(--text-muted)]">h</span></p>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">Focus Time</p>
                 </div>
-                <p className="text-2xl font-extrabold text-[var(--text-main)]">{(totalFocusMinutes / 60).toFixed(1)}h</p>
-                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Logged</p>
               </div>
-            </div>
+            </Section>
 
             {/* Top Priority Action Items */}
-            <div data-tour="priority-inbox" className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-sm flex flex-col flex-1 min-h-[300px]">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <Zap size={16} className="text-amber-500" />
-                  <h3 className="font-bold text-[var(--text-main)] text-sm">Priority Inbox</h3>
-                </div>
-                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Top {topPriorityTasks.length} Urgent</span>
-              </div>
-
-              <div className="flex flex-col gap-3 flex-1">
+            <div data-tour="priority-inbox">
+              <Section 
+                title={<div className="flex items-center gap-2"><Zap size={16} className="text-amber-500" /> Priority Inbox</div>} 
+                footer={topPriorityTasks.length > 0 ? `TOP ${topPriorityTasks.length} URGENT` : undefined}
+              >
                 {topPriorityTasks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full flex-1 py-6 opacity-80">
-                    <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4">
-                      <CheckCircle2 size={28} className="text-green-500" />
+                  <div className="p-8 flex flex-col items-center justify-center opacity-80">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-3">
+                      <CheckCircle2 size={24} className="text-emerald-500" />
                     </div>
-                    <p className="text-sm font-bold text-[var(--text-main)]">Inbox Zero!</p>
-                    <p className="text-xs text-[var(--text-muted)] text-center mt-1.5 max-w-[200px] leading-relaxed">
+                    <p className="text-[15px] font-bold text-[var(--text-main)]">Inbox Zero!</p>
+                    <p className="text-[13px] text-[var(--text-muted)] text-center mt-1 max-w-[200px] leading-relaxed">
                       All your flexible tasks are clear. You're completely caught up!
                     </p>
                   </div>
                 ) : (
                   topPriorityTasks.map(task => (
-                    <div key={task.id} className="group flex items-start gap-3 p-3 bg-[var(--bg-app)] hover:bg-[var(--bg-hover)] rounded-xl border border-[var(--border-subtle)] transition-colors">
-                      {/* One-Tap Complete Checkbox */}
-                      <button onClick={() => updateTask(task.id, { status: 'completed' })} className="mt-0.5 shrink-0 text-slate-300 dark:text-slate-600 hover:text-green-500 transition-colors" title="Mark as complete">
-                        <CheckCircle2 size={18} fill="currentColor" className="text-[var(--bg-panel)]" />
-                      </button>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-[var(--text-main)] truncate group-hover:text-[var(--accent-base)] transition-colors">{task.name}</p>
-                        <div className="flex items-center flex-wrap gap-2 mt-1.5">
-                          <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${task.priority === 5 ? 'bg-red-500/10 text-red-500' : task.priority === 3 ? 'bg-amber-500/10 text-amber-500' : task.priority === 2 ? 'bg-blue-500/10 text-blue-500' : 'bg-slate-500/10 text-slate-500'}`}>
+                    <Row 
+                      key={task.id}
+                      onClick={() => {}}
+                      icon={Circle} 
+                      iconColor="bg-transparent text-[var(--text-muted)]"
+                      title={task.name}
+                      subtitle={
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider ${task.priority === 5 ? 'bg-red-500/10 text-red-500' : task.priority === 3 ? 'bg-amber-500/10 text-amber-500' : task.priority === 2 ? 'bg-blue-500/10 text-blue-500' : 'bg-slate-500/10 text-slate-500'}`}>
                             P{task.priority === 5 ? 'C' : task.priority}
                           </span>
                           {task.deadline && (
-                            <span className="text-[10px] text-[var(--text-muted)] font-medium flex items-center gap-1">
-                              <Clock size={10} /> Due {new Date(task.deadline).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                            <span className="text-[10px] font-semibold text-[var(--text-muted)] flex items-center gap-1">
+                              <Clock size={10} /> {new Date(task.deadline).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                             </span>
                           )}
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)] bg-[var(--bg-panel)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded-sm">
-                            {task.reason}
-                          </span>
                         </div>
-                      </div>
-                    </div>
+                      }
+                      right={
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'completed' }); }} 
+                          className="p-2 text-[var(--border-subtle)] hover:text-emerald-500 transition-colors"
+                          title="Mark as complete"
+                        >
+                          <CheckCircle2 size={20} className="fill-current text-[var(--bg-panel)]" />
+                        </button>
+                      }
+                    />
                   ))
                 )}
-              </div>
+              </Section>
             </div>
 
           </div>
