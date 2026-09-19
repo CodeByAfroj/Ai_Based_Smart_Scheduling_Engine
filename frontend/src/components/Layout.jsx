@@ -563,49 +563,48 @@ export default function Layout() {
     <div className="h-screen w-screen overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex">
 
       {/* ── Toast Stack (Dynamic Island Style) ─────────────────────────── */}
-      <div className="fixed top-2 sm:top-6 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-3 w-[calc(100vw-2rem)] sm:w-auto sm:min-w-[360px] max-w-[420px] pointer-events-none">
+      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-2 w-[92vw] max-w-[420px] pointer-events-none">
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`relative pointer-events-auto flex items-start gap-4 px-5 py-4 rounded-[32px] shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)] border backdrop-blur-2xl transition-all w-full overflow-hidden ${
+            className={`relative pointer-events-auto flex items-center gap-3 px-3.5 py-2.5 rounded-[28px] shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border backdrop-blur-2xl transition-all w-full overflow-hidden ${
               toast.urgent
-                ? 'bg-black/85 border-red-500/40 text-white shadow-red-500/10'
-                : 'bg-black/85 border-white/10 text-white shadow-indigo-500/10'
+                ? 'bg-black/90 border-red-500/30 text-white shadow-red-500/20'
+                : 'bg-black/90 border-white/10 text-white shadow-indigo-500/20'
             }`}
             style={{ 
-              animation: 'dynamicIsland 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+              animation: 'dynamicIsland 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
               transformOrigin: 'top center'
             }}
           >
             {/* Dynamic Island Ambient Glow */}
-            <div className={`absolute -inset-4 opacity-20 blur-2xl rounded-[40px] pointer-events-none ${toast.urgent ? 'bg-red-500' : 'bg-indigo-500'}`}></div>
+            <div className={`absolute -inset-4 opacity-15 blur-2xl rounded-full pointer-events-none ${toast.urgent ? 'bg-red-500' : 'bg-indigo-500'}`}></div>
             
-            <div className={`relative shrink-0 mt-0.5 p-2.5 rounded-full backdrop-blur-md ${toast.urgent ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
-              {toast.urgent ? <AlertTriangle size={20} /> : <Bell size={20} />}
+            <div className={`relative shrink-0 p-1.5 rounded-full ${toast.urgent ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'}`}>
+              {toast.urgent ? <AlertTriangle size={16} /> : <Bell size={16} />}
             </div>
             
-            <div className="relative flex-1 min-w-0 pt-1">
-              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 opacity-90 ${toast.urgent ? 'text-red-400' : 'text-slate-300'}`}>
+            <div className="relative flex-1 min-w-0 flex flex-col justify-center">
+              <p className={`text-[10px] font-black uppercase tracking-wider leading-none mb-0.5 opacity-90 ${toast.urgent ? 'text-red-400' : 'text-slate-300'}`}>
                 {toast.title}
               </p>
-              <p className="text-sm text-slate-100 font-medium leading-relaxed mb-2.5 pr-2">{toast.message}</p>
-              
-              {toast.taskId && (
-                <button
-                  onClick={() => { navigate('/tasks'); dismissToast(toast.id); }}
-                  className="group inline-flex items-center gap-1.5 text-[11px] font-bold text-black bg-white hover:bg-slate-200 px-3.5 py-1.5 rounded-full transition-all shadow-[0_0_15px_rgba(255,255,255,0.2)]"
-                >
-                  View Task
-                  <span className="group-hover:translate-x-1 transition-transform">→</span>
-                </button>
-              )}
+              <p className="text-[13px] text-slate-100 font-medium leading-tight truncate pr-2">{toast.message}</p>
             </div>
+            
+            {toast.taskId && (
+              <button
+                onClick={() => { navigate('/tasks'); dismissToast(toast.id); }}
+                className="group relative shrink-0 flex items-center justify-center text-[10px] font-bold text-black bg-white hover:bg-slate-200 px-3 py-1.5 rounded-full transition-all"
+              >
+                View
+              </button>
+            )}
             
             <button
               onClick={() => dismissToast(toast.id)}
-              className="relative shrink-0 p-2 rounded-full bg-white/5 text-slate-400 hover:text-white hover:bg-white/15 transition-all mt-1"
+              className="relative shrink-0 p-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white hover:bg-white/15 transition-all ml-1"
             >
-              <XIcon size={14} />
+              <XIcon size={12} />
             </button>
           </div>
         ))}
