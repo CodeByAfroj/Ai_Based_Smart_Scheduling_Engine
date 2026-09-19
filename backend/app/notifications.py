@@ -117,16 +117,24 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
         return
 
     try:
-        # Calculate delay in seconds
         import datetime
         now = datetime.datetime.now(timezone.utc)
         if isinstance(scheduled_time, str):
             scheduled_time = datetime.datetime.fromisoformat(scheduled_time)
-        target = scheduled_time.astimezone(timezone.utc)
+        
+        if scheduled_time.tzinfo is None:
+            # Naive datetimes from Motor/MongoDB BSON dates are in UTC
+            target = scheduled_time.replace(tzinfo=timezone.utc)
+        else:
+            target = scheduled_time.astimezone(timezone.utc)
+
         delay_seconds = int((target - now).total_seconds())
 
+        print(f"🕒 [QSTASH CALC] Task: '{task_name}' | Now UTC: {now.strftime('%H:%M:%S')} | Target UTC: {target.strftime('%H:%M:%S')} | Delay: {delay_seconds}s ({delay_seconds/60:.2f}m)")
+
         if delay_seconds <= 0:
-            delay_seconds = 1 # Immediate
+            print(f"⚠️ [QSTASH] Scheduled time {target} is in the past. Triggering immediately (1s).")
+            delay_seconds = 1
 
         qstash_client.message.publish_json(
             url=CLOUDFLARE_WORKER_URL,
