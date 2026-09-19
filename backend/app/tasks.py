@@ -83,7 +83,7 @@ async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_
         settings = user.get("settings", {})
         push_sub = settings.get("push_subscription")
         wants_push = settings.get("push_notifications", True)
-        target_time = data.preferred_start_after or data.earliest_start
+        target_time = task_doc.get("scheduled_start") or task_doc.get("earliest_start") or task_doc.get("preferred_start_after")
         if push_sub and wants_push and target_time:
             schedule_push_via_qstash(user_id, data.name, target_time, push_sub)
 
@@ -103,6 +103,19 @@ async def update_task(task_id: str, data: TaskUpdate, user_id: str = Depends(get
     result = await collection.update_one(query, {"$set": update_data})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
+        
+    # Schedule push notification for updated task
+    updated_doc = await collection.find_one(query)
+    user = await get_user_collection().find_one({"google_id": user_id})
+    if updated_doc and user:
+        settings = user.get("settings", {})
+        push_sub = settings.get("push_subscription")
+        wants_push = settings.get("push_notifications", True)
+        target_time = updated_doc.get("scheduled_start") or updated_doc.get("earliest_start") or updated_doc.get("preferred_start_after")
+        if push_sub and wants_push and target_time:
+            task_name = updated_doc.get("name", "Task")
+            schedule_push_via_qstash(user_id, task_name, target_time, push_sub)
+
     return {"message": "Task updated"}
 
 @router.delete("/{task_id}")

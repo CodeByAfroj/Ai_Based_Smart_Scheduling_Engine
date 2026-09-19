@@ -10,6 +10,7 @@ from bson import ObjectId
 from .nlp import parse_task_from_text, answer_user_question_contextual, now_ist
 from .profile import get_current_user_id
 from .database import get_database
+from .notifications import schedule_push_via_qstash
 
 router = APIRouter(prefix="/nlp", tags=["nlp"])
 
@@ -65,12 +66,6 @@ async def async_auto_schedule_user_tasks(user_id: str):
             push_sub = settings.get("push_subscription")
             wants_push = settings.get("push_notifications", True)
             
-            if wants_push and push_sub:
-                try:
-                    from .notifications import schedule_push_via_qstash
-                except ImportError:
-                    schedule_push_via_qstash = None
-
             for st_item in scheduled_results:
                 await db["tasks"].update_one(
                     {"_id": st_item.task_id, "user_id": user_id},
@@ -83,7 +78,7 @@ async def async_auto_schedule_user_tasks(user_id: str):
                 )
                 
                 # Automatically push to QStash
-                if wants_push and push_sub and schedule_push_via_qstash:
+                if wants_push and push_sub:
                     try:
                         # find task name for notification payload
                         task_name = "Task"
