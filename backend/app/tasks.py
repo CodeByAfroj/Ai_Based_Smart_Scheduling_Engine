@@ -26,6 +26,7 @@ class TaskCreate(BaseModel):
     resource_id: Optional[str] = "default"
     predecessors: Optional[List[str]] = []
     reminders: Optional[List[int]] = []
+    priority_reason: Optional[str] = None
 
 class TaskUpdate(BaseModel):
     name: Optional[str] = None
@@ -35,6 +36,7 @@ class TaskUpdate(BaseModel):
     priority: Optional[int] = None
     status: Optional[str] = None # "pending", "scheduled", "completed"
     reminders: Optional[List[int]] = None
+    priority_reason: Optional[str] = None
 
 def get_task_collection():
     return get_database()["tasks"]
@@ -67,6 +69,11 @@ async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_
     task_doc["user_id"] = user_id
     task_doc["status"] = "pending"
     task_doc["created_at"] = now_ist()
+    
+    if not task_doc.get("priority_reason"):
+        from .nlp import generate_priority_reason
+        task_doc["priority_reason"] = generate_priority_reason(data.name, data.priority)
+
     await collection.insert_one(task_doc)
     task_doc["id"] = str(task_doc.pop("_id"))
     
@@ -100,6 +107,11 @@ async def update_task(task_id: str, data: TaskUpdate, user_id: str = Depends(get
         return {"message": "No fields to update"}
     
     update_data["updated_at"] = now_ist()
+
+    if "priority" in update_data and "priority_reason" not in update_data:
+        from .nlp import generate_priority_reason
+        update_data["priority_reason"] = generate_priority_reason(update_data.get("name", "Task"), update_data["priority"])
+
     query = {"$or": [{"_id": task_id}, {"_id": ObjectId(task_id)}], "user_id": user_id} if ObjectId.is_valid(task_id) else {"_id": task_id, "user_id": user_id}
     result = await collection.update_one(query, {"$set": update_data})
     if result.matched_count == 0:

@@ -182,6 +182,12 @@ async def query_endpoint(
                 
                 import uuid
                 task_id = str(uuid.uuid4())
+                
+                from .nlp import generate_priority_reason
+                ai_reason = params.get("priority_reason")
+                if not ai_reason:
+                    ai_reason = generate_priority_reason(params.get("name", "Task"), params.get("priority", 2))
+                    
                 new_task = {
                     "_id": task_id,
                     "user_id": user_id,
@@ -190,6 +196,7 @@ async def query_endpoint(
                     "earliest_start": e_start,
                     "deadline": deadline,
                     "priority": params.get("priority", 2),
+                    "priority_reason": ai_reason,
                     "fixed": params.get("fixed", False),
                     "status": status,
                     "created_at": now_ist()
@@ -232,7 +239,12 @@ async def query_endpoint(
                 if "status" in params: update_fields["status"] = params["status"]
                 if "fixed" in params: update_fields["fixed"] = params["fixed"]
                 if "duration_minutes" in params: update_fields["duration_minutes"] = params["duration_minutes"]
-                if "priority" in params: update_fields["priority"] = params["priority"]
+                if "priority" in params: 
+                    update_fields["priority"] = params["priority"]
+                    from .nlp import generate_priority_reason
+                    update_fields["priority_reason"] = params.get("priority_reason") or generate_priority_reason(params.get("name", "Task"), params["priority"])
+                elif "priority_reason" in params:
+                    update_fields["priority_reason"] = params["priority_reason"]
                 if "earliest_start" in params: update_fields["earliest_start"] = params["earliest_start"]
                 if "deadline" in params: update_fields["deadline"] = params["deadline"]
                 

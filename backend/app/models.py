@@ -15,6 +15,7 @@ class Task(BaseModel):
     resource_id: Optional[str] = "default"
     predecessors: Optional[List[str]] = []
     reminders: Optional[List[int]] = []  # minutes before start to remind
+    priority_reason: Optional[str] = None
 
 class NotificationResponse(BaseModel):
     id: str

@@ -99,15 +99,11 @@ export default function ChatButton() {
         type="button"
         data-tour="ai-assistant"
         onClick={toggleChat}
-        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-6 w-14 h-14 rounded-full bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-200 z-[99999]"
+        className={`fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-6 w-14 h-14 rounded-full bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-200 z-[99999] ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none hidden' : ''}`}
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
       >
-        {isChatOpen ? (
-          <X size={22} />
-        ) : (
-          <Zap size={22} />
-        )}
+        <Zap size={22} />
       </button>
 
       {/* Chat Window - full-screen on mobile, floating on desktop */}
@@ -135,7 +131,7 @@ export default function ChatButton() {
         `}
       >
         <ChatErrorBoundary>
-          <ChatInterface isChatOpen={isChatOpen} openChat={openChat} />
+          <ChatInterface isChatOpen={isChatOpen} openChat={openChat} closeChat={() => setIsChatOpen(false)} />
         </ChatErrorBoundary>
       </div>
     </>

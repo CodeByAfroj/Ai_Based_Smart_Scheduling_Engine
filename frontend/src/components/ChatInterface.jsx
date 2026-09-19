@@ -80,7 +80,7 @@ function FormattedMessage({ text, isUser }) {
   );
 }
 
-export default function ChatInterface({ isChatOpen, openChat }) {
+export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
 
   const { token, API_BASE } = useAuth();
   const { tasks, addTask, fetchTasks } = useTasks();
@@ -106,6 +106,16 @@ export default function ChatInterface({ isChatOpen, openChat }) {
   });
 
   const [input, setInput] = useState('');
+  const textareaRef = useRef(null);
+
+  // Reset textarea height when input clears
+  useEffect(() => {
+    if (!input && textareaRef.current) {
+      textareaRef.current.style.height = '44px';
+      textareaRef.current.style.overflowY = 'hidden';
+    }
+  }, [input]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voices, setVoices] = useState([]);
@@ -993,6 +1003,17 @@ export default function ChatInterface({ isChatOpen, openChat }) {
               <VolumeX className="h-4 w-4" />
             )}
           </button>
+          
+          {/* Close button inside header */}
+          {closeChat && (
+            <button
+              onClick={closeChat}
+              className="ml-1 sm:hidden p-1 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors shrink-0"
+              title="Close Chat"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1038,26 +1059,28 @@ export default function ChatInterface({ isChatOpen, openChat }) {
         </button>
 
         <textarea
+          ref={textareaRef}
           rows={1}
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
             e.target.style.height = 'auto';
-            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+            const nextHeight = Math.min(e.target.scrollHeight, 120);
+            e.target.style.height = nextHeight + 'px';
+            e.target.style.overflowY = e.target.scrollHeight > 120 ? 'auto' : 'hidden';
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               if (!isLoading && input.trim()) {
                 sendMessage();
-                e.target.style.height = 'auto';
               }
             }
           }}
-          placeholder={isListening ? "Listening..." : "Message TaskPulse..."}
-          className={`flex-1 min-w-0 px-3 py-2.5 border rounded-xl focus:outline-none focus:ring-2 text-sm transition-all bg-[var(--bg-app)] text-[var(--text-main)] placeholder-[var(--text-muted)] resize-none overflow-y-auto ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-500/10' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
+          placeholder={isListening ? "Listening..." : "Message..."}
+          className={`flex-1 min-w-0 px-3 py-2.5 border rounded-2xl focus:outline-none focus:ring-2 text-sm transition-all bg-[var(--bg-app)] text-[var(--text-main)] placeholder-[var(--text-muted)] resize-none leading-relaxed ${isListening ? 'border-red-400 ring-1 ring-red-300 bg-red-500/10' : 'border-[var(--border-subtle)] focus:ring-[var(--accent-base)]'
             }`}
-          style={{ minHeight: '40px', maxHeight: '120px' }}
+          style={{ height: '44px', maxHeight: '120px', overflowY: 'hidden' }}
         />
 
         <button

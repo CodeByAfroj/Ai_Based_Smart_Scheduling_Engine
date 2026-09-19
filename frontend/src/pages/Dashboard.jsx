@@ -38,11 +38,14 @@ export default function Dashboard() {
     })
     .slice(0, 5)
     .map((t, index) => {
-      let reason = "Standard Priority";
-      if (t.priority === 5) reason = "Marked Critical";
-      else if (t.priority === 3) reason = "Marked High Priority";
-      else if (t.deadline) reason = "Closest Deadline";
-      else if (index === 0) reason = "Next Actionable Item";
+      let reason = t.priority_reason;
+      if (!reason) {
+        if (t.priority === 5) reason = "Marked Critical";
+        else if (t.priority === 3) reason = "Marked High Priority";
+        else if (t.deadline) reason = "Closest Deadline";
+        else if (index === 0) reason = "Next Actionable Item";
+        else reason = "Standard Priority";
+      }
       return { ...t, reason };
     });
 
@@ -180,7 +183,7 @@ export default function Dashboard() {
                   <div className="h-9 bg-white/10 rounded-lg w-32 shrink-0 animate-pulse"></div>
                 </div>
               </div>
-            ) : activeTasks.length > 0 && recommendation && recTask && recTask.name === 'Rest & Recharge' ? (
+            ) : recommendation && recTask && recTask.name === 'Rest & Recharge' ? (
               <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(148,163,184,0.15)] border border-slate-500/30 relative overflow-hidden transition-all duration-500">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-slate-500/20 rounded-full blur-3xl"></div>

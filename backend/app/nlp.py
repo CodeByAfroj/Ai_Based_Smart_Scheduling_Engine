@@ -219,6 +219,14 @@ def call_background_llm_with_failover(messages: List[Dict[str, str]], timeout: f
 
     return None
 
+def generate_priority_reason(task_name: str, priority: int) -> str:
+    """
+    Uses Ollama (via background failover chain) to generate a short reason for task priority.
+    """
+    prompt = f"Provide a short 2-4 word reason why a task named '{task_name}' has priority level {priority} out of 5. For example, if it's priority 5 and a meeting, say 'Important Meeting'. Reply ONLY with the 2-4 word text, no quotes, no extra words."
+    res = call_background_llm_with_failover([{"role": "user", "content": prompt}], timeout=4.0)
+    return res.strip() if res else "Standard Priority"
+
 def answer_user_question_contextual(question: str, user_tasks: List[Dict], user_profile: Dict, history: Optional[List[Dict[str, str]]] = None) -> Dict[str, Any]:
     """
     Human-like contextual AI Assistant with multi-provider failover.
@@ -282,6 +290,7 @@ Example `create_task` JSON:
     "earliest_start": "YYYY-MM-DDTHH:MM:SS+05:30",
     "deadline": "YYYY-MM-DDTHH:MM:SS+05:30",
     "priority": 3,
+    "priority_reason": "Short 2-4 word reason (e.g. 'Important Client Meeting')",
     "fixed": false
   }}
 }}
@@ -294,6 +303,8 @@ Example `update_task` JSON:
     "task_id": "the-exact-task-id",
     "name": "New Name (optional)",
     "scheduled_start": "YYYY-MM-DDTHH:MM:SS+05:30 (optional)",
+    "priority": 3,
+    "priority_reason": "Short 2-4 word reason for priority",
     "status": "completed (optional)",
     "fixed": false
   }}
@@ -364,6 +375,7 @@ Extract task parameters from user input. Return strictly valid JSON ONLY:
   "earliest_start": "YYYY-MM-DDTHH:MM:SS+05:30",
   "deadline": "YYYY-MM-DDTHH:MM:SS+05:30",
   "priority": 2,
+  "priority_reason": "Short 2-4 word reason for priority",
   "fixed": false
 }}
 

@@ -114,10 +114,10 @@ export default function Layout() {
     setOverdueTasks(prev => prev.filter(t => t.id !== id));
   };
 
-  // Option 1: ⚡ AI Auto-Fit Slot (Calls CP-SAT Solver)
+  // Option 1: AI Auto-Fit Slot (Calls CP-SAT Solver)
   const handleAiAutoFit = async (task) => {
     try {
-      pushToast({ title: '⚡ Running AI Solver', message: `Calculating optimal focus slot for "${task.name}"...`, urgent: false });
+      pushToast({ title: 'Running AI Solver', message: `Calculating optimal focus slot for "${task.name}"...`, urgent: false });
       const newStart = new Date().toISOString();
       await updateTask(task.id, { status: 'pending', earliest_start: newStart });
       
@@ -128,7 +128,7 @@ export default function Layout() {
       });
       if (res.ok) {
         if (fetchTasks) await fetchTasks(true);
-        pushToast({ title: '✅ AI Auto-Scheduled', message: `"${task.name}" auto-fitted into your optimal focus window.`, urgent: false });
+        pushToast({ title: 'AI Auto-Scheduled', message: `"${task.name}" auto-fitted into your optimal focus window.`, urgent: false });
       }
     } catch (err) {
       console.warn('AI reschedule error', err);
@@ -138,7 +138,7 @@ export default function Layout() {
     }
   };
 
-  // Option 2: ⏱️ Push +2 Hours Today
+  // Option 2: Push +2 Hours Today
   const handlePushHours = async (task, hours = 2) => {
     const now = Date.now();
     const newStart = new Date(now + 15 * 60 * 1000).toISOString();
@@ -146,10 +146,10 @@ export default function Layout() {
     await updateTask(task.id, { earliest_start: newStart, deadline: newDeadline, status: 'pending' });
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
-    pushToast({ title: '⏱️ Pushed +2 Hours', message: `"${task.name}" start window extended today.`, urgent: false });
+    pushToast({ title: 'Pushed +2 Hours', message: `"${task.name}" start window extended today.`, urgent: false });
   };
 
-  // Option 3: 🌅 Tomorrow Morning (9:00 AM)
+  // Option 3: Tomorrow Morning (9:00 AM)
   const handleTomorrowMorning = async (task) => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -163,10 +163,10 @@ export default function Layout() {
     });
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
-    pushToast({ title: '🌅 Tomorrow Morning', message: `"${task.name}" scheduled for 9:00 AM tomorrow.`, urgent: false });
+    pushToast({ title: 'Tomorrow Morning', message: `"${task.name}" scheduled for 9:00 AM tomorrow.`, urgent: false });
   };
 
-  // Option 4: 📅 Custom Date & Time
+  // Option 4: Custom Date & Time
   const handleCustomReschedule = async (task, localDateTimeVal) => {
     if (!localDateTimeVal) return;
     const targetDate = new Date(localDateTimeVal);
@@ -179,12 +179,12 @@ export default function Layout() {
     });
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
-    pushToast({ title: '📅 Custom Rescheduled', message: `"${task.name}" deadline updated.`, urgent: false });
+    pushToast({ title: 'Custom Rescheduled', message: `"${task.name}" deadline updated.`, urgent: false });
   };
 
   const handleRescheduleAllAi = async () => {
     try {
-      pushToast({ title: '⚡ Auto-Scheduling All', message: `Optimizing ${overdueTasks.length} overdue tasks...`, urgent: false });
+      pushToast({ title: 'Auto-Scheduling All', message: `Optimizing ${overdueTasks.length} overdue tasks...`, urgent: false });
       const res = await fetch(`${API_BASE}/reschedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -611,8 +611,9 @@ export default function Layout() {
               </div>
               <div>
                 <p className="text-xs font-semibold opacity-80 uppercase tracking-wide">Scheduled Task — Time Now</p>
-                <p className="text-sm font-bold leading-tight">
-                  ⚡ Complete your task: <span className="underline underline-offset-2">{activeFixedBanner.name}</span>
+                <p className="text-sm font-bold leading-tight flex items-center gap-1">
+                  <Zap size={14} className="text-amber-300 shrink-0" />
+                  <span>Complete your task: <span className="underline underline-offset-2">{activeFixedBanner.name}</span></span>
                 </p>
               </div>
             </div>
@@ -643,7 +644,7 @@ export default function Layout() {
         </div>
       )}
 
-      {/* ── Overdue Task Triage Banner (bottom) ──────────────────────────── */}
+      {/* ── Overdue Task Triage Banner (bottom launcher button) ──────────────── */}
       {overdueTasks.length > 0 && !showTriagePanel && (
         <div
           className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-6 left-4 z-[99990] pointer-events-auto"
@@ -664,31 +665,31 @@ export default function Layout() {
         </div>
       )}
 
-      {/* ── Overdue Task Triage Panel (slide-up modal) ──────────────────── */}
+      {/* ── Overdue Task Triage Modal ──────────────────── */}
       {showTriagePanel && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop (z-[100000] covers FAB cleanly when open) */}
           <div
-            className="fixed inset-0 z-[99991] bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm"
             onClick={() => {
               setShowTriagePanel(false);
               setActiveRescheduleTaskId(null);
             }}
           />
-          {/* Panel */}
+          {/* Modal Container */}
           <div
-            className="fixed bottom-0 left-0 right-0 z-[99992] bg-[var(--bg-panel)] rounded-t-2xl shadow-2xl border-t border-[var(--border-subtle)] max-h-[85vh] overflow-hidden flex flex-col pr-20 sm:pr-24"
+            className="fixed bottom-0 sm:bottom-6 left-0 right-0 sm:left-4 sm:right-4 z-[100001] bg-[var(--bg-panel)] rounded-t-2xl sm:rounded-2xl shadow-2xl border border-[var(--border-subtle)] max-h-[85vh] sm:max-h-[80vh] w-full sm:max-w-2xl sm:mx-auto flex flex-col overflow-hidden"
             style={{ animation: 'slideUpPanel 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[var(--border-subtle)]">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <AlertTriangle size={16} className="text-orange-600" />
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center shrink-0">
+                  <AlertTriangle size={18} className="text-orange-400" />
                 </div>
                 <div>
                   <h2 className="font-bold text-[var(--text-main)] text-base leading-tight">Overdue Tasks</h2>
-                  <p className="text-xs text-[var(--text-muted)]">{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''} past deadline — choose action</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''} past deadline — choose action</p>
                 </div>
               </div>
               <button
@@ -696,14 +697,14 @@ export default function Layout() {
                   setShowTriagePanel(false);
                   setActiveRescheduleTaskId(null);
                 }}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--bg-hover)] text-[var(--text-muted)] transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
               >
                 <XIcon size={16} />
               </button>
             </div>
 
             {/* Task list */}
-            <div className="overflow-y-auto flex-1 px-5 py-3 flex flex-col gap-3">
+            <div className="overflow-y-auto flex-1 px-4 sm:px-5 py-3 flex flex-col gap-3">
               {overdueTasks.map(task => {
                 const overdueByMs = Date.now() - new Date(task.deadline).getTime();
                 const overdueHrs = Math.floor(overdueByMs / 3600000);
@@ -716,119 +717,152 @@ export default function Layout() {
                 return (
                   <div
                     key={task.id}
-                    className="relative bg-[var(--bg-hover)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 flex flex-col gap-2"
+                    className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-col gap-2.5 shadow-sm hover:border-[var(--border-main)] transition-colors"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      {/* Info */}
+                    {/* Top Row: Info & Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      {/* Left side: Task Title & Badges */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-[var(--text-main)] truncate">{task.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
-                            <AlertTriangle size={9} /> {overdueLabel}
+                        <h3 className="text-sm font-semibold text-[var(--text-main)] truncate leading-tight">
+                          {task.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded-md">
+                            <AlertTriangle size={11} className="text-red-400 shrink-0" />
+                            {overdueLabel}
                           </span>
                           {task.priority > 2 && (
-                            <span className="inline-flex text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
                               High Priority
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Right side: Action Buttons */}
+                      <div className="flex items-center gap-2 shrink-0 justify-end">
                         <button
                           title="Reschedule options"
                           onClick={() => setActiveRescheduleTaskId(isMenuOpen ? null : task.id)}
-                          className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
-                            isMenuOpen ? 'bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
+                            isMenuOpen
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
                           }`}
                         >
-                          <RotateCcw size={11} /> Reschedule <ChevronDown size={11} />
+                          <RotateCcw size={12} />
+                          <span>Reschedule</span>
+                          <ChevronDown size={12} className={`transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
+
                         <button
                           title="Mark as completed"
                           onClick={() => {
                             updateTask(task.id, { status: 'completed' });
                             dismissOverdueTask(task.id);
                           }}
-                          className="flex items-center gap-1 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-colors"
+                          className="flex items-center gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-colors shadow-sm"
                         >
-                          <CheckCircle2 size={11} /> Done
+                          <CheckCircle2 size={12} />
+                          <span>Done</span>
                         </button>
+
                         <button
                           title="Delete task"
                           onClick={async () => {
                             if (deleteTask) await deleteTask(task.id);
                             dismissOverdueTask(task.id);
                           }}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 hover:text-red-600 text-[var(--text-muted)] transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-colors"
                         >
                           <Trash2 size={13} />
                         </button>
+
                         <button
                           title="Dismiss notification"
                           onClick={() => dismissOverdueTask(task.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--border-subtle)] text-[var(--text-muted)] transition-colors"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--bg-hover)] text-[var(--text-muted)] transition-colors"
                         >
-                          <XIcon size={13} />
+                          <XIcon size={14} />
                         </button>
                       </div>
                     </div>
 
-                    {/* Interactive Choice Menu Dropdown / Popover */}
+                    {/* Interactive Choice Menu Dropdown */}
                     {isMenuOpen && (
-                      <div className="mt-2 p-3 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-lg flex flex-col gap-2 text-xs">
-                        <span className="font-semibold text-[var(--text-muted)] uppercase text-[10px] tracking-wider">Choose Reschedule Action</span>
+                      <div className="mt-1 pt-3 border-t border-[var(--border-subtle)] flex flex-col gap-2.5">
+                        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                          Select Reschedule Option
+                        </span>
+
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          {/* Option 1: AI Auto-Fit */}
                           <button
                             onClick={() => handleAiAutoFit(task)}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors text-left"
+                            className="flex items-start gap-2.5 p-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/15 transition-all text-left group cursor-pointer"
                           >
-                            <Zap size={14} className="shrink-0 text-indigo-600" />
+                            <Zap size={15} className="text-indigo-400 shrink-0 mt-0.5" />
                             <div>
-                              <div className="font-semibold">⚡ AI Auto-Fit Slot</div>
-                              <div className="text-[10px] text-indigo-600/80 dark:text-indigo-400">Optimal CP-SAT time</div>
+                              <div className="text-xs font-bold text-[var(--text-main)] group-hover:text-indigo-300">
+                                AI Auto-Fit Slot
+                              </div>
+                              <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                                Optimal CP-SAT time block
+                              </div>
                             </div>
                           </button>
 
+                          {/* Option 2: Push +2 Hours */}
                           <button
                             onClick={() => handlePushHours(task, 2)}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium transition-colors text-left"
+                            className="flex items-start gap-2.5 p-2.5 rounded-xl border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/15 transition-all text-left group cursor-pointer"
                           >
-                            <Clock size={14} className="shrink-0 text-blue-600" />
+                            <Clock size={15} className="text-blue-400 shrink-0 mt-0.5" />
                             <div>
-                              <div className="font-semibold">⏱️ Push +2 Hours</div>
-                              <div className="text-[10px] text-blue-600/80 dark:text-blue-400">Later today</div>
+                              <div className="text-xs font-bold text-[var(--text-main)] group-hover:text-blue-300">
+                                Push +2 Hours
+                              </div>
+                              <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                                Later today
+                              </div>
                             </div>
                           </button>
 
+                          {/* Option 3: Tomorrow Morning */}
                           <button
                             onClick={() => handleTomorrowMorning(task)}
-                            className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 font-medium transition-colors text-left"
+                            className="flex items-start gap-2.5 p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/15 transition-all text-left group cursor-pointer"
                           >
-                            <Sun size={14} className="shrink-0 text-amber-600" />
+                            <Sun size={15} className="text-amber-400 shrink-0 mt-0.5" />
                             <div>
-                              <div className="font-semibold">🌅 Tomorrow Morning</div>
-                              <div className="text-[10px] text-amber-600/80 dark:text-amber-400">At 9:00 AM</div>
+                              <div className="text-xs font-bold text-[var(--text-main)] group-hover:text-amber-300">
+                                Tomorrow Morning
+                              </div>
+                              <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
+                                At 9:00 AM
+                              </div>
                             </div>
                           </button>
                         </div>
 
                         {/* Custom Date & Time selector */}
-                        <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center gap-2">
-                          <span className="text-[11px] font-medium text-[var(--text-muted)] shrink-0">📅 Custom:</span>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-hover)]">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] shrink-0">
+                            <Calendar size={14} className="text-emerald-400" />
+                            <span>Custom Time:</span>
+                          </div>
                           <input
                             type="datetime-local"
                             value={customDateTimeMap[task.id] || ''}
                             onChange={(e) => setCustomDateTimeMap(prev => ({ ...prev, [task.id]: e.target.value }))}
-                            className="flex-1 bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-main)] rounded-md px-2 py-1 text-xs"
+                            className="flex-1 bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-main)] rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-500 transition-colors"
                           />
                           <button
                             disabled={!customDateTimeMap[task.id]}
                             onClick={() => handleCustomReschedule(task, customDateTimeMap[task.id])}
-                            className="px-3 py-1 bg-indigo-600 text-white rounded-md font-semibold text-xs disabled:opacity-50 hover:bg-indigo-700 transition-colors"
+                            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-xs disabled:opacity-40 transition-colors shrink-0"
                           >
-                            Set
+                            Set Time
                           </button>
                         </div>
                       </div>
@@ -839,31 +873,33 @@ export default function Layout() {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+            <div className="px-5 py-3 border-t border-[var(--border-subtle)] bg-[var(--bg-panel)] flex items-center justify-between gap-3 flex-wrap">
               <button
                 onClick={handleRescheduleAllAi}
-                className="flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:underline"
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 <Zap size={14} /> AI Reschedule All
               </button>
-              <button
-                onClick={() => {
-                  overdueTasks.forEach(t => {
-                    updateTask(t.id, { status: 'completed' });
-                    dismissOverdueTask(t.id);
-                  });
-                  setShowTriagePanel(false);
-                }}
-                className="flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:underline"
-              >
-                <CheckCircle2 size={14} /> Mark All Done
-              </button>
-              <button
-                onClick={() => setShowTriagePanel(false)}
-                className="text-sm text-[var(--text-muted)] hover:text-[var(--text-main)]"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    overdueTasks.forEach(t => {
+                      updateTask(t.id, { status: 'completed' });
+                      dismissOverdueTask(t.id);
+                    });
+                    setShowTriagePanel(false);
+                  }}
+                  className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  <CheckCircle2 size={14} /> Mark All Done
+                </button>
+                <button
+                  onClick={() => setShowTriagePanel(false)}
+                  className="text-xs sm:text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-main)] px-2 py-1 rounded-md transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </>
