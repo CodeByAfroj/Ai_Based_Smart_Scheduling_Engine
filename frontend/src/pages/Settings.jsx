@@ -119,7 +119,7 @@ export default function Settings() {
 
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
-      <div className="max-w-2xl mx-auto px-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Settings</h1>
 
