@@ -168,7 +168,8 @@ export default function TaskAlarmManager() {
 
   useEffect(() => {
     if (!tasks || tasks.length === 0) return;
-    
+    if (profile?.alarm_enabled === false) return; // Do not trigger web alarms if disabled
+
     const checkDeadlines = () => {
       // Don't interrupt an active alarm
       if (activeAlarmTask) return;

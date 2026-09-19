@@ -34,6 +34,7 @@ export default function Settings() {
 
   const [notifPref, setNotifPref] = useState(profile?.notification_preference || 'text_and_sound');
   const [pushEnabled, setPushEnabled] = useState(profile?.push_notifications ?? true);
+  const [alarmEnabled, setAlarmEnabled] = useState(profile?.alarm_enabled ?? true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -65,10 +66,10 @@ export default function Settings() {
   const saveNotif = async () => {
     setSaving(true);
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/profile/update`, {
+      const res = await fetch(`${API_BASE}/profile/update`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...profile, notification_preference: notifPref, push_notifications: pushEnabled }),
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...profile, notification_preference: notifPref, push_notifications: pushEnabled, alarm_enabled: alarmEnabled }),
       });
       await fetchProfile();
       setSaved(true);
@@ -209,13 +210,27 @@ export default function Settings() {
                   <p className="text-xs text-[var(--text-muted)]">Alerts for reminders and schedule changes</p>
                 </div>
               </div>
-              <button
-                style={{ minHeight: 'unset' }}
-                onClick={handlePushToggle}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${pushEnabled ? 'bg-[var(--accent-base)]' : 'bg-slate-200'}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${pushEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-              </button>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={pushEnabled} onChange={(e) => handlePushToggle(e.target.checked)} className="sr-only peer" />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            {/* Alarm toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-app)] border border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                  <Bell size={15} />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-[var(--text-main)]">In-App Web Alarms</p>
+                  <p className="text-xs text-[var(--text-muted)]">Play sound locally when website is open</p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={alarmEnabled} onChange={(e) => setAlarmEnabled(e.target.checked)} className="sr-only peer" />
+                <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
+              </label>
             </div>
 
             {/* Alert mode */}
