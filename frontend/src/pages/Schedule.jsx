@@ -173,8 +173,8 @@ export default function Schedule() {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       {isOverdue ? (
-                        <button onClick={() => pushTaskTime(task)} className="text-[10px] font-bold bg-white text-red-600 border border-red-200 hover:bg-red-50 px-2 py-1 rounded shadow-sm transition-colors">
-                          Push +24h
+                        <button onClick={runEngine} disabled={scheduling} className="text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg shadow-sm transition-all flex items-center gap-1">
+                          <Zap size={10} /> Auto-Fit Slot
                         </button>
                       ) : (
                         <div className="text-xs text-[var(--text-muted)] flex items-center gap-1.5">

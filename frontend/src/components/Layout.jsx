@@ -20,6 +20,8 @@ import {
   RotateCcw,
   ListTodo,
   HelpCircle,
+  Trash2,
+  Sun,
 } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,8 +56,10 @@ export default function Layout() {
     try { return new Set(JSON.parse(localStorage.getItem('tp_dismissed_overdue') || '[]')); }
     catch { return new Set(); }
   });
+  const [activeRescheduleTaskId, setActiveRescheduleTaskId] = useState(null);
+  const [customDateTimeMap, setCustomDateTimeMap] = useState({});
 
-  const { tasks, updateTask } = useTasks();
+  const { tasks, fetchTasks, updateTask, deleteTask } = useTasks();
 
   const notifiedIdsRef = useRef(
     (() => { try { return new Set(JSON.parse(localStorage.getItem('tp_notified_ids') || '[]')); } catch { return new Set(); } })()
@@ -99,15 +103,7 @@ export default function Layout() {
     return () => clearInterval(interval);
   }, [tasks, dismissedOverdueIds]);
 
-  // Reschedule: push deadline +24h from now
-  const rescheduleTask = (task) => {
-    const newDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    const newStart = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // start in 30min
-    updateTask(task.id, { deadline: newDeadline, earliest_start: newStart, status: 'pending' });
-    dismissOverdueTask(task.id);
-    pushToast({ title: '🔄 Rescheduled', message: `"${task.name}" moved to tomorrow.`, urgent: false });
-  };
-
+  // ── Reschedule Handlers (Interactive Choice Menu) ──────────────────────
   const dismissOverdueTask = (id) => {
     setDismissedOverdueIds(prev => {
       const next = new Set(prev);
@@ -116,6 +112,93 @@ export default function Layout() {
       return next;
     });
     setOverdueTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  // Option 1: ⚡ AI Auto-Fit Slot (Calls CP-SAT Solver)
+  const handleAiAutoFit = async (task) => {
+    try {
+      pushToast({ title: '⚡ Running AI Solver', message: `Calculating optimal focus slot for "${task.name}"...`, urgent: false });
+      const newStart = new Date().toISOString();
+      await updateTask(task.id, { status: 'pending', earliest_start: newStart });
+      
+      const res = await fetch(`${API_BASE}/reschedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: newStart })
+      });
+      if (res.ok) {
+        if (fetchTasks) await fetchTasks(true);
+        pushToast({ title: '✅ AI Auto-Scheduled', message: `"${task.name}" auto-fitted into your optimal focus window.`, urgent: false });
+      }
+    } catch (err) {
+      console.warn('AI reschedule error', err);
+    } finally {
+      dismissOverdueTask(task.id);
+      setActiveRescheduleTaskId(null);
+    }
+  };
+
+  // Option 2: ⏱️ Push +2 Hours Today
+  const handlePushHours = async (task, hours = 2) => {
+    const now = Date.now();
+    const newStart = new Date(now + 15 * 60 * 1000).toISOString();
+    const newDeadline = new Date(now + hours * 60 * 60 * 1000).toISOString();
+    await updateTask(task.id, { earliest_start: newStart, deadline: newDeadline, status: 'pending' });
+    dismissOverdueTask(task.id);
+    setActiveRescheduleTaskId(null);
+    pushToast({ title: '⏱️ Pushed +2 Hours', message: `"${task.name}" start window extended today.`, urgent: false });
+  };
+
+  // Option 3: 🌅 Tomorrow Morning (9:00 AM)
+  const handleTomorrowMorning = async (task) => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    const tomorrowEnd = new Date(tomorrow.getTime() + 4 * 60 * 60 * 1000);
+    
+    await updateTask(task.id, {
+      earliest_start: tomorrow.toISOString(),
+      deadline: tomorrowEnd.toISOString(),
+      status: 'pending'
+    });
+    dismissOverdueTask(task.id);
+    setActiveRescheduleTaskId(null);
+    pushToast({ title: '🌅 Tomorrow Morning', message: `"${task.name}" scheduled for 9:00 AM tomorrow.`, urgent: false });
+  };
+
+  // Option 4: 📅 Custom Date & Time
+  const handleCustomReschedule = async (task, localDateTimeVal) => {
+    if (!localDateTimeVal) return;
+    const targetDate = new Date(localDateTimeVal);
+    const earliestStart = new Date().toISOString();
+    
+    await updateTask(task.id, {
+      earliest_start: earliestStart,
+      deadline: targetDate.toISOString(),
+      status: 'pending'
+    });
+    dismissOverdueTask(task.id);
+    setActiveRescheduleTaskId(null);
+    pushToast({ title: '📅 Custom Rescheduled', message: `"${task.name}" deadline updated.`, urgent: false });
+  };
+
+  const handleRescheduleAllAi = async () => {
+    try {
+      pushToast({ title: '⚡ Auto-Scheduling All', message: `Optimizing ${overdueTasks.length} overdue tasks...`, urgent: false });
+      const res = await fetch(`${API_BASE}/reschedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() })
+      });
+      if (res.ok && fetchTasks) {
+        await fetchTasks(true);
+      }
+    } catch (e) {
+      console.warn('Bulk reschedule error', e);
+    } finally {
+      overdueTasks.forEach(t => dismissOverdueTask(t.id));
+      setShowTriagePanel(false);
+    }
   };
 
 
@@ -587,11 +670,14 @@ export default function Layout() {
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-[99991] bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowTriagePanel(false)}
+            onClick={() => {
+              setShowTriagePanel(false);
+              setActiveRescheduleTaskId(null);
+            }}
           />
           {/* Panel */}
           <div
-            className="fixed bottom-0 left-0 right-0 z-[99992] bg-[var(--bg-panel)] rounded-t-2xl shadow-2xl border-t border-[var(--border-subtle)] max-h-[80vh] overflow-hidden flex flex-col"
+            className="fixed bottom-0 left-0 right-0 z-[99992] bg-[var(--bg-panel)] rounded-t-2xl shadow-2xl border-t border-[var(--border-subtle)] max-h-[85vh] overflow-hidden flex flex-col pr-20 sm:pr-24"
             style={{ animation: 'slideUpPanel 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}
           >
             {/* Header */}
@@ -602,11 +688,14 @@ export default function Layout() {
                 </div>
                 <div>
                   <h2 className="font-bold text-[var(--text-main)] text-base leading-tight">Overdue Tasks</h2>
-                  <p className="text-xs text-[var(--text-muted)]">{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''} past deadline — take action</p>
+                  <p className="text-xs text-[var(--text-muted)]">{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''} past deadline — choose action</p>
                 </div>
               </div>
               <button
-                onClick={() => setShowTriagePanel(false)}
+                onClick={() => {
+                  setShowTriagePanel(false);
+                  setActiveRescheduleTaskId(null);
+                }}
                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--bg-hover)] text-[var(--text-muted)] transition-colors"
               >
                 <XIcon size={16} />
@@ -622,53 +711,128 @@ export default function Layout() {
                 const overdueLabel = overdueDays > 0
                   ? `${overdueDays}d ${overdueHrs % 24}h overdue`
                   : `${overdueHrs}h overdue`;
+                const isMenuOpen = activeRescheduleTaskId === task.id;
 
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center gap-3 bg-[var(--bg-hover)] border border-[var(--border-subtle)] rounded-xl px-4 py-3"
+                    className="relative bg-[var(--bg-hover)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 flex flex-col gap-2"
                   >
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[var(--text-main)] truncate">{task.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
-                          <AlertTriangle size={9} /> {overdueLabel}
-                        </span>
-                        {task.priority > 2 && (
-                          <span className="inline-flex text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">
-                            High Priority
+                    <div className="flex items-center justify-between gap-3">
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[var(--text-main)] truncate">{task.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
+                            <AlertTriangle size={9} /> {overdueLabel}
                           </span>
-                        )}
+                          {task.priority > 2 && (
+                            <span className="inline-flex text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">
+                              High Priority
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          title="Reschedule options"
+                          onClick={() => setActiveRescheduleTaskId(isMenuOpen ? null : task.id)}
+                          className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
+                            isMenuOpen ? 'bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          <RotateCcw size={11} /> Reschedule <ChevronDown size={11} />
+                        </button>
+                        <button
+                          title="Mark as completed"
+                          onClick={() => {
+                            updateTask(task.id, { status: 'completed' });
+                            dismissOverdueTask(task.id);
+                          }}
+                          className="flex items-center gap-1 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-colors"
+                        >
+                          <CheckCircle2 size={11} /> Done
+                        </button>
+                        <button
+                          title="Delete task"
+                          onClick={async () => {
+                            if (deleteTask) await deleteTask(task.id);
+                            dismissOverdueTask(task.id);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 hover:text-red-600 text-[var(--text-muted)] transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                        <button
+                          title="Dismiss notification"
+                          onClick={() => dismissOverdueTask(task.id)}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--border-subtle)] text-[var(--text-muted)] transition-colors"
+                        >
+                          <XIcon size={13} />
+                        </button>
                       </div>
                     </div>
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        title="Reschedule to tomorrow"
-                        onClick={() => rescheduleTask(task)}
-                        className="flex items-center gap-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1.5 rounded-lg transition-colors"
-                      >
-                        <RotateCcw size={11} /> Reschedule
-                      </button>
-                      <button
-                        title="Mark as completed"
-                        onClick={() => {
-                          updateTask(task.id, { status: 'completed' });
-                          dismissOverdueTask(task.id);
-                        }}
-                        className="flex items-center gap-1 text-xs font-semibold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-colors"
-                      >
-                        <CheckCircle2 size={11} /> Done
-                      </button>
-                      <button
-                        title="Dismiss"
-                        onClick={() => dismissOverdueTask(task.id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--border-subtle)] text-[var(--text-muted)] transition-colors"
-                      >
-                        <XIcon size={13} />
-                      </button>
-                    </div>
+
+                    {/* Interactive Choice Menu Dropdown / Popover */}
+                    {isMenuOpen && (
+                      <div className="mt-2 p-3 bg-[var(--bg-panel)] border border-[var(--border-subtle)] rounded-xl shadow-lg flex flex-col gap-2 text-xs">
+                        <span className="font-semibold text-[var(--text-muted)] uppercase text-[10px] tracking-wider">Choose Reschedule Action</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <button
+                            onClick={() => handleAiAutoFit(task)}
+                            className="flex items-center gap-2 p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 font-medium transition-colors text-left"
+                          >
+                            <Zap size={14} className="shrink-0 text-indigo-600" />
+                            <div>
+                              <div className="font-semibold">⚡ AI Auto-Fit Slot</div>
+                              <div className="text-[10px] text-indigo-600/80 dark:text-indigo-400">Optimal CP-SAT time</div>
+                            </div>
+                          </button>
+
+                          <button
+                            onClick={() => handlePushHours(task, 2)}
+                            className="flex items-center gap-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium transition-colors text-left"
+                          >
+                            <Clock size={14} className="shrink-0 text-blue-600" />
+                            <div>
+                              <div className="font-semibold">⏱️ Push +2 Hours</div>
+                              <div className="text-[10px] text-blue-600/80 dark:text-blue-400">Later today</div>
+                            </div>
+                          </button>
+
+                          <button
+                            onClick={() => handleTomorrowMorning(task)}
+                            className="flex items-center gap-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 font-medium transition-colors text-left"
+                          >
+                            <Sun size={14} className="shrink-0 text-amber-600" />
+                            <div>
+                              <div className="font-semibold">🌅 Tomorrow Morning</div>
+                              <div className="text-[10px] text-amber-600/80 dark:text-amber-400">At 9:00 AM</div>
+                            </div>
+                          </button>
+                        </div>
+
+                        {/* Custom Date & Time selector */}
+                        <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center gap-2">
+                          <span className="text-[11px] font-medium text-[var(--text-muted)] shrink-0">📅 Custom:</span>
+                          <input
+                            type="datetime-local"
+                            value={customDateTimeMap[task.id] || ''}
+                            onChange={(e) => setCustomDateTimeMap(prev => ({ ...prev, [task.id]: e.target.value }))}
+                            className="flex-1 bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-main)] rounded-md px-2 py-1 text-xs"
+                          />
+                          <button
+                            disabled={!customDateTimeMap[task.id]}
+                            onClick={() => handleCustomReschedule(task, customDateTimeMap[task.id])}
+                            className="px-3 py-1 bg-indigo-600 text-white rounded-md font-semibold text-xs disabled:opacity-50 hover:bg-indigo-700 transition-colors"
+                          >
+                            Set
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -677,12 +841,10 @@ export default function Layout() {
             {/* Footer */}
             <div className="px-5 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
               <button
-                onClick={() => {
-                  overdueTasks.forEach(t => rescheduleTask(t));
-                }}
-                className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:underline"
+                onClick={handleRescheduleAllAi}
+                className="flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:underline"
               >
-                <RotateCcw size={14} /> Reschedule All
+                <Zap size={14} /> AI Reschedule All
               </button>
               <button
                 onClick={() => {
