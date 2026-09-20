@@ -216,8 +216,9 @@ async def query_endpoint(
                 settings = (user or {}).get("settings", {})
                 push_sub = settings.get("push_subscription")
                 wants_push = settings.get("push_notifications", True)
+                alarm_enabled = settings.get("alarm_enabled", True)
                 if push_sub and wants_push and scheduled_start:
-                    schedule_push_via_qstash(user_id, task_id, params.get("name", "New Task"), scheduled_start, push_sub, reminders=params.get("reminders"))
+                    schedule_push_via_qstash(user_id, task_id, params.get("name", "New Task"), scheduled_start, push_sub, reminders=params.get("reminders"), alarm_enabled=alarm_enabled)
 
                 # Dispatch real-time web notification with task name
                 try:

@@ -107,7 +107,7 @@ async def save_notification_to_db(user_id: str, title: str, message: str, type: 
     await db["notifications"].insert_one(doc)
     return doc
 
-def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = None, push_sub: dict = None, reminders: list = None, task_id: str = None):
+def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = None, push_sub: dict = None, reminders: list = None, task_id: str = None, alarm_enabled: bool = True):
     # Support both 5-arg signature (user_id, task_id, task_name, scheduled_time, push_sub)
     # and 4-arg signature (user_id, task_name, scheduled_time, push_sub)
     if isinstance(push_sub, dict):
@@ -150,7 +150,7 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
         else:
             target = scheduled_time.astimezone(timezone.utc)
 
-        # 1. Schedule prior reminder notifications (e.g. 5m, 10m, 30m before)
+        # 1. Schedule prior standard REMINDER notifications (e.g. 5m, 10m, 30m before)
         if reminders and isinstance(reminders, list):
             for m in reminders:
                 try:
@@ -163,8 +163,8 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                             body={
                                 "title": f"⏰ {task_name} starts in {mins} min",
                                 "body": f"Reminder: Your scheduled task '{task_name}' is starting in {mins} minutes.",
-                                "requireInteraction": True,
-                                "tag": f"alarm-{task_id}-{mins}",
+                                "requireInteraction": False,  # Standard notification, auto-dismisses
+                                "tag": f"reminder-{task_id}-{mins}",
                                 "pushSubscription": push_sub
                             },
                             delay=f"{rem_delay}s",
@@ -176,25 +176,30 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                 except Exception as r_err:
                     print(f"Error scheduling reminder {m}m: {r_err}")
 
-        # 2. Schedule main start-time notification
+        # 2. Schedule DEADLINE ALARM (Triggers ONLY when the deadline/start time is reached)
+        if not alarm_enabled:
+            print(f"🛑 [ALARM DISABLED] User {user_id} has turned OFF alarms in settings. Skipping deadline alarm for '{task_name}'.")
+            return
+
         delay_seconds = int((target - now).total_seconds())
         if delay_seconds <= 0:
-            print(f"⚠️ [QSTASH] Scheduled time {target} is in the past ({abs(delay_seconds)}s ago). Skipping push scheduling.")
+            print(f"⚠️ [QSTASH ALARM] Scheduled deadline time {target} is in the past ({abs(delay_seconds)}s ago). Skipping alarm.")
             return
 
         qstash_client.message.publish_json(
             url=CLOUDFLARE_WORKER_URL,
             body={
-                "title": f"🚀 Task Starting: {task_name}",
-                "body": f"Deadline / Start time for '{task_name}' has arrived! Complete your task now.",
-                "requireInteraction": True,
+                "title": f"🚨 ALARM: {task_name} Deadline Reached!",
+                "body": f"Deadline for '{task_name}' has arrived! Complete your task now.",
+                "requireInteraction": True,  # Persistent OS Alarm: Stays open on screen until dismissed
                 "tag": f"alarm-{task_id}",
+                "sound": "/alarm.mp3",
                 "pushSubscription": push_sub
             },
             delay=f"{delay_seconds}s",
             deduplication_id=f"main-{task_id}-{int(target.timestamp())}"
         )
-        print(f"✅ [QSTASH] Scheduled Main Web Push for '{task_name}' at {target} (delay: {delay_seconds}s) -> {CLOUDFLARE_WORKER_URL}")
+        print(f"🚨 [QSTASH ALARM] Scheduled Deadline Alarm for '{task_name}' at {target} (delay: {delay_seconds}s)")
     except Exception as e:
         print(f"❌ [QSTASH ERROR] Error scheduling push via QStash: {e}")
 
