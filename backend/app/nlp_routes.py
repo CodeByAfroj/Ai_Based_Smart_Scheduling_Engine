@@ -65,6 +65,7 @@ async def async_auto_schedule_user_tasks(user_id: str):
             # Need to get user push subscription
             push_sub = settings.get("push_subscription")
             wants_push = settings.get("push_notifications", True)
+            alarm_enabled = settings.get("alarm_enabled", True)
             
             for st_item in scheduled_results:
                 await db["tasks"].update_one(
