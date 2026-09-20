@@ -94,12 +94,14 @@ async def get_profile(user_id: str = Depends(get_current_user_id)):
 @router.put("/update")
 async def update_profile(data: ProfileUpdate, user_id: str = Depends(get_current_user_id)):
     collection = get_user_collection()
+    
+    # Use dot notation for updates to avoid overwriting unrelated settings like push_subscription
+    update_fields = {f"settings.{k}": v for k, v in data.model_dump().items()}
+    update_fields["updated_at"] = now_ist()
+    
     result = await collection.update_one(
         {"google_id": user_id},
-        {"$set": {
-            "settings": data.model_dump(),
-            "updated_at": now_ist()
-        }},
+        {"$set": update_fields},
         upsert=True
     )
     if result.matched_count == 0 and result.upserted_id is None:
