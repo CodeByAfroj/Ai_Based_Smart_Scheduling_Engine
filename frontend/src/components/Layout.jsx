@@ -22,6 +22,7 @@ import {
   HelpCircle,
   Trash2,
   Sun,
+  BellRing,
 } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -322,6 +323,19 @@ export default function Layout() {
     setupWebPush();
   }, [token, API_BASE]);
 
+  // Active playing alarm banner (shows when push alarm arrives with Cancel button)
+  const [activeAlarm, setActiveAlarm] = useState(null);
+
+  const stopAlarm = useCallback(() => {
+    if (window.__activeAlarmAudio) {
+      window.__activeAlarmAudio.pause();
+      window.__activeAlarmAudio.currentTime = 0;
+    }
+    if (window.__alarmTimeout) clearTimeout(window.__alarmTimeout);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setActiveAlarm(null);
+  }, []);
+
   // Trigger Samsung alarm.mp3 audio playback and voice TTS when push alarm signal arrives
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -329,12 +343,7 @@ export default function Layout() {
         if (!event.data) return;
 
         if (event.data.type === 'STOP_ALARM') {
-          if (window.__activeAlarmAudio) {
-            window.__activeAlarmAudio.pause();
-            window.__activeAlarmAudio.currentTime = 0;
-          }
-          if (window.__alarmTimeout) clearTimeout(window.__alarmTimeout);
-          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+          stopAlarm();
           return;
         }
 
@@ -344,6 +353,11 @@ export default function Layout() {
           if (pref === 'silent' || pref === 'vibrate') {
             return;
           }
+
+          setActiveAlarm({
+            title: event.data.title || '🚨 DEADLINE ALARM',
+            body: event.data.body || 'Your scheduled task focus window has arrived!'
+          });
 
           if (pref === 'voice' && 'speechSynthesis' in window) {
             try {
@@ -395,7 +409,7 @@ export default function Layout() {
         navigator.serviceWorker.removeEventListener('message', handleSWMessage);
       };
     }
-  }, []);
+  }, [stopAlarm]);
 
   useEffect(() => {
     if (!token || !API_BASE) return undefined;
@@ -755,8 +769,43 @@ export default function Layout() {
   return (
     <div className="fixed inset-0 overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex">
 
-      {/* ── Toast Stack (Dynamic Island Style) ─────────────────────────── */}
+      {/* ── Toast Stack & Active Alarm (Dynamic Island Style) ─────────────────────────── */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-2 w-[92vw] max-w-[420px] pointer-events-none">
+        
+        {/* Dynamic Island Active Ringtone Alarm Pill */}
+        {activeAlarm && (
+          <div
+            className="relative pointer-events-auto flex items-center gap-3 px-3.5 py-2.5 rounded-[28px] shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border border-red-500/40 bg-black/90 backdrop-blur-2xl text-white shadow-red-500/20 transition-all w-full overflow-hidden"
+            style={{
+              animation: 'dynamicIsland 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              transformOrigin: 'top center'
+            }}
+          >
+            {/* Dynamic Island Red Ambient Glow */}
+            <div className="absolute -inset-4 opacity-25 blur-2xl rounded-full bg-red-500 pointer-events-none"></div>
+
+            <div className="relative shrink-0 p-2 rounded-full bg-red-500/20 text-red-400 animate-pulse">
+              <BellRing size={16} />
+            </div>
+
+            <div className="relative flex-1 min-w-0 flex flex-col justify-center">
+              <p className="text-[10px] font-black uppercase tracking-wider leading-none mb-0.5 text-red-400">
+                {activeAlarm.title || '🚨 ALARM ACTIVE'}
+              </p>
+              <p className="text-[12px] text-slate-100 font-medium leading-tight truncate pr-1">
+                {activeAlarm.body}
+              </p>
+            </div>
+
+            <button
+              onClick={stopAlarm}
+              className="group relative shrink-0 flex items-center justify-center text-[11px] font-bold text-white bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded-full transition-all flex items-center gap-1 shadow-md shadow-red-600/30 border border-red-400/30 active:scale-95 cursor-pointer"
+              title="Cancel & Stop Alarm"
+            >
+              <XIcon size={13} /> Stop
+            </button>
+          </div>
+        )}
         {toasts.map(toast => (
           <div
             key={toast.id}

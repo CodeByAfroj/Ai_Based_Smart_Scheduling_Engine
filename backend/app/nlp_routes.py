@@ -88,7 +88,7 @@ async def async_auto_schedule_user_tasks(user_id: str):
                                 task_name = t.name
                                 task_reminders = getattr(t, "reminders", None)
                                 break
-                        notif_pref = user_settings.get("notification_preference", "text_and_sound")
+                        notif_pref = settings.get("notification_preference", "text_and_sound")
                         schedule_push_via_qstash(user_id, st_item.task_id, task_name, st_item.start, push_sub, reminders=task_reminders, alarm_enabled=alarm_enabled, notification_preference=notif_pref)
                     except Exception as q_err:
                         print(f"Failed to auto-schedule push for {st_item.task_id}: {q_err}")

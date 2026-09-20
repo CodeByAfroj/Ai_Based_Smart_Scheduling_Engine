@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  Bell, CheckCircle2, Calendar, Mail, Zap, 
-  Database, User, ExternalLink 
+import {
+  Bell, CheckCircle2, Calendar, Mail, Zap,
+  Database, User, ExternalLink
 } from 'lucide-react';
 import { Section, Row } from '../components/ui/LayoutBlocks';
 
@@ -71,71 +71,71 @@ export default function Integrations() {
         )}
 
         <Section title="Identity & Calendar Sync">
-          <Row 
+          <Row
             icon={User} iconColor="bg-blue-600"
             title="Google Account"
-            badge={profile?.email ? 'connected' : 'disconnected'}
-            subtitle="Authentication via Google OAuth 2.0"
-            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium max-w-[140px] sm:max-w-none truncate">{profile?.email || 'Not connected'}</span>}
+            badge={profile?.email ? <CheckCircle2 size={16} className="text-emerald-500 shrink-0" title="Connected" /> : null}
+            subtitle="Google OAuth sync"
+            right={<span className="hidden sm:inline text-xs text-[var(--text-muted)] font-medium max-w-[160px] truncate">{profile?.email || 'Not connected'}</span>}
           />
-          <Row 
+          <Row
             icon={Calendar} iconColor="bg-rose-500"
             title="Google Calendar"
-            badge={profile?.email ? 'ready' : 'disconnected'}
-            subtitle="Calendar event sync & scheduling"
+            badge={profile?.email ? <CheckCircle2 size={16} className="text-emerald-500 shrink-0" title="Ready" /> : null}
+            subtitle="Calendar event sync"
             right={
-              <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="btn-ghost text-[11px] sm:text-xs py-1 px-2 sm:px-3 flex items-center gap-1 shrink-0">
-                <ExternalLink size={12} /> Access
+              <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="btn-ghost text-[11px] sm:text-xs py-1 px-2.5 flex items-center gap-1 shrink-0">
+                <ExternalLink size={12} />
               </a>
             }
           />
         </Section>
 
         <Section title="Notification Channels">
-          <Row 
+          <Row
             icon={Bell} iconColor="bg-amber-500"
             title="Push Notifications"
-            badge={profile?.push_notifications ? 'active' : 'inactive'}
-            subtitle="Real-time SSE push alerts"
-            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium shrink-0">{profile?.push_notifications ? 'Live SSE' : 'Disabled'}</span>}
+            badge={profile?.push_notifications ? <CheckCircle2 size={16} className="text-emerald-500 shrink-0" title="Active" /> : null}
+            subtitle="Real-time push"
+            right={<span className="hidden sm:inline text-xs text-[var(--text-muted)] font-medium shrink-0">{profile?.push_notifications ? 'Live SSE' : 'Disabled'}</span>}
           />
-          <Row 
+          <Row
             icon={Mail} iconColor="bg-sky-500"
             title="Email Notifications"
-            badge={profile?.email_summary ? 'active' : 'configured'}
-            subtitle="Task reminders & briefings"
-            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium max-w-[140px] sm:max-w-none truncate">{profile?.email ? profile.email : 'Not configured'}</span>}
+            badge={profile?.email_summary || profile?.email ? <CheckCircle2 size={16} className="text-emerald-500 shrink-0" title="Configured" /> : null}
+            subtitle="Task reminders"
+            right={<span className="hidden sm:inline text-xs text-[var(--text-muted)] font-medium max-w-[160px] truncate">{profile?.email ? profile.email : 'Not configured'}</span>}
           />
         </Section>
 
         <Section title="Core Engines & Storage">
-          <Row 
+          <Row
             icon={Zap} iconColor="bg-indigo-600"
             title="OR-Tools Scheduling Engine"
-            badge="active"
-            subtitle="Intelligent constraint solver"
-            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium shrink-0">v9.x</span>}
+            badge={<CheckCircle2 size={16} className="text-emerald-500 shrink-0" title="Active" />}
+            subtitle="Constraint solver"
+            right={<span className="hidden sm:inline text-xs text-[var(--text-muted)] font-medium shrink-0">v9.x</span>}
           />
-          <Row 
+          <Row
             icon={Database} iconColor="bg-emerald-600"
             title="MongoDB Atlas"
-            badge="connected"
-            subtitle="Cloud database & schedule storage"
-            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium shrink-0">Async Motor</span>}
+            badge={<CheckCircle2 size={16} className="text-emerald-500 shrink-0" title="Connected" />}
+            subtitle="Cloud database"
+            right={<span className="hidden sm:inline text-xs text-[var(--text-muted)] font-medium shrink-0">Async Motor</span>}
           />
         </Section>
 
         {/* Notification Architecture Info */}
         <Section title="Architecture Reference">
-          <Row 
+          <Row
             icon={Mail} iconColor="bg-sky-500"
             title="Email Channel"
-            subtitle={<>FastAPI BackgroundTasks via <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">smtplib</code></>}
+            subtitle="FastAPI smtplib"
           />
-          <Row 
+          <Row
             icon={Bell} iconColor="bg-amber-500"
             title="Web Push Channel"
-            subtitle={<>SSE stream at <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">/notifications/stream</code></>}
+            subtitle="SSE stream"
           />
         </Section>
 

@@ -27,7 +27,13 @@ export const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, is
         <div className="flex-1 min-w-0 flex flex-col justify-center">
           <div className="flex items-center gap-2 flex-wrap">
             <div className="text-[15px] font-medium text-[var(--text-main)] leading-snug">{title}</div>
-            {badge && <span className="bg-[var(--accent-light)] text-[var(--accent-base)] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">{badge}</span>}
+            {badge && (
+              React.isValidElement(badge) ? (
+                badge
+              ) : (
+                <span className="bg-[var(--accent-light)] text-[var(--accent-base)] text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">{badge}</span>
+              )
+            )}
           </div>
           {subtitle && <div className="text-[13px] text-[var(--text-muted)] leading-relaxed mt-0.5">{subtitle}</div>}
           {children && <div className="mt-1">{children}</div>}

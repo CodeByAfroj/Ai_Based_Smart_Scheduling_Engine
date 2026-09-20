@@ -1,4 +1,4 @@
-// Service Worker Version: 1.2
+// Service Worker Version: 1.3
 self.addEventListener('push', function(event) {
   let data = {};
   if (event.data) {
@@ -25,7 +25,8 @@ self.addEventListener('push', function(event) {
     tag: data.tag || 'taskpulse-alarm',
     data: { url: data.url || '/' },
     actions: [
-      { action: 'open', title: '⏰ Open Task' }
+      { action: 'open', title: '⏰ Open Task' },
+      { action: 'dismiss', title: '✖ Cancel Alarm' }
     ]
   };
 
@@ -48,6 +49,18 @@ self.addEventListener('push', function(event) {
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+
+  if (event.action === 'dismiss') {
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then(windowClients => {
+        for (var i = 0; i < windowClients.length; i++) {
+          windowClients[i].postMessage({ type: 'STOP_ALARM' });
+        }
+      })
+    );
+    return;
+  }
+
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then(windowClients => {
       // Send STOP_ALARM signal to active tabs when notification is clicked

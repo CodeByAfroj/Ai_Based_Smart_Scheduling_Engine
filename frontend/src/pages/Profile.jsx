@@ -138,8 +138,8 @@ export default function Profile() {
               title={rule.label} 
               subtitle={
                 <div>
-                  <span className="font-semibold text-[var(--text-main)] block mb-0.5">{rule.value}</span>
-                  <span className="hidden sm:block">{rule.desc}</span>
+                  <span className="font-normal text-[var(--text-muted)] text-xs block mb-0.5">{rule.value}</span>
+                  <span className="hidden sm:block text-[11px] text-[var(--text-muted)]/70">{rule.desc}</span>
                 </div>
               }
             />
