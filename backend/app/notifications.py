@@ -193,13 +193,13 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                 "body": f"Deadline for '{task_name}' has arrived! Complete your task now.",
                 "requireInteraction": True,  # Persistent OS Alarm: Stays open on screen until dismissed
                 "tag": f"alarm-{task_id}",
-                "sound": "/alarm.mp3",
+                "sound": "https://ai-based-smart-scheduling-engine.vercel.app/alarm.mp3",
                 "pushSubscription": push_sub
             },
             delay=f"{delay_seconds}s",
             deduplication_id=f"main-{task_id}-{int(target.timestamp())}"
         )
-        print(f"🚨 [QSTASH ALARM] Scheduled Deadline Alarm for '{task_name}' at {target} (delay: {delay_seconds}s)")
+        print(f"✅ [QSTASH ALARM] Scheduled Deadline Alarm for '{task_name}' at {target} (delay: {delay_seconds}s)")
     except Exception as e:
         print(f"❌ [QSTASH ERROR] Error scheduling push via QStash: {e}")
 

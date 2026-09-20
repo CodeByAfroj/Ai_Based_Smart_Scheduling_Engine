@@ -83,7 +83,7 @@ export default function Layout() {
 
   const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
-  // ── Audio Context Initialization ──────────────────────────────────────────
+  // ── Audio Context & Alarm Engine Initialization ───────────────────────────
   useEffect(() => {
     const initAudio = () => {
       if (!window.__audioCtx) {
@@ -94,6 +94,20 @@ export default function Layout() {
       }
       if (window.__audioCtx && window.__audioCtx.state === 'suspended') {
         window.__audioCtx.resume();
+      }
+
+      // Pre-unlock physical alarm audio element for Chrome/Safari autoplay policies
+      if (!window.__alarmAudio) {
+        const audio = new Audio('/alarm.mp3');
+        audio.volume = 1.0;
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          window.__alarmAudio = audio;
+          console.log('🔊 Alarm audio engine unlocked for device');
+        }).catch(() => {
+          window.__alarmAudio = audio;
+        });
       }
     };
     
@@ -307,20 +321,6 @@ export default function Layout() {
     
     setupWebPush();
   }, [token, API_BASE]);
-
-  // Listen for PLAY_ALARM signal from Service Worker to trigger physical MP3 alarm sound
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      const handleSWMessage = (event) => {
-        if (event.data && event.data.type === 'PLAY_ALARM') {
-          console.log("📢 Received PLAY_ALARM from Service Worker:", event.data);
-          triggerAudioAlert(event.data.title || 'Alarm', event.data.body || '');
-        }
-      };
-      navigator.serviceWorker.addEventListener('message', handleSWMessage);
-      return () => navigator.serviceWorker.removeEventListener('message', handleSWMessage);
-    }
-  }, [profile]);
 
   useEffect(() => {
     if (!token || !API_BASE) return undefined;
@@ -594,22 +594,6 @@ export default function Layout() {
     }
   };
 
-  const playMp3Alarm = () => {
-    try {
-      const audio = new Audio('/alarm.mp3');
-      audio.volume = 1.0;
-      audio.play().then(() => {
-        console.log('✅ Physical alarm.mp3 audio playing on device.');
-      }).catch(err => {
-        console.warn('Physical alarm.mp3 playback blocked by browser, falling back to Web Audio chime:', err);
-        playElegantChime();
-      });
-    } catch (e) {
-      console.error('Error playing alarm.mp3 audio:', e);
-      playElegantChime();
-    }
-  };
-
   const triggerAudioAlert = async (title, message) => {
     const pref = profile?.notification_preference || 'text_and_sound';
     const alarmEnabled = profile?.alarm_enabled !== false; // Default true
@@ -620,16 +604,17 @@ export default function Layout() {
 
     if (!alarmEnabled) return;
 
-    // Play physical MP3 alarm chime
-    playMp3Alarm();
-
     if (pref === 'voice') {
       triggerVibration();
+      playElegantChime();
       setTimeout(() => {
         playHumanizedVoice(textToAnnounce);
       }, 250);
-    } else if (pref === 'text_and_sound' || pref === 'sound') {
+    } else if (pref === 'text_and_sound') {
       triggerVibration();
+      playElegantChime();
+    } else if (pref === 'sound') {
+      playElegantChime();
     } else if (pref === 'vibrate') {
       triggerVibration();
     }

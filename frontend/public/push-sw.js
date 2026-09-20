@@ -25,20 +25,7 @@ self.addEventListener('push', function(event) {
     ]
   };
 
-  // Broadcast PLAY_ALARM message to all active browser windows
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
-      clientList.forEach(function(client) {
-        client.postMessage({
-          type: 'PLAY_ALARM',
-          title: title,
-          body: options.body,
-          sound: options.sound
-        });
-      });
-      return self.registration.showNotification(title, options);
-    })
-  );
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', function(event) {
