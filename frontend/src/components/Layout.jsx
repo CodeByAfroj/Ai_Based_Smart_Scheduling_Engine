@@ -322,20 +322,37 @@ export default function Layout() {
     setupWebPush();
   }, [token, API_BASE]);
 
-  // Option A: Automatically trigger alarm.mp3 audio playback when push alarm signal arrives
+  // Trigger continuous looping alarm.mp3 audio playback when push alarm signal arrives
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const handleSWMessage = (event) => {
         if (event.data && event.data.type === 'PLAY_ALARM') {
           try {
-            const alarmAudio = new Audio('/alarm.mp3');
-            alarmAudio.volume = 1.0;
-            alarmAudio.play().catch(() => {});
+            if (!window.__activeAlarmAudio) {
+              window.__activeAlarmAudio = new Audio('/alarm.mp3');
+            }
+            window.__activeAlarmAudio.loop = true; // Continuous looping sound until stopped!
+            window.__activeAlarmAudio.volume = 1.0;
+            window.__activeAlarmAudio.currentTime = 0;
+            window.__activeAlarmAudio.play().catch(e => console.warn('Autoplay block:', e));
           } catch (e) {}
         }
       };
+
+      // Stop looping alarm sound when user interacts with the app
+      const stopLoopingAlarm = () => {
+        if (window.__activeAlarmAudio) {
+          window.__activeAlarmAudio.pause();
+          window.__activeAlarmAudio.currentTime = 0;
+        }
+      };
+
+      window.addEventListener('click', stopLoopingAlarm);
       navigator.serviceWorker.addEventListener('message', handleSWMessage);
-      return () => navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+      return () => {
+        window.removeEventListener('click', stopLoopingAlarm);
+        navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+      };
     }
   }, []);
 

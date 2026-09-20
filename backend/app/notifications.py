@@ -149,6 +149,9 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
             target = scheduled_time.replace(tzinfo=IST).astimezone(timezone.utc)
         else:
             target = scheduled_time.astimezone(timezone.utc)
+        
+        target_ist = target.astimezone(IST)
+        formatted_time = target_ist.strftime("%I:%M %p")
 
         # 1. Schedule prior standard REMINDER notifications (e.g. 5m, 10m, 30m before)
         if reminders and isinstance(reminders, list):
@@ -161,8 +164,8 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                         qstash_client.message.publish_json(
                             url=CLOUDFLARE_WORKER_URL,
                             body={
-                                "title": f"⏰ {task_name} starts in {mins} min",
-                                "body": f"Reminder: Your scheduled task '{task_name}' is starting in {mins} minutes.",
+                                "title": f"⏰ Reminder: {task_name}",
+                                "body": f"'{task_name}' starts in {mins} mins ({formatted_time}). Get ready for your focus session.",
                                 "requireInteraction": False,  # Standard notification, auto-dismisses
                                 "tag": f"reminder-{task_id}-{mins}",
                                 "pushSubscription": push_sub
@@ -189,8 +192,8 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
         qstash_client.message.publish_json(
             url=CLOUDFLARE_WORKER_URL,
             body={
-                "title": f"🚨 {task_name}'s Deadline Reached!",
-                "body": f"Deadline for '{task_name}' has arrived! Complete your task now.",
+                "title": f"🚨 DEADLINE ALARM: {task_name}",
+                "body": f"Time is up! Scheduled focus window for '{task_name}' has arrived ({formatted_time}).",
                 "requireInteraction": True,  # Persistent OS Alarm: Stays open on screen until dismissed
                 "tag": f"alarm-{task_id}",
                 "pushSubscription": push_sub
@@ -198,7 +201,7 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
             delay=f"{delay_seconds}s",
             deduplication_id=f"main-{task_id}-{int(target.timestamp())}"
         )
-        print(f"✅ [QSTASH ALARM] Scheduled Deadline Alarm for '{task_name}' at {target} (delay: {delay_seconds}s)")
+        print(f"🚨 [QSTASH ALARM] Scheduled Deadline Alarm for '{task_name}' at {target} (delay: {delay_seconds}s)")
     except Exception as e:
         print(f"❌ [QSTASH ERROR] Error scheduling push via QStash: {e}")
 

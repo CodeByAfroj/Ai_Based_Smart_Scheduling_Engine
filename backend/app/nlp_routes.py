@@ -220,13 +220,14 @@ async def query_endpoint(
                 if push_sub and wants_push and scheduled_start:
                     schedule_push_via_qstash(user_id, task_id, params.get("name", "New Task"), scheduled_start, push_sub, reminders=params.get("reminders"), alarm_enabled=alarm_enabled)
 
-                # Dispatch real-time web notification with task name
-                try:
-                    from .notifications import notify_user
-                    task_name = params.get("name", "New Task")
-                    await notify_user(user_id, "Task Created", f"Scheduled '{task_name}' into your optimal focus window.")
-                except Exception as ne:
-                    print(f"Task notification error: {ne}")
+                # Dispatch real-time web notification ONLY if alarm mode is NOT enabled (prevents duplicate notifications)
+                if not alarm_enabled:
+                    try:
+                        from .notifications import notify_user
+                        task_name = params.get("name", "New Task")
+                        await notify_user(user_id, "✨ Task Scheduled", f"Scheduled '{task_name}' into your optimal focus window.")
+                    except Exception as ne:
+                        print(f"Task notification error: {ne}")
 
                 # Run CP-SAT auto scheduler synchronously for instant response
                 await async_auto_schedule_user_tasks(user_id)
