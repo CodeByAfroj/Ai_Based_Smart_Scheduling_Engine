@@ -19,7 +19,7 @@ export const Row = ({ icon: Icon, iconColor, title, subtitle, right, onClick, is
       className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 ${onClick ? 'cursor-pointer hover:bg-[var(--bg-hover)] active:bg-black/5 dark:active:bg-white/5 transition-colors text-left' : ''} ${isButton ? 'justify-center' : ''} ${className}`}
     >
       {!isButton && Icon && (
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm ${iconColor || 'bg-slate-500'}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${(iconColor && iconColor.includes('text-')) ? iconColor : `text-white ${iconColor || 'bg-slate-500'}`}`}>
           <Icon size={16} />
         </div>
       )}

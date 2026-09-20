@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   X, ChevronRight, ChevronLeft, CheckCircle2,
   LayoutGrid, Zap, Target, CheckSquare, Calendar,
-  User, Palette, Bell, Mic, Settings as SettingsIcon
+  User, Palette, Bell, Mic, Settings as SettingsIcon, MessageSquare
 } from 'lucide-react';
 
 const TOUR_STEPS = [
@@ -83,7 +83,7 @@ const TOUR_STEPS = [
     icon: Palette,
     title: '7. Appearance & Theme Settings',
     description: 'Customize visual modes (Light, Dark, or System mode) across all workstation devices.',
-    placement: 'right-center',
+    placement: 'bottom-center',
   },
   {
     id: 'settings-notif',
@@ -92,9 +92,20 @@ const TOUR_STEPS = [
     sidebarTarget: '[data-tour="nav-settings"]',
     mobSidebarTarget: '[data-tour="mob-nav-settings"]',
     icon: Bell,
-    title: '8. Notification Preferences',
+    title: '8. Notification Delivery',
+    description: 'Toggle web push notifications and in-app sound alarms on or off globally.',
+    placement: 'bottom-center',
+  },
+  {
+    id: 'settings-alert-style',
+    page: '/settings',
+    target: '[data-tour="settings-alert-style"]',
+    sidebarTarget: '[data-tour="nav-settings"]',
+    mobSidebarTarget: '[data-tour="mob-nav-settings"]',
+    icon: MessageSquare,
+    title: '9. Alert Style Preferences',
     description: 'Configure Neural AI Voice alerts, text + sound chimes, or silent visual badges prior to task start times.',
-    placement: 'right-center',
+    placement: 'bottom-center',
   },
   {
     id: 'ai-assistant',
@@ -103,7 +114,7 @@ const TOUR_STEPS = [
     sidebarTarget: null,
     mobSidebarTarget: null,
     icon: Mic,
-    title: '9. 2-Way AI Voice Assistant',
+    title: '10. 2-Way AI Voice Assistant',
     description: 'Click or tap this orb anytime on any page to speak or chat. Schedule meetings and manage tasks hands-free!',
     placement: 'top-left',
   },

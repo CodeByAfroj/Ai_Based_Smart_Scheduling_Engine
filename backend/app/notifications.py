@@ -107,7 +107,7 @@ async def save_notification_to_db(user_id: str, title: str, message: str, type: 
     await db["notifications"].insert_one(doc)
     return doc
 
-def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_sub: dict, reminders: list = None):
+def schedule_push_via_qstash(user_id: str, task_id: str, task_name: str, scheduled_time, push_sub: dict, reminders: list = None):
     if not qstash_client:
         print("⚠️ [PUSH] QStash client not initialized, skipping push scheduling.")
         return
@@ -143,7 +143,8 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
                                 "title": f"⏰ Reminder ({mins}m before): {task_name}",
                                 "pushSubscription": push_sub
                             },
-                            delay=f"{rem_delay}s"
+                            delay=f"{rem_delay}s",
+                            deduplication_id=f"rem-{task_id}-{mins}-{int(target.timestamp())}"
                         )
                         print(f"✅ [QSTASH REMINDER] Scheduled {mins}m prior alert for '{task_name}' (delay: {rem_delay}s)")
                 except Exception as r_err:
@@ -161,7 +162,8 @@ def schedule_push_via_qstash(user_id: str, task_name: str, scheduled_time, push_
                 "title": f"🚀 Task Starting: {task_name}",
                 "pushSubscription": push_sub
             },
-            delay=f"{delay_seconds}s"
+            delay=f"{delay_seconds}s",
+            deduplication_id=f"main-{task_id}-{int(target.timestamp())}"
         )
         print(f"✅ [QSTASH] Scheduled Main Web Push for '{task_name}' at {target} (delay: {delay_seconds}s) -> {CLOUDFLARE_WORKER_URL}")
     except Exception as e:

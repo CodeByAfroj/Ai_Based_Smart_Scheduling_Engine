@@ -47,7 +47,7 @@ export default function Profile() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header Title */}
-        <div className="flex items-center justify-between mb-8">
+        <div data-tour="profile-header" className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-[var(--text-main)] mb-1">User Profile</h1>
             <p className="text-sm text-[var(--text-muted)]">Your personal identity, work style context, and scheduling parameters</p>

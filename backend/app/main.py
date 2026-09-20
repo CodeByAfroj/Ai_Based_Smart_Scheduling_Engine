@@ -221,7 +221,8 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
             # Schedule push notification
             wants_push = user_info.get("settings", {}).get("push_notifications", True)
             if push_sub and st.start and wants_push:
-                schedule_push_via_qstash(user_id, task_name, st.start, push_sub)
+                reminders_list = task_doc.get("reminders", []) if task_doc else []
+                schedule_push_via_qstash(user_id, st.task_id, task_name, st.start, push_sub, reminders=reminders_list)
 
     # Build message including any auto-recovery info
     if reset_task_names:
@@ -323,6 +324,8 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
 
     for task in request.tasks:
         deadline_dt = task.deadline if isinstance(task.deadline, datetime) else None
+        if deadline_dt is not None and deadline_dt.tzinfo is None:
+            deadline_dt = deadline_dt.replace(tzinfo=IST)
         if deadline_dt is None:
             try:
                 deadline_dt = datetime.fromisoformat(str(task.deadline))

@@ -1,3 +1,4 @@
+// Service Worker Version: 1.1
 self.addEventListener('push', function(event) {
   let data = {};
   if (event.data) {

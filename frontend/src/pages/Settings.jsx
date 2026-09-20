@@ -134,7 +134,8 @@ export default function Settings() {
         <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Settings</h1>
 
         {/* Appearance */}
-        <Section title="Appearance">
+        <div data-tour="settings-theme">
+          <Section title="Appearance">
           <Row 
             icon={Sun} iconColor="bg-amber-500" title="Light Mode" 
             onClick={() => applyTheme('light')}
@@ -150,10 +151,12 @@ export default function Settings() {
             onClick={() => applyTheme('system')}
             right={theme === 'system' && <CheckCircle2 size={20} className="text-blue-500" />}
           />
-        </Section>
+          </Section>
+        </div>
 
         {/* Notifications */}
-        <Section title="Notifications">
+        <div data-tour="settings-notif">
+          <Section title="Notifications">
           <Row 
             icon={Smartphone} iconColor="bg-red-500" title="Push Notifications" subtitle="Alerts outside the app"
             right={<Toggle checked={pushEnabled} onChange={handlePushToggle} />}
@@ -162,10 +165,12 @@ export default function Settings() {
             icon={Bell} iconColor="bg-orange-500" title="In-App Alarms" subtitle="Play sounds when app is open"
             right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
           />
-        </Section>
+          </Section>
+        </div>
 
         {/* Alert Style */}
-        <Section title="Alert Style">
+        <div data-tour="settings-alert-style">
+          <Section title="Alert Style">
           {notifOptions.map((opt) => (
             <Row 
               key={opt.id}
@@ -175,7 +180,8 @@ export default function Settings() {
               right={notifPref === opt.id && <CheckCircle2 size={20} className="text-blue-500" />}
             />
           ))}
-        </Section>
+          </Section>
+        </div>
 
         {/* Live Activity Tracking */}
         <Section title="Live Tracking" footer="Uses device motion (accelerometer) to detect if you're busy and auto-reschedule active tasks. iOS requires Safari motion permissions.">

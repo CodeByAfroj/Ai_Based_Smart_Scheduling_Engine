@@ -32,22 +32,6 @@ export default function Integrations() {
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'connected':
-      case 'active':
-        return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-500 flex items-center gap-1 border border-green-500/20"><CheckCircle2 size={10} /> Active</span>;
-      case 'ready':
-      case 'configured':
-        return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 border border-blue-500/20">Ready</span>;
-      case 'inactive':
-      case 'disconnected':
-        return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--bg-app)] text-[var(--text-muted)] border border-[var(--border-subtle)]">Inactive</span>;
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -89,26 +73,19 @@ export default function Integrations() {
         <Section title="Identity & Calendar Sync">
           <Row 
             icon={User} iconColor="bg-blue-600"
-            title={<div className="flex items-center gap-2">Google Account {getStatusBadge(profile?.email ? 'connected' : 'disconnected')}</div>}
-            subtitle={
-              <div>
-                <span className="hidden sm:block text-[var(--text-main)] font-medium mb-0.5">Authentication & user identity via Google OAuth 2.0</span>
-                <span className="block text-[11px] opacity-70">{profile?.email || 'Not connected'}</span>
-              </div>
-            }
+            title="Google Account"
+            badge={profile?.email ? 'connected' : 'disconnected'}
+            subtitle="Authentication & user identity via Google OAuth 2.0"
+            right={<span className="text-xs text-[var(--text-muted)] font-medium">{profile?.email || 'Not connected'}</span>}
           />
           <Row 
             icon={Calendar} iconColor="bg-rose-500"
-            title={<div className="flex items-center gap-2">Google Calendar {getStatusBadge(profile?.email ? 'ready' : 'disconnected')}</div>}
-            subtitle={
-              <div>
-                <span className="hidden sm:block text-[var(--text-main)] font-medium mb-0.5">Read calendar events and sync scheduled tasks as calendar blocks</span>
-                <span className="block text-[11px] opacity-70">{profile?.email ? 'Available via Google OAuth scope' : 'Connect Google first'}</span>
-              </div>
-            }
+            title="Google Calendar"
+            badge={profile?.email ? 'ready' : 'disconnected'}
+            subtitle="Read calendar events and sync scheduled tasks as calendar blocks"
             right={
               <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="btn-ghost text-[11px] sm:text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1 shrink-0">
-                <ExternalLink size={12} /> <span className="hidden sm:inline">Request </span>Calendar Access
+                <ExternalLink size={12} /> <span className="hidden sm:inline">Request </span>Access
               </a>
             }
           />
@@ -117,64 +94,49 @@ export default function Integrations() {
         <Section title="Notification Channels">
           <Row 
             icon={Bell} iconColor="bg-amber-500"
-            title={<div className="flex items-center gap-2">Push Notifications (Web) {getStatusBadge(profile?.push_notifications ? 'active' : 'inactive')}</div>}
-            subtitle={
-              <div>
-                <span className="hidden sm:block text-[var(--text-main)] font-medium mb-0.5">Real-time in-app alerts via Server-Sent Events (SSE)</span>
-                <span className="block text-[11px] opacity-70">{profile?.push_notifications ? 'Live SSE stream connected' : 'Enable in Profile Settings'}</span>
-              </div>
-            }
+            title="Push Notifications (Web)"
+            badge={profile?.push_notifications ? 'active' : 'inactive'}
+            subtitle="Real-time in-app alerts via Server-Sent Events (SSE)"
+            right={<span className="text-xs text-[var(--text-muted)] font-medium">{profile?.push_notifications ? 'Live SSE Connected' : 'Disabled'}</span>}
           />
           <Row 
             icon={Mail} iconColor="bg-sky-500"
-            title={<div className="flex items-center gap-2">Email Notifications {getStatusBadge(profile?.email_summary ? 'active' : 'configured')}</div>}
-            subtitle={
-              <div>
-                <span className="hidden sm:block text-[var(--text-main)] font-medium mb-0.5">Automated task reminders and daily schedule briefings via email</span>
-                <span className="block text-[11px] opacity-70">{profile?.email ? `Delivers to ${profile.email}` : 'Connect Google first'}</span>
-              </div>
-            }
+            title="Email Notifications"
+            badge={profile?.email_summary ? 'active' : 'configured'}
+            subtitle="Automated task reminders and daily schedule briefings via email"
+            right={<span className="text-xs text-[var(--text-muted)] font-medium">{profile?.email ? `To: ${profile.email}` : 'Not configured'}</span>}
           />
         </Section>
 
         <Section title="Core Engines & Storage">
           <Row 
             icon={Zap} iconColor="bg-indigo-600"
-            title={<div className="flex items-center gap-2">OR-Tools Scheduling Engine {getStatusBadge('active')}</div>}
-            subtitle={
-              <div>
-                <span className="hidden sm:block text-[var(--text-main)] font-medium mb-0.5">Constraint programming solver for intelligent task scheduling</span>
-                <span className="block text-[11px] opacity-70">v9.x • Constraint solver with working-hours enforcement</span>
-              </div>
-            }
+            title="OR-Tools Scheduling Engine"
+            badge="active"
+            subtitle="Constraint programming solver for intelligent task scheduling"
+            right={<span className="text-xs text-[var(--text-muted)] font-medium hidden sm:inline">v9.x</span>}
           />
           <Row 
             icon={Database} iconColor="bg-emerald-600"
-            title={<div className="flex items-center gap-2">MongoDB Atlas {getStatusBadge('connected')}</div>}
-            subtitle={
-              <div>
-                <span className="hidden sm:block text-[var(--text-main)] font-medium mb-0.5">Cloud database for persistent task, profile, and schedule storage</span>
-                <span className="block text-[11px] opacity-70">Async Motor driver • scheduling_engine database</span>
-              </div>
-            }
+            title="MongoDB Atlas"
+            badge="connected"
+            subtitle="Cloud database for persistent task, profile, and schedule storage"
+            right={<span className="text-xs text-[var(--text-muted)] font-medium hidden sm:inline">Async Motor</span>}
           />
         </Section>
 
         {/* Notification Architecture Info */}
         <Section title="Architecture Reference">
-          <div className="p-5 flex items-start gap-4 text-sm text-[var(--text-muted)] bg-[var(--bg-app)]">
-            <Zap size={20} className="text-[var(--accent-base)] shrink-0 mt-0.5" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-              <div>
-                <p className="font-bold text-[var(--text-main)] flex items-center gap-2 mb-1.5"><Mail size={14} className="text-sky-500" /> Email Channel</p>
-                <p className="leading-relaxed">Uses Python <code className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded text-[11px] font-mono">smtplib</code> via FastAPI BackgroundTasks. Configure SMTP credentials in <code className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded text-[11px] font-mono">.env</code> for real delivery, otherwise emails are simulated in the backend terminal.</p>
-              </div>
-              <div>
-                <p className="font-bold text-[var(--text-main)] flex items-center gap-2 mb-1.5"><Bell size={14} className="text-amber-500" /> Web Push Channel</p>
-                <p className="leading-relaxed">Server-Sent Events (SSE) stream at <code className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded text-[11px] font-mono">/notifications/stream</code>. The frontend connects via <code className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded text-[11px] font-mono">EventSource</code> for real-time push notifications without polling.</p>
-              </div>
-            </div>
-          </div>
+          <Row 
+            icon={Mail} iconColor="bg-sky-500"
+            title="Email Channel"
+            subtitle={<>Uses Python <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">smtplib</code> via FastAPI BackgroundTasks. Simulated locally.</>}
+          />
+          <Row 
+            icon={Bell} iconColor="bg-amber-500"
+            title="Web Push Channel"
+            subtitle={<>Server-Sent Events (SSE) stream at <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">/notifications/stream</code> for real-time alerts.</>}
+          />
         </Section>
 
       </div>
