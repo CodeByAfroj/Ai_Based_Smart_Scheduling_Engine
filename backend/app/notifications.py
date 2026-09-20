@@ -107,7 +107,7 @@ async def save_notification_to_db(user_id: str, title: str, message: str, type: 
     await db["notifications"].insert_one(doc)
     return doc
 
-def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = None, push_sub: dict = None, reminders: list = None, task_id: str = None, alarm_enabled: bool = True):
+def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = None, push_sub: dict = None, reminders: list = None, task_id: str = None, alarm_enabled: bool = True, notification_preference: str = "text_and_sound"):
     # Support both 5-arg signature (user_id, task_id, task_name, scheduled_time, push_sub)
     # and 4-arg signature (user_id, task_name, scheduled_time, push_sub)
     if isinstance(push_sub, dict):
@@ -154,6 +154,8 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
         formatted_time = target_ist.strftime("%I:%M %p")
 
         target_min_ts = int(target.replace(second=0, microsecond=0).timestamp())
+        is_silent = (notification_preference == "silent")
+        is_vibrate = (notification_preference == "vibrate")
 
         # 1. Schedule prior standard REMINDER notifications (e.g. 5m, 10m, 30m before)
         if reminders and isinstance(reminders, list):
@@ -170,6 +172,9 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                                 "body": f"'{task_name}' starts in {mins} mins ({formatted_time}). Get ready for your focus session.",
                                 "requireInteraction": False,  # Standard notification, auto-dismisses
                                 "tag": f"reminder-{task_id}-{mins}",
+                                "notification_preference": notification_preference,
+                                "silent": is_silent,
+                                "vibrate": [500, 250, 500, 250, 500] if is_vibrate else None,
                                 "pushSubscription": push_sub
                             },
                             delay=f"{rem_delay}s",
@@ -198,6 +203,9 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                 "body": f"Time is up! Scheduled focus window for '{task_name}' has arrived ({formatted_time}).",
                 "requireInteraction": True,  # Persistent OS Alarm: Stays open on screen until dismissed
                 "tag": f"alarm-{task_id}",
+                "notification_preference": notification_preference,
+                "silent": is_silent,
+                "vibrate": [500, 250, 500, 250, 500] if is_vibrate else None,
                 "pushSubscription": push_sub
             },
             delay=f"{delay_seconds}s",

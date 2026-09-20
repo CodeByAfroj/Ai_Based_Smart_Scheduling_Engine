@@ -322,19 +322,58 @@ export default function Layout() {
     setupWebPush();
   }, [token, API_BASE]);
 
-  // Trigger continuous looping alarm.mp3 audio playback when push alarm signal arrives
+  // Trigger Samsung alarm.mp3 audio playback and voice TTS when push alarm signal arrives
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const handleSWMessage = (event) => {
-        if (event.data && event.data.type === 'PLAY_ALARM') {
+        if (!event.data) return;
+
+        if (event.data.type === 'STOP_ALARM') {
+          if (window.__activeAlarmAudio) {
+            window.__activeAlarmAudio.pause();
+            window.__activeAlarmAudio.currentTime = 0;
+          }
+          if (window.__alarmTimeout) clearTimeout(window.__alarmTimeout);
+          if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+          return;
+        }
+
+        if (event.data.type === 'PLAY_ALARM') {
+          const pref = event.data.notification_preference || 'text_and_sound';
+          
+          if (pref === 'silent' || pref === 'vibrate') {
+            return;
+          }
+
+          if (pref === 'voice' && 'speechSynthesis' in window) {
+            try {
+              const text = `${event.data.title || 'Task Alert'}. ${event.data.body || ''}`;
+              const utterance = new SpeechSynthesisUtterance(text);
+              utterance.rate = 1.0;
+              utterance.pitch = 1.0;
+              window.speechSynthesis.cancel();
+              window.speechSynthesis.speak(utterance);
+            } catch (err) {
+              console.warn("TTS Error:", err);
+            }
+          }
+
           try {
             if (!window.__activeAlarmAudio) {
               window.__activeAlarmAudio = new Audio('/alarm.mp3');
             }
-            window.__activeAlarmAudio.loop = true; // Continuous looping sound until stopped!
-            window.__activeAlarmAudio.volume = 1.0;
             window.__activeAlarmAudio.currentTime = 0;
+            window.__activeAlarmAudio.volume = 1.0;
+            window.__activeAlarmAudio.loop = true;
             window.__activeAlarmAudio.play().catch(e => console.warn('Autoplay block:', e));
+
+            if (window.__alarmTimeout) clearTimeout(window.__alarmTimeout);
+            window.__alarmTimeout = setTimeout(() => {
+              if (window.__activeAlarmAudio) {
+                window.__activeAlarmAudio.pause();
+                window.__activeAlarmAudio.currentTime = 0;
+              }
+            }, 6000);
           } catch (e) {}
         }
       };
@@ -345,6 +384,8 @@ export default function Layout() {
           window.__activeAlarmAudio.pause();
           window.__activeAlarmAudio.currentTime = 0;
         }
+        if (window.__alarmTimeout) clearTimeout(window.__alarmTimeout);
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       };
 
       window.addEventListener('click', stopLoopingAlarm);

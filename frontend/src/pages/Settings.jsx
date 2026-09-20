@@ -53,11 +53,11 @@ export default function Settings() {
   const { tracking, error: trackError, status: trackStatus, toggle: toggleTracking } = useLiveTracking();
 
   const notifOptions = [
-    { id: 'voice',         icon: Volume2,       label: 'Neural AI Voice',     desc: 'Humanized TTS reads alerts aloud via edge-tts',        color: 'bg-indigo-500' },
-    { id: 'text_and_sound',icon: MessageSquare,  label: 'Text + Sound Chime',  desc: 'Popup notification with a glass chime tone',           color: 'bg-blue-500'   },
-    { id: 'sound',         icon: Volume2,        label: 'Sound Only',          desc: 'Plays chime without popup or voice',                    color: 'bg-emerald-500'},
-    { id: 'vibrate',       icon: Vibrate,        label: 'Vibrate / Haptic',    desc: 'Silent phone vibration pattern, no sound',             color: 'bg-amber-500'  },
-    { id: 'silent',        icon: VolumeX,        label: 'Silent / Visual Only',desc: 'In-app badge only, no sound or haptic',                color: 'bg-slate-500'  },
+    { id: 'voice',         icon: Volume2,       label: 'Neural AI Voice',     desc: 'Humanized TTS reads alerts aloud when notification triggers', color: 'bg-indigo-500' },
+    { id: 'text_and_sound',icon: MessageSquare,  label: 'Text + Sound Chime',  desc: 'Popup notification with Samsung-style digital chime tone',    color: 'bg-blue-500'   },
+    { id: 'sound',         icon: Volume2,        label: 'Sound Only',          desc: 'Plays digital chime tone without text popup where supported', color: 'bg-emerald-500'},
+    { id: 'vibrate',       icon: Vibrate,        label: 'Vibrate / Haptic',    desc: 'Silent phone vibration pattern, no audio chime',            color: 'bg-amber-500'  },
+    { id: 'silent',        icon: VolumeX,        label: 'Silent / Visual Only',desc: 'Silent push notification & badge only, no sound or haptics',  color: 'bg-slate-500'  },
   ];
 
   const handlePushToggle = async (val) => {
@@ -158,11 +158,11 @@ export default function Settings() {
         <div data-tour="settings-notif">
           <Section title="Notifications">
           <Row 
-            icon={Smartphone} iconColor="bg-red-500" title="Push Notifications" subtitle="Alerts outside the app"
+            icon={Smartphone} iconColor="bg-red-500" title="Advance Reminders (Push)" subtitle="OS push alerts prior to task start time (e.g. 5m, 15m before)"
             right={<Toggle checked={pushEnabled} onChange={handlePushToggle} />}
           />
           <Row 
-            icon={Bell} iconColor="bg-orange-500" title="In-App Alarms" subtitle="Play sounds when app is open"
+            icon={Bell} iconColor="bg-orange-500" title="Deadline Alarms (OS Alerts)" subtitle="Persistent OS heads-up alert when scheduled task start time arrives"
             right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
           />
           </Section>

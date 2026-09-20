@@ -219,10 +219,13 @@ async def schedule(request: ScheduleRequest, user_id: str = Depends(get_current_
             )
             
             # Schedule push notification
-            wants_push = user_info.get("settings", {}).get("push_notifications", True)
+            user_settings = user_info.get("settings", {})
+            wants_push = user_settings.get("push_notifications", True)
+            alarm_enabled = user_settings.get("alarm_enabled", True)
+            notif_pref = user_settings.get("notification_preference", "text_and_sound")
             if push_sub and st.start and wants_push:
                 reminders_list = task_doc.get("reminders", []) if task_doc else []
-                schedule_push_via_qstash(user_id, st.task_id, task_name, st.start, push_sub, reminders=reminders_list)
+                schedule_push_via_qstash(user_id, st.task_id, task_name, st.start, push_sub, reminders=reminders_list, alarm_enabled=alarm_enabled, notification_preference=notif_pref)
 
     # Build message including any auto-recovery info
     if reset_task_names:

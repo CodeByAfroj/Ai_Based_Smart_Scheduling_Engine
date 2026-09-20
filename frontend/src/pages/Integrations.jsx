@@ -36,15 +36,15 @@ export default function Integrations() {
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div className="flex items-center justify-between mb-8 flex-wrap gap-4 scroll-mt-24">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-4 scroll-mt-24">
           <div>
-            <h1 className="text-3xl font-bold text-[var(--text-main)] mb-1">Integrations & Connections</h1>
-            <p className="text-sm text-[var(--text-muted)]">Manage your connected services and notification channels</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-main)] mb-1">Integrations & Connections</h1>
+            <p className="text-xs sm:text-sm text-[var(--text-muted)]">Connected services & notification channels</p>
           </div>
           <button
             onClick={sendTestNotification}
             disabled={testingNotif}
-            className="btn-primary py-2.5 px-5 text-sm flex items-center gap-2"
+            className="btn-primary py-2 px-4 text-xs sm:text-sm flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             {testingNotif ? (
               <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending...</>
@@ -55,16 +55,16 @@ export default function Integrations() {
         </div>
 
         {testResult && (
-          <div className={`p-4 rounded-xl mb-8 flex items-center gap-3 border ${testResult === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
-            {testResult === 'success' ? <CheckCircle2 size={20} /> : <Bell size={20} />}
+          <div className={`p-3.5 sm:p-4 rounded-xl mb-6 sm:mb-8 flex items-center gap-3 border ${testResult === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+            {testResult === 'success' ? <CheckCircle2 size={20} className="shrink-0" /> : <Bell size={20} className="shrink-0" />}
             <div>
-              <p className="font-bold text-sm">
+              <p className="font-bold text-xs sm:text-sm">
                 {testResult === 'success' ? 'Test notification dispatched!' : 'Failed to send test notification'}
               </p>
-              <p className="text-xs opacity-80 mt-0.5">
+              <p className="text-[11px] sm:text-xs opacity-80 mt-0.5">
                 {testResult === 'success'
-                  ? 'Check your backend terminal for the simulated email output and your browser for the web push.'
-                  : 'Make sure the backend server is running.'}
+                  ? 'Check your backend terminal for simulated email and browser for web push.'
+                  : 'Make sure backend server is running.'}
               </p>
             </div>
           </div>
@@ -75,17 +75,17 @@ export default function Integrations() {
             icon={User} iconColor="bg-blue-600"
             title="Google Account"
             badge={profile?.email ? 'connected' : 'disconnected'}
-            subtitle="Authentication & user identity via Google OAuth 2.0"
-            right={<span className="text-xs text-[var(--text-muted)] font-medium">{profile?.email || 'Not connected'}</span>}
+            subtitle="Authentication via Google OAuth 2.0"
+            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium max-w-[140px] sm:max-w-none truncate">{profile?.email || 'Not connected'}</span>}
           />
           <Row 
             icon={Calendar} iconColor="bg-rose-500"
             title="Google Calendar"
             badge={profile?.email ? 'ready' : 'disconnected'}
-            subtitle="Read calendar events and sync scheduled tasks as calendar blocks"
+            subtitle="Calendar event sync & scheduling"
             right={
-              <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="btn-ghost text-[11px] sm:text-xs py-1.5 px-2.5 sm:px-3 flex items-center gap-1 shrink-0">
-                <ExternalLink size={12} /> <span className="hidden sm:inline">Request </span>Access
+              <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="btn-ghost text-[11px] sm:text-xs py-1 px-2 sm:px-3 flex items-center gap-1 shrink-0">
+                <ExternalLink size={12} /> Access
               </a>
             }
           />
@@ -94,17 +94,17 @@ export default function Integrations() {
         <Section title="Notification Channels">
           <Row 
             icon={Bell} iconColor="bg-amber-500"
-            title="Push Notifications (Web)"
+            title="Push Notifications"
             badge={profile?.push_notifications ? 'active' : 'inactive'}
-            subtitle="Real-time in-app alerts via Server-Sent Events (SSE)"
-            right={<span className="text-xs text-[var(--text-muted)] font-medium">{profile?.push_notifications ? 'Live SSE Connected' : 'Disabled'}</span>}
+            subtitle="Real-time SSE push alerts"
+            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium shrink-0">{profile?.push_notifications ? 'Live SSE' : 'Disabled'}</span>}
           />
           <Row 
             icon={Mail} iconColor="bg-sky-500"
             title="Email Notifications"
             badge={profile?.email_summary ? 'active' : 'configured'}
-            subtitle="Automated task reminders and daily schedule briefings via email"
-            right={<span className="text-xs text-[var(--text-muted)] font-medium">{profile?.email ? `To: ${profile.email}` : 'Not configured'}</span>}
+            subtitle="Task reminders & briefings"
+            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium max-w-[140px] sm:max-w-none truncate">{profile?.email ? profile.email : 'Not configured'}</span>}
           />
         </Section>
 
@@ -113,15 +113,15 @@ export default function Integrations() {
             icon={Zap} iconColor="bg-indigo-600"
             title="OR-Tools Scheduling Engine"
             badge="active"
-            subtitle="Constraint programming solver for intelligent task scheduling"
-            right={<span className="text-xs text-[var(--text-muted)] font-medium hidden sm:inline">v9.x</span>}
+            subtitle="Intelligent constraint solver"
+            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium shrink-0">v9.x</span>}
           />
           <Row 
             icon={Database} iconColor="bg-emerald-600"
             title="MongoDB Atlas"
             badge="connected"
-            subtitle="Cloud database for persistent task, profile, and schedule storage"
-            right={<span className="text-xs text-[var(--text-muted)] font-medium hidden sm:inline">Async Motor</span>}
+            subtitle="Cloud database & schedule storage"
+            right={<span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-medium shrink-0">Async Motor</span>}
           />
         </Section>
 
@@ -130,12 +130,12 @@ export default function Integrations() {
           <Row 
             icon={Mail} iconColor="bg-sky-500"
             title="Email Channel"
-            subtitle={<>Uses Python <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">smtplib</code> via FastAPI BackgroundTasks. Simulated locally.</>}
+            subtitle={<>FastAPI BackgroundTasks via <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">smtplib</code></>}
           />
           <Row 
             icon={Bell} iconColor="bg-amber-500"
             title="Web Push Channel"
-            subtitle={<>Server-Sent Events (SSE) stream at <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">/notifications/stream</code> for real-time alerts.</>}
+            subtitle={<>SSE stream at <code className="bg-[var(--bg-app)] border border-[var(--border-subtle)] px-1 py-0.5 rounded text-[10px] font-mono mx-1">/notifications/stream</code></>}
           />
         </Section>
 

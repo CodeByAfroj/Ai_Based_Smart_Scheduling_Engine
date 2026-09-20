@@ -78,6 +78,9 @@ export default async function handler(req, res) {
       icon: 'https://ai-based-smart-scheduling-engine.vercel.app/pwa-192x192.png',
       requireInteraction: reqBody.requireInteraction !== undefined ? reqBody.requireInteraction : true,
       tag: reqBody.tag || 'taskpulse-alarm',
+      notification_preference: reqBody.notification_preference || 'text_and_sound',
+      silent: reqBody.silent || false,
+      vibrate: reqBody.vibrate || undefined,
       url: '/'
     });
 

@@ -35,17 +35,13 @@ export default function ProfileSetup() {
   const [tags, setTags] = useState(profile?.categories?.length > 0 ? profile.categories : ['Engineering', 'Sprint Review', 'Deep Work']);
   const [customTag, setCustomTag] = useState('');
 
-  // Step 4: Notification Preferences
-  const [notificationPref, setNotificationPref] = useState(profile?.notification_preference || 'text_and_sound');
-
   const completedSteps = [
     !!(age && profession && workStyle),
     !!(timezone && startTime && endTime && wakeUpTime && sleepTime),
-    tags.length > 0,
-    !!notificationPref
+    tags.length > 0
   ];
   
-  const totalSteps = 4;
+  const totalSteps = 3;
   const readinessScore = Math.round((completedSteps.filter(Boolean).length / totalSteps) * 100);
 
   const addTag = (tag) => {
@@ -80,7 +76,7 @@ export default function ProfileSetup() {
           push_notifications: profile?.push_notifications ?? true,
           desktop_notifications: profile?.desktop_notifications ?? true,
           email_summary: profile?.email_summary ?? false,
-          notification_preference: notificationPref,
+          notification_preference: profile?.notification_preference || 'text_and_sound',
         })
       });
       if (res.ok) {
@@ -425,35 +421,12 @@ export default function ProfileSetup() {
           </div>
         </Section>
 
-        {/* Section 4: Notification Preferences */}
-        <Section title="4. Notification Preferences">
-          <Row 
-            icon={Bell} iconColor="bg-indigo-600"
-            title="Alert Style & Sounds"
-            subtitle="Choose how TaskPulse delivers scheduling notifications and system alerts"
-            right={
-              <div className="relative">
-                <select 
-                  value={notificationPref} 
-                  onChange={e => setNotificationPref(e.target.value)} 
-                  className="input-field text-xs py-1.5 px-3 pr-8 appearance-none"
-                >
-                  <option value="text_and_sound">Text & Sound</option>
-                  <option value="silent">Silent Banners</option>
-                  <option value="important_only">High Priority Only</option>
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" size={14} />
-              </div>
-            }
-          />
-        </Section>
-
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4">
+        <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-4 pt-6 pb-12 sm:pb-0">
           <button 
             type="button" 
             onClick={() => navigate(-1)} 
-            className="btn-ghost py-2.5 px-5 text-sm"
+            className="btn-ghost py-2.5 px-5 text-sm w-full sm:w-auto"
           >
             Cancel
           </button>
@@ -461,7 +434,7 @@ export default function ProfileSetup() {
             type="button" 
             onClick={handleSave} 
             disabled={saving || readinessScore < 100}
-            className={`btn-primary py-2.5 px-6 text-sm shadow-md flex items-center gap-2 ${readinessScore < 100 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`btn-primary py-2.5 px-6 text-sm shadow-md flex items-center justify-center gap-2 w-full sm:w-auto ${readinessScore < 100 ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             {saving ? (
               <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving...</>

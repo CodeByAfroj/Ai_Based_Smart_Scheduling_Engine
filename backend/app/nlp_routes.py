@@ -88,7 +88,8 @@ async def async_auto_schedule_user_tasks(user_id: str):
                                 task_name = t.name
                                 task_reminders = getattr(t, "reminders", None)
                                 break
-                        schedule_push_via_qstash(user_id, st_item.task_id, task_name, st_item.start, push_sub, reminders=task_reminders, alarm_enabled=alarm_enabled)
+                        notif_pref = user_settings.get("notification_preference", "text_and_sound")
+                        schedule_push_via_qstash(user_id, st_item.task_id, task_name, st_item.start, push_sub, reminders=task_reminders, alarm_enabled=alarm_enabled, notification_preference=notif_pref)
                     except Exception as q_err:
                         print(f"Failed to auto-schedule push for {st_item.task_id}: {q_err}")
     except Exception as auto_sched_err:
@@ -217,8 +218,9 @@ async def query_endpoint(
                 push_sub = settings.get("push_subscription")
                 wants_push = settings.get("push_notifications", True)
                 alarm_enabled = settings.get("alarm_enabled", True)
+                notif_pref = settings.get("notification_preference", "text_and_sound")
                 if push_sub and wants_push and scheduled_start:
-                    schedule_push_via_qstash(user_id, task_id, params.get("name", "New Task"), scheduled_start, push_sub, reminders=params.get("reminders"), alarm_enabled=alarm_enabled)
+                    schedule_push_via_qstash(user_id, task_id, params.get("name", "New Task"), scheduled_start, push_sub, reminders=params.get("reminders"), alarm_enabled=alarm_enabled, notification_preference=notif_pref)
 
                 # Dispatch real-time web notification ONLY if alarm mode is NOT enabled (prevents duplicate notifications)
                 if not alarm_enabled:
