@@ -79,6 +79,7 @@ export default async function handler(req, res) {
       badge: 'https://ai-based-smart-scheduling-engine.vercel.app/badge.png',
       requireInteraction: reqBody.requireInteraction !== undefined ? reqBody.requireInteraction : true,
       tag: reqBody.tag || 'taskpulse-alarm',
+      sound: 'https://ai-based-smart-scheduling-engine.vercel.app/alarm.mp3',
       url: '/'
     });
 

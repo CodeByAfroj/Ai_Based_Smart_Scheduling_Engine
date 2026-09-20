@@ -18,6 +18,7 @@ self.addEventListener('push', function(event) {
     requireInteraction: data.requireInteraction !== undefined ? data.requireInteraction : true,
     renotify: true,
     tag: data.tag || 'taskpulse-alarm',
+    sound: data.sound || (self.location.origin + '/alarm.mp3'),
     data: { url: data.url || '/' },
     actions: [
       { action: 'open', title: '⏰ Open Task' }
