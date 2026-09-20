@@ -110,11 +110,11 @@ export default function Layout() {
         });
       }
     };
-    
+
     window.addEventListener('click', initAudio, { once: true });
     window.addEventListener('touchstart', initAudio, { once: true });
     window.addEventListener('keydown', initAudio, { once: true });
-    
+
     return () => {
       window.removeEventListener('click', initAudio);
       window.removeEventListener('touchstart', initAudio);
@@ -267,26 +267,26 @@ export default function Layout() {
   // Auto-subscribe to Web Push Notifications on login/load if permission is granted
   useEffect(() => {
     if (!token || !API_BASE) return;
-    
+
     const setupWebPush = async () => {
       if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-      
+
       let permission = Notification.permission;
       if (permission === 'default') {
         permission = await Notification.requestPermission();
       }
-      
+
       if (permission === 'granted') {
         try {
           let registration = await navigator.serviceWorker.getRegistration();
           if (!registration) {
-             registration = await navigator.serviceWorker.register('/push-sw.js');
+            registration = await navigator.serviceWorker.register('/push-sw.js');
           }
           registration = await navigator.serviceWorker.ready;
-          
+
           const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
           if (!vapidPublicKey) return;
-          
+
           // urlBase64ToUint8Array logic inline
           const padding = '='.repeat((4 - vapidPublicKey.length % 4) % 4);
           const base64 = (vapidPublicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
@@ -295,7 +295,7 @@ export default function Layout() {
           for (let i = 0; i < rawData.length; ++i) {
             outputArray[i] = rawData.charCodeAt(i);
           }
-          
+
           let subscription = await registration.pushManager.getSubscription();
           if (!subscription) {
             subscription = await registration.pushManager.subscribe({
@@ -303,7 +303,7 @@ export default function Layout() {
               applicationServerKey: outputArray
             });
           }
-          
+
           // Send the active subscription to backend to ensure it's registered for this device
           await fetch(`${API_BASE}/notifications/subscribe`, {
             method: 'POST',
@@ -318,7 +318,7 @@ export default function Layout() {
         }
       }
     };
-    
+
     setupWebPush();
   }, [token, API_BASE]);
 
@@ -365,7 +365,7 @@ export default function Layout() {
 
     // Establish Server-Sent Events (SSE) connection for real-time push
     const eventSource = new EventSource(`${API_BASE}/notifications/stream?token=${token}`);
-    
+
     eventSource.addEventListener('notification', (e) => {
       try {
         const data = JSON.parse(e.data);
@@ -536,7 +536,7 @@ export default function Layout() {
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
-      
+
       const now = ctx.currentTime;
 
       // Soft ambient glass chime (C-major 7th chord triad with exponential decay)
@@ -573,7 +573,7 @@ export default function Layout() {
 
   const fireNativePushNotification = (title, message, isSilent = false) => {
     if (!('Notification' in window)) return;
-    
+
     const options = {
       body: message,
       icon: '/pwa-192x192.png',
@@ -582,7 +582,7 @@ export default function Layout() {
       renotify: true,
       silent: isSilent,
     };
-    
+
     if (Notification.permission === 'default') {
       Notification.requestPermission().then((perm) => {
         if (perm === 'granted') {

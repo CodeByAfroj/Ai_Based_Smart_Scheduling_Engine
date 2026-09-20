@@ -189,11 +189,10 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
         qstash_client.message.publish_json(
             url=CLOUDFLARE_WORKER_URL,
             body={
-                "title": f"🚨 ALARM: {task_name} Deadline Reached!",
+                "title": f"🚨 {task_name}'s Deadline Reached!",
                 "body": f"Deadline for '{task_name}' has arrived! Complete your task now.",
                 "requireInteraction": True,  # Persistent OS Alarm: Stays open on screen until dismissed
                 "tag": f"alarm-{task_id}",
-                "sound": "https://ai-based-smart-scheduling-engine.vercel.app/alarm.mp3",
                 "pushSubscription": push_sub
             },
             delay=f"{delay_seconds}s",

@@ -14,11 +14,10 @@ self.addEventListener('push', function(event) {
     body: data.body || 'You have a scheduled task starting now.',
     icon: data.icon || (self.location.origin + '/pwa-192x192.png'),
     badge: data.badge || (self.location.origin + '/badge.png'),
-    vibrate: [500, 250, 500, 250, 500, 250, 500, 250, 500],
+    vibrate: [500, 250, 500, 250, 500],
     requireInteraction: data.requireInteraction !== undefined ? data.requireInteraction : true,
     renotify: true,
     tag: data.tag || 'taskpulse-alarm',
-    sound: data.sound || (self.location.origin + '/alarm.mp3'),
     data: { url: data.url || '/' },
     actions: [
       { action: 'open', title: '⏰ Open Task' }
