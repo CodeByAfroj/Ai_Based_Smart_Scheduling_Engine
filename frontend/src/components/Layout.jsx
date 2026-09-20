@@ -225,12 +225,63 @@ export default function Layout() {
     };
   }, []);
 
-  // Request browser notification permission on mount
+  // Auto-subscribe to Web Push Notifications on login/load if permission is granted
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
+    if (!token || !API_BASE) return;
+    
+    const setupWebPush = async () => {
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+      
+      let permission = Notification.permission;
+      if (permission === 'default') {
+        permission = await Notification.requestPermission();
+      }
+      
+      if (permission === 'granted') {
+        try {
+          let registration = await navigator.serviceWorker.getRegistration();
+          if (!registration) {
+             registration = await navigator.serviceWorker.register('/push-sw.js');
+          }
+          registration = await navigator.serviceWorker.ready;
+          
+          const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+          if (!vapidPublicKey) return;
+          
+          // urlBase64ToUint8Array logic inline
+          const padding = '='.repeat((4 - vapidPublicKey.length % 4) % 4);
+          const base64 = (vapidPublicKey + padding).replace(/\-/g, '+').replace(/_/g, '/');
+          const rawData = window.atob(base64);
+          const outputArray = new Uint8Array(rawData.length);
+          for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+          }
+          
+          let subscription = await registration.pushManager.getSubscription();
+          if (!subscription) {
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: outputArray
+            });
+          }
+          
+          // Send the active subscription to backend to ensure it's registered for this device
+          await fetch(`${API_BASE}/notifications/subscribe`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(subscription.toJSON())
+          });
+        } catch (err) {
+          console.error('Auto-setup for push notifications failed:', err);
+        }
+      }
+    };
+    
+    setupWebPush();
+  }, [token, API_BASE]);
 
   useEffect(() => {
     if (!token || !API_BASE) return undefined;
@@ -439,6 +490,10 @@ export default function Layout() {
       if (!AudioContext) return;
 
       const ctx = new AudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      
       const now = ctx.currentTime;
 
       // Soft ambient glass chime (C-major 7th chord triad with exponential decay)
@@ -477,37 +532,38 @@ export default function Layout() {
     } catch (e) { }
   };
 
-  const fireNativePushNotification = (title, message) => {
+  const fireNativePushNotification = (title, message, isSilent = false) => {
     if (!('Notification' in window)) return;
+    
+    const options = {
+      body: message,
+      icon: '/pwa-192x192.png',
+      badge: '/pwa-192x192.png',
+      tag: 'taskpulse-alert',
+      renotify: true,
+      silent: isSilent,
+    };
+    
     if (Notification.permission === 'default') {
       Notification.requestPermission().then((perm) => {
         if (perm === 'granted') {
-          new Notification(title, {
-            body: message,
-            icon: '/pwa-192x192.png',
-            badge: '/pwa-192x192.png',
-            tag: 'taskpulse-alert',
-            renotify: true,
-          });
+          new Notification(title, options);
         }
       });
     } else if (Notification.permission === 'granted') {
-      new Notification(title, {
-        body: message,
-        icon: '/pwa-192x192.png',
-        badge: '/pwa-192x192.png',
-        tag: 'taskpulse-alert',
-        renotify: true,
-      });
+      new Notification(title, options);
     }
   };
 
   const triggerAudioAlert = async (title, message) => {
     const pref = profile?.notification_preference || 'text_and_sound';
+    const alarmEnabled = profile?.alarm_enabled !== false; // Default true
     const textToAnnounce = `${title}. ${message}`;
 
-    // Always fire a native OS/browser push notification
-    fireNativePushNotification(title, message);
+    // Always fire a native OS/browser push notification (pass silent flag if selected)
+    fireNativePushNotification(title, message, pref === 'silent');
+
+    if (!alarmEnabled) return;
 
     if (pref === 'voice') {
       triggerVibration();
