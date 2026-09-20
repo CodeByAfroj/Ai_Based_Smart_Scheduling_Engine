@@ -700,24 +700,16 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
         fixed: taskData.fixed || false
       };
 
-      // Create the task via API
-      const response = await fetch(`${API_BASE}/tasks/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(taskToCreate)
-      });
+      // Create task via TaskContext so UI state is updated immediately without refresh
+      const createdTask = await addTask(taskToCreate);
 
-      if (!response.ok) {
+      if (!createdTask) {
         throw new Error('Failed to create task');
       }
 
-      const data = await response.json();
-
-      // Add to local state optimistically
-      addTask(data.task);
+      if (fetchTasks) {
+        await fetchTasks(true);
+      }
 
       // Success message
       const successMessage = {
@@ -781,8 +773,8 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
       });
       speakIfEnabled(responseMessage.text);
 
-      if ((queryData.task_created || queryData.action === 'update_task') && fetchTasks) {
-        fetchTasks(true);
+      if ((queryData.task_created || ['create_task', 'update_task', 'delete_task', 'complete_task', 'reschedule'].includes(queryData.action)) && fetchTasks) {
+        await fetchTasks(true);
       }
     } catch (error) {
       console.error('Error processing question:', error);

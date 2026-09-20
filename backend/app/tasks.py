@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from typing import List, Optional
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -60,8 +60,15 @@ async def list_tasks(user_id: str = Depends(get_current_user_id)):
                 t[field] = val.isoformat()
     return {"tasks": tasks}
 
+async def update_priority_reason_bg(task_id: str, name: str, priority: int):
+    import asyncio
+    from .nlp import generate_priority_reason
+    reason = await asyncio.to_thread(generate_priority_reason, name, priority)
+    collection = get_task_collection()
+    await collection.update_one({"_id": task_id}, {"$set": {"priority_reason": reason}})
+
 @router.post("/")
-async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_id)):
+async def create_task(data: TaskCreate, background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user_id)):
     collection = get_task_collection()
     task_id = str(uuid.uuid4())
     task_doc = data.model_dump()
@@ -71,8 +78,8 @@ async def create_task(data: TaskCreate, user_id: str = Depends(get_current_user_
     task_doc["created_at"] = now_ist()
     
     if not task_doc.get("priority_reason"):
-        from .nlp import generate_priority_reason
-        task_doc["priority_reason"] = generate_priority_reason(data.name, data.priority)
+        task_doc["priority_reason"] = "Standard Priority"
+        background_tasks.add_task(update_priority_reason_bg, task_id, data.name, data.priority)
 
     await collection.insert_one(task_doc)
     task_doc["id"] = str(task_doc.pop("_id"))

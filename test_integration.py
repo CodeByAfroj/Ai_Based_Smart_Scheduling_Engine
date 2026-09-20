@@ -35,7 +35,7 @@ async def full_integration_test():
     target_time = datetime.now(timezone.utc) + timedelta(seconds=1)
     
     try:
-        schedule_push_via_qstash("noreplybyusers@gmail.com", "Agent Integration Test", target_time, push_sub)
+        schedule_push_via_qstash("noreplybyusers@gmail.com", "test_task_id", "Agent Integration Test", target_time, push_sub)
         print("4. Success! Backend successfully handed off the payload to QStash.")
         print("5. QStash is now sending the webhook to Vercel.")
         print("6. If Vercel processes it correctly, your phone will ring right NOW!")

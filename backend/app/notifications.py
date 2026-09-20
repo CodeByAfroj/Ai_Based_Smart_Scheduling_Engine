@@ -107,7 +107,28 @@ async def save_notification_to_db(user_id: str, title: str, message: str, type: 
     await db["notifications"].insert_one(doc)
     return doc
 
-def schedule_push_via_qstash(user_id: str, task_id: str, task_name: str, scheduled_time, push_sub: dict, reminders: list = None):
+def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = None, push_sub: dict = None, reminders: list = None, task_id: str = None):
+    # Support both 5-arg signature (user_id, task_id, task_name, scheduled_time, push_sub)
+    # and 4-arg signature (user_id, task_name, scheduled_time, push_sub)
+    if isinstance(push_sub, dict):
+        real_task_id = task_id or arg2 or "task"
+        task_name = str(arg3) if arg3 is not None else "Task"
+        scheduled_time = arg4
+        real_push_sub = push_sub
+    elif isinstance(arg4, dict):
+        real_task_id = task_id or "task"
+        task_name = str(arg2) if arg2 else "Task"
+        scheduled_time = arg3
+        real_push_sub = arg4
+    else:
+        real_task_id = task_id or arg2 or "task"
+        task_name = str(arg3) if arg3 is not None else (str(arg2) if arg2 else "Task")
+        scheduled_time = arg4 if arg4 is not None else arg3
+        real_push_sub = push_sub or (arg4 if isinstance(arg4, dict) else None)
+
+    task_id = real_task_id
+    push_sub = real_push_sub
+
     if not qstash_client:
         print("⚠️ [PUSH] QStash client not initialized, skipping push scheduling.")
         return

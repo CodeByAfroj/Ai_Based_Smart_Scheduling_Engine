@@ -18,7 +18,7 @@ async def test():
     start = datetime.datetime.utcnow() + datetime.timedelta(minutes=2)
     
     try:
-        schedule_push_via_qstash(user["google_id"], "Test Task", start, push_sub)
+        schedule_push_via_qstash(user["google_id"], "test_task_id", "Test Task", start, push_sub)
         print("Success calling QStash!")
     except Exception as e:
         print("FAILED TO CALL QSTASH:", e)

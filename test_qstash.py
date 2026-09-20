@@ -18,5 +18,5 @@ push_sub = {
 }
 
 target_time = datetime.now(timezone.utc) + timedelta(minutes=1)
-schedule_push_via_qstash("test_user", "Test Task", target_time, push_sub)
+schedule_push_via_qstash("test_user", "test_task_id", "Test Task", target_time, push_sub)
 print("Successfully scheduled push in QStash.")

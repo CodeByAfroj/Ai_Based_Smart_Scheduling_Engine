@@ -83,6 +83,31 @@ export default function Layout() {
 
   const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
+  // ── Audio Context Initialization ──────────────────────────────────────────
+  useEffect(() => {
+    const initAudio = () => {
+      if (!window.__audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          window.__audioCtx = new AudioContext();
+        }
+      }
+      if (window.__audioCtx && window.__audioCtx.state === 'suspended') {
+        window.__audioCtx.resume();
+      }
+    };
+    
+    window.addEventListener('click', initAudio, { once: true });
+    window.addEventListener('touchstart', initAudio, { once: true });
+    window.addEventListener('keydown', initAudio, { once: true });
+    
+    return () => {
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+      window.removeEventListener('keydown', initAudio);
+    };
+  }, []);
+
   // ── Overdue task detection ────────────────────────────────────────────────
   useEffect(() => {
     if (!tasks || tasks.length === 0) return;
@@ -486,10 +511,14 @@ export default function Layout() {
 
   const playElegantChime = () => {
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
+      let ctx = window.__audioCtx;
+      if (!ctx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        ctx = new AudioContext();
+        window.__audioCtx = ctx;
+      }
 
-      const ctx = new AudioContext();
       if (ctx.state === 'suspended') {
         ctx.resume();
       }
@@ -515,12 +544,8 @@ export default function Layout() {
         osc.start(now + idx * 0.04);
         osc.stop(now + idx * 0.04 + 0.65);
       });
-
-      setTimeout(() => {
-        ctx.close().catch(() => { });
-      }, 800);
-    } catch (e) {
-      console.log('Chime playback error:', e);
+    } catch (err) {
+      console.error('Error playing chime:', err);
     }
   };
 

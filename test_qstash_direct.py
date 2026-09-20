@@ -26,7 +26,7 @@ async def test():
     print(f"Calculated delay: {delay_seconds} seconds")
     
     try:
-        schedule_push_via_qstash("noreplybyusers@gmail.com", "🙂‍↔️ Test", start, push_sub)
+        schedule_push_via_qstash("noreplybyusers@gmail.com", str(task.get("_id", "test_id")) if task else "test_id", "🙂‍↔️ Test", start, push_sub)
         print("Success calling QStash!")
     except Exception as e:
         print("FAILED TO CALL QSTASH:", e)
