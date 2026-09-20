@@ -85,6 +85,16 @@ export default function Settings() {
             userVisibleOnly: true,
             applicationServerKey: convertedVapidKey
           });
+
+          // Send the push subscription to the backend
+          await fetch(`${API_BASE}/notifications/subscribe`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(subscription.toJSON())
+          });
         } else {
           setPushEnabled(false);
           alert('Notification permission denied. Please enable in browser settings.');

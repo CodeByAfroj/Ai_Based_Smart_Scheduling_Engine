@@ -270,10 +270,33 @@ export default function Layout() {
     // Initial fetch
     fetchNotifications();
 
-    // Poll every 15 seconds
+    // Poll every 15 seconds as a fallback
     const intervalId = setInterval(fetchNotifications, 15000);
 
-    return () => clearInterval(intervalId);
+    // Establish Server-Sent Events (SSE) connection for real-time push
+    const eventSource = new EventSource(`${API_BASE}/notifications/stream?token=${token}`);
+    
+    eventSource.addEventListener('notification', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        // Show real-time alert toast & sound
+        triggerAudioAlert(data.title || 'Alert', data.message || '');
+        setHasUnread(true);
+        // Fetch to update the notifications list menu
+        fetchNotifications();
+      } catch (err) {
+        console.error('Error parsing real-time notification data:', err);
+      }
+    });
+
+    eventSource.onerror = (err) => {
+      console.error('SSE Connection Error:', err);
+    };
+
+    return () => {
+      clearInterval(intervalId);
+      eventSource.close();
+    };
   }, [token, API_BASE, profile?.notification_preference]);
 
   // ── Deadline + Fixed-task alert engine ───────────────────────────────────
