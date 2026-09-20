@@ -161,13 +161,18 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                         qstash_client.message.publish_json(
                             url=CLOUDFLARE_WORKER_URL,
                             body={
-                                "title": f"⏰ Reminder ({mins}m before): {task_name}",
+                                "title": f"⏰ {task_name} starts in {mins} min",
+                                "body": f"Reminder: Your scheduled task '{task_name}' is starting in {mins} minutes.",
+                                "requireInteraction": True,
+                                "tag": f"alarm-{task_id}-{mins}",
                                 "pushSubscription": push_sub
                             },
                             delay=f"{rem_delay}s",
                             deduplication_id=f"rem-{task_id}-{mins}-{int(target.timestamp())}"
                         )
                         print(f"✅ [QSTASH REMINDER] Scheduled {mins}m prior alert for '{task_name}' (delay: {rem_delay}s)")
+                    else:
+                        print(f"⚠️ [QSTASH REMINDER] Reminder {mins}m prior for '{task_name}' is in the past ({abs(rem_delay)}s ago). Skipping.")
                 except Exception as r_err:
                     print(f"Error scheduling reminder {m}m: {r_err}")
 
@@ -181,6 +186,9 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
             url=CLOUDFLARE_WORKER_URL,
             body={
                 "title": f"🚀 Task Starting: {task_name}",
+                "body": f"Deadline / Start time for '{task_name}' has arrived! Complete your task now.",
+                "requireInteraction": True,
+                "tag": f"alarm-{task_id}",
                 "pushSubscription": push_sub
             },
             delay=f"{delay_seconds}s",

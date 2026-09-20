@@ -82,11 +82,13 @@ async def async_auto_schedule_user_tasks(user_id: str):
                     try:
                         # find task name for notification payload
                         task_name = "Task"
+                        task_reminders = None
                         for t in task_models:
                             if t.id == st_item.task_id:
                                 task_name = t.name
+                                task_reminders = getattr(t, "reminders", None)
                                 break
-                        schedule_push_via_qstash(user_id, st_item.task_id, task_name, st_item.start, push_sub)
+                        schedule_push_via_qstash(user_id, st_item.task_id, task_name, st_item.start, push_sub, reminders=task_reminders)
                     except Exception as q_err:
                         print(f"Failed to auto-schedule push for {st_item.task_id}: {q_err}")
     except Exception as auto_sched_err:
@@ -215,7 +217,7 @@ async def query_endpoint(
                 push_sub = settings.get("push_subscription")
                 wants_push = settings.get("push_notifications", True)
                 if push_sub and wants_push and scheduled_start:
-                    schedule_push_via_qstash(user_id, task_id, params.get("name", "New Task"), scheduled_start, push_sub)
+                    schedule_push_via_qstash(user_id, task_id, params.get("name", "New Task"), scheduled_start, push_sub, reminders=params.get("reminders"))
 
                 # Dispatch real-time web notification with task name
                 try:
