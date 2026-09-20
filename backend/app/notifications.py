@@ -153,6 +153,8 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
         target_ist = target.astimezone(IST)
         formatted_time = target_ist.strftime("%I:%M %p")
 
+        target_min_ts = int(target.replace(second=0, microsecond=0).timestamp())
+
         # 1. Schedule prior standard REMINDER notifications (e.g. 5m, 10m, 30m before)
         if reminders and isinstance(reminders, list):
             for m in reminders:
@@ -171,7 +173,7 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                                 "pushSubscription": push_sub
                             },
                             delay=f"{rem_delay}s",
-                            deduplication_id=f"rem-{task_id}-{mins}-{int(target.timestamp())}"
+                            deduplication_id=f"rem-{task_id}-{mins}-{target_min_ts}"
                         )
                         print(f"✅ [QSTASH REMINDER] Scheduled {mins}m prior alert for '{task_name}' (delay: {rem_delay}s)")
                     else:
@@ -199,7 +201,7 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
                 "pushSubscription": push_sub
             },
             delay=f"{delay_seconds}s",
-            deduplication_id=f"main-{task_id}-{int(target.timestamp())}"
+            deduplication_id=f"main-{task_id}-{target_min_ts}"
         )
         print(f"🚨 [QSTASH ALARM] Scheduled Deadline Alarm for '{task_name}' at {target} (delay: {delay_seconds}s)")
     except Exception as e:
