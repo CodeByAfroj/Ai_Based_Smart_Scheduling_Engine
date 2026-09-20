@@ -150,10 +150,13 @@ def schedule_push_via_qstash(user_id: str, arg2: str = "", arg3 = None, arg4 = N
         else:
             target = scheduled_time.astimezone(timezone.utc)
         
+        # Normalize target timestamp to exact minute boundary for deterministic QStash deduplication
+        target = target.replace(second=0, microsecond=0)
+        
         target_ist = target.astimezone(IST)
         formatted_time = target_ist.strftime("%I:%M %p")
 
-        target_min_ts = int(target.replace(second=0, microsecond=0).timestamp())
+        target_min_ts = int(target.timestamp())
         is_silent = (notification_preference == "silent")
         is_vibrate = (notification_preference == "vibrate")
 
