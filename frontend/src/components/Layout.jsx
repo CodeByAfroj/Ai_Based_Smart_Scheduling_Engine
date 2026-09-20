@@ -322,6 +322,23 @@ export default function Layout() {
     setupWebPush();
   }, [token, API_BASE]);
 
+  // Option A: Automatically trigger alarm.mp3 audio playback when push alarm signal arrives
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handleSWMessage = (event) => {
+        if (event.data && event.data.type === 'PLAY_ALARM') {
+          try {
+            const alarmAudio = new Audio('/alarm.mp3');
+            alarmAudio.volume = 1.0;
+            alarmAudio.play().catch(() => {});
+          } catch (e) {}
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleSWMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+    }
+  }, []);
+
   useEffect(() => {
     if (!token || !API_BASE) return undefined;
 
