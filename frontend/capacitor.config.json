@@ -1,9 +1,5 @@
 {
   "appId": "com.taskpulse.app",
   "appName": "TaskPulse",
-  "webDir": "dist",
-  "server": {
-    "url": "https://ai-based-smart-scheduling-engine.vercel.app",
-    "cleartext": true
-  }
+  "webDir": "dist"
 }
