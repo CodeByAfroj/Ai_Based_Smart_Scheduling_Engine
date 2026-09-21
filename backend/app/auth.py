@@ -32,15 +32,17 @@ async def google_auth(request: Request):
                 detail="Token missing"
             )
 
-        # Verify token with Google's userinfo endpoint
+        # Verify token with Google's userinfo or tokeninfo endpoint
         async with httpx.AsyncClient() as client:
-
-            response = await client.get(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
-                headers={
-                    "Authorization": f"Bearer {token}"
-                }
-            )
+            if token.startswith("ey"):
+                response = await client.get(f"https://oauth2.googleapis.com/tokeninfo?id_token={token}")
+            else:
+                response = await client.get(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    headers={
+                        "Authorization": f"Bearer {token}"
+                    }
+                )
 
         if response.status_code != 200:
             raise HTTPException(
