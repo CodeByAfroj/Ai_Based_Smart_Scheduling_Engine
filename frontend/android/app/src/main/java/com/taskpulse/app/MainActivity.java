@@ -24,6 +24,8 @@ public class MainActivity extends BridgeActivity {
         // Inject Native Bridge to WebView
         WebView webView = this.getBridge().getWebView();
         if (webView != null) {
+            webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36");
+            webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
             webView.addJavascriptInterface(new WebAppInterface(this), "AndroidNative");
         }
     }
