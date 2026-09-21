@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TaskPulse</string>
+    <string name="title_activity_main">TaskPulse</string>
+    <string name="package_name">com.taskpulse.app</string>
+    <string name="custom_url_scheme">com.taskpulse.app</string>
+</resources>
