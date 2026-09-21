@@ -4,10 +4,19 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Bell, Moon, Sun, Monitor, Vibrate, Volume2, VolumeX,
   MessageSquare, Activity, Play, Square, AlertCircle, RefreshCw,
-  ChevronRight, Zap, Smartphone, Settings as SettingsIcon, CheckCircle2
+  ChevronRight, Zap, Smartphone, Settings as SettingsIcon, CheckCircle2,
+  Clock, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLiveTracking } from '../contexts/TrackingContext';
+import {
+  isTWA,
+  checkScreenTimePermission,
+  requestScreenTimePermission,
+  checkExactAlarmPermission,
+  requestExactAlarmPermission,
+  getScreenTimeUsageData
+} from '../utils/nativeBridge';
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -40,6 +49,42 @@ export default function Settings() {
   const [notifPref, setNotifPref] = useState(profile?.notification_preference || 'text_and_sound');
   const [pushEnabled, setPushEnabled] = useState(profile?.push_notifications ?? true);
   const [alarmEnabled, setAlarmEnabled] = useState(profile?.alarm_enabled ?? true);
+
+  const [screenTimePerm, setScreenTimePerm] = useState(false);
+  const [exactAlarmPerm, setExactAlarmPerm] = useState(false);
+  const [isNativeApp, setIsNativeApp] = useState(false);
+  const [screenTimeData, setScreenTimeData] = useState(null);
+
+  useEffect(() => {
+    setIsNativeApp(isTWA());
+    async function initPermissions() {
+      const stPerm = await checkScreenTimePermission();
+      const eaPerm = await checkExactAlarmPermission();
+      setScreenTimePerm(stPerm);
+      setExactAlarmPerm(eaPerm);
+
+      // Auto-request at startup if not granted
+      if (!stPerm) {
+        const autoSt = await requestScreenTimePermission();
+        if (autoSt) setScreenTimePerm(true);
+      }
+      if (!eaPerm) {
+        const autoEa = await requestExactAlarmPermission();
+        if (autoEa) setExactAlarmPerm(true);
+      }
+    }
+    initPermissions();
+  }, []);
+
+  const handleRequestScreenTime = async () => {
+    const granted = await requestScreenTimePermission();
+    setScreenTimePerm(granted);
+  };
+
+  const handleRequestExactAlarm = async () => {
+    const granted = await requestExactAlarmPermission();
+    setExactAlarmPerm(granted);
+  };
   
   useEffect(() => {
     if (profile) {
@@ -166,6 +211,87 @@ export default function Settings() {
             right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
           />
           </Section>
+        </div>
+
+        {/* Device & Hardware Permissions */}
+        <div data-tour="settings-hardware-permissions">
+          <Section 
+            title="Device & System Permissions"
+            footer={isNativeApp ? "Android TWA Mode active: Hardware alarms & system screen time access enabled." : "Web PWA Mode active (Mac/Desktop): In-app focus tracking & browser audio alarms active."}
+          >
+            <Row 
+              icon={Activity} 
+              iconColor="bg-emerald-500" 
+              title="Analyze App Activity & Screen Time" 
+              subtitle={isNativeApp ? "Grants Android UsageStats access to analyze app activity" : "In-app focus & idle session analyzer (Web PWA)"}
+              right={
+                screenTimePerm ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                    <CheckCircle2 size={14} /> Granted
+                  </span>
+                ) : (
+                  <button 
+                    onClick={handleRequestScreenTime}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
+                  >
+                    Grant Access
+                  </button>
+                )
+              }
+            />
+            <Row 
+              icon={Clock} 
+              iconColor="bg-indigo-500" 
+              title="Exact Hardware Clock Alarms" 
+              subtitle={isNativeApp ? "Allows waking phone from sleep & ringing lock-screen alarms" : "Browser system notification & audio alerts"}
+              right={
+                exactAlarmPerm ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                    <CheckCircle2 size={14} /> Enabled
+                  </span>
+                ) : (
+                  <button 
+                    onClick={handleRequestExactAlarm}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
+                  >
+                    Enable Alarms
+                  </button>
+                )
+              }
+            />
+          </Section>
+        </div>
+
+        {/* Live Screen Time Data Inspector */}
+        <div className="mb-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+              <h3 className="text-sm font-semibold text-[var(--text-main)]">Live Screen Time Data Stream</h3>
+            </div>
+            <button
+              onClick={async () => {
+                const data = await getScreenTimeUsageData();
+                setScreenTimeData(data || { status: 'Active', source: isNativeApp ? 'Android UsageStats' : 'Web Focus Tracker' });
+              }}
+              className="text-xs text-indigo-500 hover:text-indigo-400 font-medium underline"
+            >
+              Refresh Data
+            </button>
+          </div>
+          <div className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl p-3 font-mono text-xs text-[var(--text-muted)] overflow-x-auto">
+            {screenTimeData ? (
+              <pre className="text-emerald-500 dark:text-emerald-400">{JSON.stringify(screenTimeData, null, 2)}</pre>
+            ) : (
+              <div className="flex items-center justify-between text-xs">
+                <span>Click "Refresh Data" to inspect live Screen Time payload...</span>
+                <span className="text-indigo-400 font-sans font-medium">{isNativeApp ? 'Android TWA Mode' : 'Web PWA Mode'}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Alert Style */}

@@ -336,6 +336,30 @@ export default function Layout() {
     setActiveAlarm(null);
   }, []);
 
+  // Unlock browser audio permissions on first user click/touch gesture
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (window.__audioCtx && window.__audioCtx.state === 'suspended') {
+        window.__audioCtx.resume().catch(() => {});
+      }
+      if (!window.__activeAlarmAudio) {
+        try {
+          window.__activeAlarmAudio = new Audio('/alarm.mp3');
+          window.__activeAlarmAudio.volume = 1.0;
+        } catch (_) {}
+      }
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, []);
+
   // Trigger Samsung alarm.mp3 audio playback and voice TTS when push alarm signal arrives
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -392,20 +416,8 @@ export default function Layout() {
         }
       };
 
-      // Stop looping alarm sound when user interacts with the app
-      const stopLoopingAlarm = () => {
-        if (window.__activeAlarmAudio) {
-          window.__activeAlarmAudio.pause();
-          window.__activeAlarmAudio.currentTime = 0;
-        }
-        if (window.__alarmTimeout) clearTimeout(window.__alarmTimeout);
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      };
-
-      window.addEventListener('click', stopLoopingAlarm);
       navigator.serviceWorker.addEventListener('message', handleSWMessage);
       return () => {
-        window.removeEventListener('click', stopLoopingAlarm);
         navigator.serviceWorker.removeEventListener('message', handleSWMessage);
       };
     }
@@ -614,41 +626,16 @@ export default function Layout() {
 
   const playElegantChime = () => {
     try {
-      let ctx = window.__audioCtx;
-      if (!ctx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        ctx = new AudioContext();
-        window.__audioCtx = ctx;
+      if (!window.__activeAlarmAudio) {
+        window.__activeAlarmAudio = new Audio('/alarm.mp3');
       }
-
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-
-      const now = ctx.currentTime;
-
-      // Soft ambient glass chime (C-major 7th chord triad with exponential decay)
-      const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-      freqs.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.04);
-
-        gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.08 / (idx + 1), now + idx * 0.04 + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.04 + 0.6);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(now + idx * 0.04);
-        osc.stop(now + idx * 0.04 + 0.65);
+      window.__activeAlarmAudio.currentTime = 0;
+      window.__activeAlarmAudio.volume = 1.0;
+      window.__activeAlarmAudio.play().catch((err) => {
+        console.warn("Audio play error:", err);
       });
     } catch (err) {
-      console.error('Error playing chime:', err);
+      console.warn("Audio exception:", err);
     }
   };
 
