@@ -2,6 +2,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { CalendarSync, Sparkles, ShieldCheck, ArrowRight, Eye, Mail, Lock } from 'lucide-react';
+import { getApiBase } from '../utils/apiConfig';
 
 export default function Login() {
   const { login } = useAuth();
@@ -10,7 +11,8 @@ export default function Login() {
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/auth/google`, {
+        const apiBase = getApiBase();
+        const res = await fetch(`${apiBase}/auth/google`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: tokenResponse.access_token })
@@ -18,7 +20,7 @@ export default function Login() {
         if (res.ok) {
           const data = await res.json();
           login(data.access_token);
-          navigate('/');
+          navigate('/', { replace: true });
         } else {
           console.error("Backend auth failed", await res.text());
         }
