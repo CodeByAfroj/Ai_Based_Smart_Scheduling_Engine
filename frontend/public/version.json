@@ -1,5 +1,5 @@
 {
-  "nativeVersion": "1.0.2",
+  "nativeVersion": "1.0.3",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Aligned screen time query with current calendar day."
+  "releaseNotes": "Perfectly aligned screen time stats and removed system apps."
 }

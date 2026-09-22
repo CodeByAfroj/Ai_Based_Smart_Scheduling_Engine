@@ -87,18 +87,29 @@ public class MainActivity extends BridgeActivity {
                 long startTime = calendar.getTimeInMillis();
                 long endTime = System.currentTimeMillis();
 
-                // Use queryUsageStats for 100% accurate and highly optimized data (matches Digital Wellbeing exactly)
-                List<UsageStats> stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime);
+                // queryAndAggregateUsageStats perfectly splits time boundaries (unlike queryUsageStats)
+                java.util.Map<String, UsageStats> stats = usm.queryAndAggregateUsageStats(startTime, endTime);
                 HashMap<String, Long> appForegroundTime = new HashMap<>();
                 String currentForegroundApp = "unknown";
+                android.content.pm.PackageManager pm = mContext.getPackageManager();
 
                 if (stats != null) {
-                    for (UsageStats stat : stats) {
+                    for (UsageStats stat : stats.values()) {
                         long timeInForeground = stat.getTotalTimeInForeground();
                         if (timeInForeground > 0) {
                             String pkg = stat.getPackageName();
-                            long existing = appForegroundTime.containsKey(pkg) ? appForegroundTime.get(pkg) : 0;
-                            appForegroundTime.put(pkg, existing + timeInForeground);
+                            
+                            // Filter out system apps (like Android System, Battery, Settings, System UI)
+                            try {
+                                android.content.pm.ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+                                if ((info.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) {
+                                    continue;
+                                }
+                            } catch (Exception e) {
+                                continue;
+                            }
+                            
+                            appForegroundTime.put(pkg, timeInForeground);
                         }
                     }
                 }
