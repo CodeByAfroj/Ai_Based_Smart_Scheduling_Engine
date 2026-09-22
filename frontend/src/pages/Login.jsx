@@ -54,7 +54,7 @@ export default function Login() {
     
     // Check if running in Capacitor Native Environment
     const isNative = typeof window !== 'undefined' && 
-                     (!!window.Capacitor || window.location.protocol === 'capacitor:');
+                     (window.AndroidNative || (window.Capacitor && window.Capacitor.isNativePlatform()) || window.location.protocol === 'capacitor:');
                      
     if (isNative) {
       try {
