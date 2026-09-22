@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Calendar;
 
 public class MainActivity extends BridgeActivity {
 
@@ -75,8 +76,16 @@ public class MainActivity extends BridgeActivity {
         public String getScreenTimeUsage() {
             try {
                 UsageStatsManager usm = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);
+                
+                // Align with Android Digital Wellbeing: Start at midnight of the current day
+                Calendar calendar = Calendar.getInstance();
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
+                calendar.set(Calendar.MILLISECOND, 0);
+                
+                long startTime = calendar.getTimeInMillis();
                 long endTime = System.currentTimeMillis();
-                long startTime = endTime - (1000 * 60 * 60 * 24); // Last 24 Hours
 
                 // Use queryUsageStats for 100% accurate and highly optimized data (matches Digital Wellbeing exactly)
                 List<UsageStats> stats = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime);
