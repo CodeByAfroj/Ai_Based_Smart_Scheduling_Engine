@@ -72,7 +72,7 @@ export default function ProfileSetup() {
           weekend_preference: weekendPref,
           buffer_enabled: bufferEnabled,
           categories: tags,
-          is_complete: true,
+          is_complete: readinessScore === 100,
           push_notifications: profile?.push_notifications ?? true,
           desktop_notifications: profile?.desktop_notifications ?? true,
           email_summary: profile?.email_summary ?? false,
@@ -433,13 +433,13 @@ export default function ProfileSetup() {
           <button 
             type="button" 
             onClick={handleSave} 
-            disabled={saving || readinessScore < 100}
-            className={`btn-primary py-2.5 px-6 text-sm shadow-md flex items-center justify-center gap-2 w-full sm:w-auto ${readinessScore < 100 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={saving}
+            className="btn-primary py-2.5 px-6 text-sm shadow-md flex items-center justify-center gap-2 w-full sm:w-auto"
           >
             {saving ? (
               <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Saving...</>
             ) : (
-              <><CheckCircle2 size={16} /> Save Complete Profile <ArrowRight size={16} /></>
+              <><CheckCircle2 size={16} /> Save Profile <ArrowRight size={16} /></>
             )}
           </button>
         </div>

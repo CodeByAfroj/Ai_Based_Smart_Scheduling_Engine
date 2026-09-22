@@ -208,10 +208,12 @@ export default function Settings() {
             icon={Smartphone} iconColor="bg-red-500" title="Advance Reminders (Push)" subtitle="Prior start reminders"
             right={<Toggle checked={pushEnabled} onChange={handlePushToggle} />}
           />
-          <Row 
-            icon={Bell} iconColor="bg-orange-500" title="Deadline Alarms (OS Alerts)" subtitle="Task start alarms"
-            right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
-          />
+          {!isNativeApp && (
+            <Row 
+              icon={Bell} iconColor="bg-orange-500" title="Deadline Alarms (OS Alerts)" subtitle="Task start alarms"
+              right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
+            />
+          )}
           </Section>
         </div>
 
@@ -248,9 +250,12 @@ export default function Settings() {
               subtitle={isNativeApp ? "Allows waking phone from sleep & ringing lock-screen alarms" : "Browser system notification & audio alerts"}
               right={
                 exactAlarmPerm ? (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
-                    <CheckCircle2 size={14} /> Enabled
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1 hidden sm:flex">
+                      <CheckCircle2 size={14} /> Enabled
+                    </span>
+                    <Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />
+                  </div>
                 ) : (
                   <button 
                     onClick={handleRequestExactAlarm}

@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { triggerExactAlarm, cancelAlarm } from '../utils/nativeBridge';
 
 const TaskContext = createContext();
 
 export function TaskProvider({ children }) {
-  const { token, API_BASE } = useAuth();
+  const { token, API_BASE, profile } = useAuth();
   
   // Initialize from cache if available to prevent loading flashes
   const [tasks, setTasks] = useState(() => {
@@ -56,6 +57,29 @@ export function TaskProvider({ children }) {
       localStorage.removeItem('taskpulse_tasks');
     }
   }, [token, fetchTasks]);
+
+  // Schedule exact OS alarms when tasks change
+  useEffect(() => {
+    if (!profile?.alarm_enabled) return;
+
+    const now = Date.now();
+    if (!window.__scheduledAlarms) window.__scheduledAlarms = new Set();
+    
+    tasks.forEach(task => {
+      if (task.status !== 'completed' && task.scheduled_start) {
+        const startMillis = new Date(task.scheduled_start).getTime();
+        // Schedule if it's in the future
+        if (startMillis > now) {
+          const alarmKey = `${task.id}_${startMillis}`;
+          
+          if (!window.__scheduledAlarms.has(alarmKey)) {
+            triggerExactAlarm(task.name, startMillis);
+            window.__scheduledAlarms.add(alarmKey);
+          }
+        }
+      }
+    });
+  }, [tasks, profile?.alarm_enabled]);
 
   const addTask = async (newTaskData) => {
     // Optimistic UI update could go here, but let's wait for DB to get the ID
