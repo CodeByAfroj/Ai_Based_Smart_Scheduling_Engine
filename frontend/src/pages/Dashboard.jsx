@@ -132,16 +132,7 @@ export default function Dashboard() {
                 <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-4">
                   Your workspace is {readinessScore}% ready. Complete your profile preferences — timezone, work hours, notifications, and categories — to enable TaskPulse's autonomous scheduling engine.
                 </p>
-                <div className="flex flex-wrap gap-6 text-sm">
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle2 size={16} />
-                    <span className="font-medium">Push alerts & audio chime 15m prior to task start</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle2 size={16} />
-                    <span className="font-medium">Daily Morning Schedule Briefing at 8:30 AM</span>
-                  </div>
-                </div>
+
               </div>
             </div>
             <div className="flex flex-row lg:flex-col gap-3 lg:justify-center shrink-0">

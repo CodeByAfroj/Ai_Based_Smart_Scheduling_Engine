@@ -251,9 +251,6 @@ export default function Settings() {
               right={
                 exactAlarmPerm ? (
                   <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1 hidden sm:flex">
-                      <CheckCircle2 size={14} /> Enabled
-                    </span>
                     <Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />
                   </div>
                 ) : (
