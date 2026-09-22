@@ -66,8 +66,8 @@ public class MainActivity extends BridgeActivity {
                 if (stats != null) {
                     for (UsageStats usage : stats) {
                         long totalTimeInForeground = usage.getTotalTimeInForeground();
-                        long minutes = totalTimeInForeground / (1000 * 60);
-                        if (minutes > 0) {
+                        if (totalTimeInForeground > 0) {
+                            long minutes = Math.max(1, totalTimeInForeground / (1000 * 60));
                             JSONObject obj = new JSONObject();
                             obj.put("package", usage.getPackageName());
                             obj.put("minutes", minutes);

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import {
   Bell, CheckCircle2, Circle, Clock, Calendar, ArrowRight,
-  Zap, BarChart3, ChevronRight, Play, Moon
+  Zap, BarChart3, ChevronRight, Play, Moon, RefreshCw
 } from 'lucide-react';
 import { formatIST, formatDateIST, nowIST } from '../utils/time'
 import { Section, Row } from '../components/ui/LayoutBlocks';
@@ -52,27 +52,26 @@ export default function Dashboard() {
 
   const [recommendation, setRecommendation] = useState(null);
   const [loadingRec, setLoadingRec] = useState(false);
-  useEffect(() => {
+  const fetchRecommendation = (forceRefresh = false) => {
     if (!token) return;
-
-    // Fast-loading Cache System (5 minute TTL)
-    // The cache key now dynamically depends on your exact active tasks. 
-    // If you complete or add a task, the cache instantly invalidates itself!
+    
     const activeTasksString = tasks.filter(t => t.status !== 'completed').map(t => t.id).sort().join(',');
     const CACHE_KEY = `taskpulse_ai_rec_cache_${activeTasksString}`;
     const CACHE_TTL_MS = 5 * 60 * 1000;
 
-    try {
-      const cachedString = sessionStorage.getItem(CACHE_KEY);
-      if (cachedString) {
-        const { data, timestamp } = JSON.parse(cachedString);
-        if (Date.now() - timestamp < CACHE_TTL_MS) {
-          setRecommendation(data);
-          return; // Skip API call and use instant cache
+    if (!forceRefresh) {
+      try {
+        const cachedString = sessionStorage.getItem(CACHE_KEY);
+        if (cachedString) {
+          const { data, timestamp } = JSON.parse(cachedString);
+          if (Date.now() - timestamp < CACHE_TTL_MS) {
+            setRecommendation(data);
+            return;
+          }
         }
+      } catch (e) {
+        console.warn("Cache read failed", e);
       }
-    } catch (e) {
-      console.warn("Cache read failed", e);
     }
 
     setLoadingRec(true);
@@ -86,6 +85,10 @@ export default function Dashboard() {
       })
       .catch(err => console.error('Rec error', err))
       .finally(() => setLoadingRec(false));
+  };
+
+  useEffect(() => {
+    fetchRecommendation();
   }, [token, tasks]);
 
   if (loading && (!tasks || tasks.length === 0)) {
@@ -199,6 +202,9 @@ export default function Dashboard() {
                         {recommendation.current_energy_level}
                       </span>
                     </div>
+                    <button onClick={() => fetchRecommendation(true)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors border border-white/10">
+                      <RefreshCw size={14} className={loadingRec ? "animate-spin" : ""} />
+                    </button>
                   </div>
 
                   <h3 className="text-2xl font-black text-white mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">{recTask.name}</h3>
@@ -236,7 +242,12 @@ export default function Dashboard() {
                         {recommendation.current_energy_level}
                       </span>
                     </div>
-                    <span className="text-xs text-indigo-200/80 font-mono font-medium tracking-wider bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">Score: {recTask.score} pts</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-indigo-200/80 font-mono font-medium tracking-wider bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">Score: {recTask.score} pts</span>
+                      <button onClick={() => fetchRecommendation(true)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-indigo-200/80 hover:text-white transition-colors border border-white/10">
+                        <RefreshCw size={14} className={loadingRec ? "animate-spin" : ""} />
+                      </button>
+                    </div>
                   </div>
 
                   <h3 className="text-2xl font-black text-white mb-2 tracking-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-indigo-200 transition-all duration-300">{recTask.name}</h3>

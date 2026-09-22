@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { localInputToIST, formatIST, formatDateIST } from '../utils/time';
 import { Zap, Volume2, VolumeX, Mic } from 'lucide-react';
 import ChatGPTVoiceOrb from './ChatGPTVoiceOrb';
-
+import { isTWA } from '../utils/nativeBridge';
+import { SpeechRecognition as NativeSpeech } from '@capacitor-community/speech-recognition';
 // Component to render formatted Markdown (bold, headers, bullets, colors) cleanly
 function FormattedMessage({ text, isUser }) {
   if (isUser) {
@@ -235,6 +236,13 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
         activeRecognitionRef.current.abort();
       } catch (e) { }
       activeRecognitionRef.current = null;
+    }
+
+    if (isTWA()) {
+      try {
+        NativeSpeech.stop();
+        NativeSpeech.removeAllListeners();
+      } catch (e) { }
     }
 
     // 2. Instantly pause, strip callbacks, and destroy HTML5 Audio
@@ -873,6 +881,52 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
 
     if (isListening) {
       setIsListening(false);
+      if (isTWA()) {
+        try { NativeSpeech.stop(); } catch (e) {}
+      }
+      return;
+    }
+
+    if (isTWA()) {
+      try {
+        const permStatus = await NativeSpeech.checkPermissions();
+        if (permStatus.speechRecognition !== 'granted') {
+          await NativeSpeech.requestPermissions();
+        }
+        
+        setIsListening(true);
+        
+        await NativeSpeech.removeAllListeners();
+        await NativeSpeech.addListener('partialResults', (data) => {
+           if (data.matches && data.matches.length > 0) {
+              const transcript = data.matches[0];
+              setIsListening(false);
+              cancelSpeech();
+              handleVoiceInput(transcript);
+              NativeSpeech.stop();
+              NativeSpeech.removeAllListeners();
+           }
+        });
+        
+        const result = await NativeSpeech.start({
+          language: "en-US",
+          maxResults: 1,
+          prompt: "Say something",
+          partialResults: true,
+          popup: false,
+        });
+        
+        // Fallback if partialResults event doesn't fire but start() resolves
+        if (result && result.matches && result.matches.length > 0) {
+          setIsListening(false);
+          cancelSpeech();
+          handleVoiceInput(result.matches[0]);
+        }
+      } catch (err) {
+        console.error('Native speech error:', err);
+        setIsListening(false);
+        isProcessingRef.current = false;
+      }
       return;
     }
 
