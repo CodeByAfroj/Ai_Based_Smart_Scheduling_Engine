@@ -15,6 +15,7 @@ import Notifications from './pages/Notifications';
 import Settings from './pages/Settings';
 import Layout from './components/Layout';
 import PWAInstallBanner from './components/PWAInstallBanner';
+import AutoUpdater from './components/AutoUpdater';
 
 
 function ProtectedRoute({ children }) {
@@ -146,6 +147,7 @@ export default function App() {
           </TrackingProvider>
         </TaskProvider>
       </AuthProvider>
+      <AutoUpdater />
       <PWAInstallBanner />
     </ThemeProvider>
   );

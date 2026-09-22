@@ -11,6 +11,13 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import android.os.Environment;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import android.net.Uri;
 import com.getcapacitor.BridgeActivity;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -237,6 +244,48 @@ public class MainActivity extends BridgeActivity {
                 if (alarmManager != null) {
                     alarmManager.cancel(pendingIntent);
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public void downloadAndInstallUpdate(String apkUrl) {
+            try {
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
+                request.setTitle("Downloading Update");
+                request.setDescription("TaskPulse native update is downloading...");
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "TaskPulse_Update.apk");
+
+                DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+                final long downloadId = manager.enqueue(request);
+
+                BroadcastReceiver onComplete = new BroadcastReceiver() {
+                    public void onReceive(Context ctxt, Intent intent) {
+                        long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                        if (downloadId == id) {
+                            try {
+                                File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TaskPulse_Update.apk");
+                                Uri apkUri = FileProvider.getUriForFile(mContext, mContext.getApplicationContext().getPackageName() + ".fileprovider", file);
+                                Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                                installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                                installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                mContext.startActivity(installIntent);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            mContext.unregisterReceiver(this);
+                        }
+                    }
+                };
+                
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    mContext.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_EXPORTED);
+                } else {
+                    mContext.registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
