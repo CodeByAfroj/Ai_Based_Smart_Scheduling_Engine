@@ -56,4 +56,5 @@ jobs:
           artifacts: "frontend/android/app/build/outputs/apk/debug/app-debug.apk"
           allowUpdates: true
           makeLatest: true
+          replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
