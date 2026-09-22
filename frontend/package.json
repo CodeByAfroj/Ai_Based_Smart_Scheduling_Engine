@@ -12,6 +12,7 @@
   "dependencies": {
     "@capacitor/android": "^8.5.2",
     "@capacitor/core": "^8.5.2",
+    "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
     "@huggingface/transformers": "^4.2.0",
     "@react-oauth/google": "^0.13.5",
     "@tailwindcss/vite": "^4.3.3",
@@ -20,6 +21,7 @@
     "lucide-react": "^1.45.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-is": "^19.3.0",
     "react-router-dom": "^7.18.3",
     "recharts": "^3.10.1",
     "tailwindcss": "^4.3.3",

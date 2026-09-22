@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { CalendarSync, Sparkles, ShieldCheck, ArrowRight, Eye, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { getApiBase } from '../utils/apiConfig';
 
@@ -38,7 +39,7 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = useGoogleLogin({
+  const handleWebGoogleLogin = useGoogleLogin({
     onSuccess: (tokenResponse) => handleAuthSuccess(tokenResponse.access_token),
     onError: errorResponse => {
       console.error('Google Login Error:', errorResponse);
@@ -46,6 +47,39 @@ export default function Login() {
       setIsLoading(false);
     },
   });
+
+  const handleGoogleLogin = async () => {
+    setErrorMessage('');
+    setIsLoading(true);
+    
+    // Check if running in Capacitor Native Environment
+    const isNative = typeof window !== 'undefined' && 
+                     (!!window.Capacitor || window.location.protocol === 'capacitor:');
+                     
+    if (isNative) {
+      try {
+        await GoogleAuth.initialize({
+          clientId: '397100048038-lb4broqvu771adseev9as4njei0bqc6v.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+          grantOfflineAccess: true,
+        });
+        const googleUser = await GoogleAuth.signIn();
+        // The capacitor plugin returns authentication.accessToken
+        if (googleUser && googleUser.authentication && googleUser.authentication.accessToken) {
+          handleAuthSuccess(googleUser.authentication.accessToken);
+        } else {
+          throw new Error('Google Auth response missing access token');
+        }
+      } catch (error) {
+        console.error('Native Google Auth Error:', error);
+        setErrorMessage(`Native Sign-In Error: ${error.message || 'Cancelled or failed'}`);
+        setIsLoading(false);
+      }
+    } else {
+      // Fallback to web browser popup flow
+      handleWebGoogleLogin();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] flex">

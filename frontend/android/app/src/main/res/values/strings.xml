@@ -4,4 +4,5 @@
     <string name="title_activity_main">TaskPulse</string>
     <string name="package_name">com.taskpulse.app</string>
     <string name="custom_url_scheme">com.taskpulse.app</string>
+    <string name="server_client_id">397100048038-lb4broqvu771adseev9as4njei0bqc6v.apps.googleusercontent.com</string>
 </resources>

@@ -1,5 +1,12 @@
 {
   "appId": "com.taskpulse.app",
   "appName": "TaskPulse",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "397100048038-lb4broqvu771adseev9as4njei0bqc6v.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  }
 }
