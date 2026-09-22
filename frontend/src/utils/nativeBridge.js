@@ -86,7 +86,7 @@ export async function requestExactAlarmPermission() {
   return false;
 }
 
-// 3. FETCH SCREEN TIME DATA
+// 3. FETCH SCREEN TIME DATA (24h history + current app)
 export async function getScreenTimeUsageData() {
   if (isTWA() && window.AndroidNative?.getScreenTimeUsage) {
     try {
@@ -94,6 +94,20 @@ export async function getScreenTimeUsageData() {
       return typeof data === 'string' ? JSON.parse(data) : data;
     } catch (err) {
       console.error('Failed to parse TWA screen time data:', err);
+      return null;
+    }
+  }
+  return null;
+}
+
+// 3b. GET CURRENT FOREGROUND APP (real-time, battery-optimized)
+export async function getCurrentForegroundApp() {
+  if (isTWA() && window.AndroidNative?.getCurrentApp) {
+    try {
+      const data = window.AndroidNative.getCurrentApp();
+      return typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (err) {
+      console.error('Failed to get current app:', err);
       return null;
     }
   }
