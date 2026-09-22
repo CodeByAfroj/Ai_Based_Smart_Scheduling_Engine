@@ -4,9 +4,14 @@
  */
 
 export const getApiBase = () => {
-  // Always use live remote server when running inside Android/iOS native Capacitor container
-  if (typeof window !== 'undefined' && (window.Capacitor?.isNativePlatform?.() || window.location.protocol === 'capacitor:')) {
-    return 'https://ai-based-smart-scheduling-engine.vercel.app';
+  if (typeof window !== 'undefined') {
+    const isCapacitor = !!window.Capacitor || 
+                        window.location.protocol === 'capacitor:' || 
+                        (window.location.hostname === 'localhost' && window.location.port === '');
+    
+    if (isCapacitor) {
+      return 'https://ai-based-smart-scheduling-engine.vercel.app';
+    }
   }
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
