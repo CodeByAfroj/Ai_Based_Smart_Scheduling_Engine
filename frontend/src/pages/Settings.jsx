@@ -55,6 +55,7 @@ export default function Settings() {
   const [isNativeApp, setIsNativeApp] = useState(false);
   const [nativeVersion, setNativeVersion] = useState("Web");
   const [screenTimeData, setScreenTimeData] = useState(null);
+  const [isRefreshingScreenTime, setIsRefreshingScreenTime] = useState(false);
 
   useEffect(() => {
     const native = isTWA();
@@ -293,12 +294,16 @@ export default function Settings() {
             </div>
             <button
               onClick={async () => {
+                setIsRefreshingScreenTime(true);
                 const data = await getScreenTimeUsageData();
                 setScreenTimeData(data || { status: 'Active', source: isNativeApp ? 'Android UsageEvents' : 'Web Focus Tracker' });
+                setIsRefreshingScreenTime(false);
               }}
-              className="text-xs text-indigo-500 hover:text-indigo-400 font-medium underline"
+              disabled={isRefreshingScreenTime}
+              className="flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-xs font-medium hover:bg-indigo-500/20 transition-colors disabled:opacity-50"
             >
-              Refresh Data
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingScreenTime ? 'animate-spin' : ''}`} />
+              {isRefreshingScreenTime ? 'Refreshing...' : 'Refresh Data'}
             </button>
           </div>
           <div className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl p-3 overflow-x-auto">
