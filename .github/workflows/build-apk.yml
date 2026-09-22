@@ -26,6 +26,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install dependencies & build frontend
         run: |
@@ -43,7 +45,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd frontend/android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --parallel --build-cache --configure-on-demand
 
       - name: Create or Update Latest Release
         uses: ncipollo/release-action@v1
