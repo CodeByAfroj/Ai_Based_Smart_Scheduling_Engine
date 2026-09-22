@@ -232,6 +232,11 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
+        public String getNativeVersion() {
+            return BuildConfig.VERSION_NAME;
+        }
+
+        @JavascriptInterface
         public void downloadAndInstallUpdate(String apkUrl) {
             try {
                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));

@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCcw, X, Smartphone, ArrowRight } from 'lucide-react';
 import { isTWA } from '../utils/nativeBridge';
 
-// The currently bundled version of the native wrapper
-// Bump this string before building a new APK manually.
-const CURRENT_NATIVE_VERSION = "1.0.0";
-
 const AutoUpdater = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -24,9 +20,18 @@ const AutoUpdater = () => {
 
         const data = await response.json();
         
+        // Get the real installed version from the Android app itself
+        let installedVersion = "1.0.0"; // Fallback
+        if (window.AndroidNative && window.AndroidNative.getNativeVersion) {
+          installedVersion = window.AndroidNative.getNativeVersion();
+        }
+
         // Simple version string comparison
-        if (data.nativeVersion && data.nativeVersion !== CURRENT_NATIVE_VERSION) {
-          setUpdateInfo(data);
+        if (data.nativeVersion && data.nativeVersion !== installedVersion) {
+          setUpdateInfo({
+            ...data,
+            installedVersion
+          });
           setUpdateAvailable(true);
         }
       } catch (err) {
@@ -68,7 +73,7 @@ const AutoUpdater = () => {
             </div>
             <div>
               <h4 className="text-white font-bold text-sm sm:text-base leading-tight">App Update Available</h4>
-              <p className="text-indigo-200/70 text-xs mt-0.5 font-medium">Version {updateInfo?.nativeVersion} is ready</p>
+              <p className="text-indigo-200/70 text-xs mt-0.5 font-medium">Update from v{updateInfo?.installedVersion} to v{updateInfo?.nativeVersion}</p>
             </div>
           </div>
           <button 

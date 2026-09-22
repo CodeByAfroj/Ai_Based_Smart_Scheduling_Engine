@@ -53,11 +53,17 @@ export default function Settings() {
   const [screenTimePerm, setScreenTimePerm] = useState(false);
   const [exactAlarmPerm, setExactAlarmPerm] = useState(false);
   const [isNativeApp, setIsNativeApp] = useState(false);
+  const [nativeVersion, setNativeVersion] = useState("Web");
   const [screenTimeData, setScreenTimeData] = useState(null);
 
   useEffect(() => {
     const native = isTWA();
     setIsNativeApp(native);
+    
+    if (native && window.AndroidNative && window.AndroidNative.getNativeVersion) {
+      setNativeVersion(window.AndroidNative.getNativeVersion());
+    }
+
     async function initPermissions() {
       const stPerm = await checkScreenTimePermission();
       const eaPerm = await checkExactAlarmPermission();
@@ -228,7 +234,7 @@ export default function Settings() {
         <div data-tour="settings-hardware-permissions">
           <Section 
             title="Device & System Permissions"
-            footer={isNativeApp ? "Android TWA Mode active: Hardware alarms & system screen time access enabled." : "Web PWA Mode active (Mac/Desktop): In-app focus tracking & browser audio alarms active."}
+            footer={isNativeApp ? `Android Native App Mode active (v${nativeVersion}): Hardware alarms & system screen time access enabled.` : "Web PWA Mode active (Mac/Desktop): In-app focus tracking & browser audio alarms active."}
           >
             <Row 
               icon={Activity} 
