@@ -99,13 +99,9 @@ public class MainActivity extends BridgeActivity {
                         if (timeInForeground > 0) {
                             String pkg = stat.getPackageName();
                             
-                            // Filter out system apps (like Android System, Battery, Settings, System UI)
-                            try {
-                                android.content.pm.ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
-                                if ((info.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) {
-                                    continue;
-                                }
-                            } catch (Exception e) {
+                            // Filter out background services by checking if the app is launchable from the app drawer
+                            // This perfectly mirrors Digital Wellbeing's visibility list.
+                            if (pm.getLaunchIntentForPackage(pkg) == null) {
                                 continue;
                             }
                             
