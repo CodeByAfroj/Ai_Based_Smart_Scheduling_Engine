@@ -47,6 +47,12 @@ jobs:
           cd frontend/android
           ./gradlew assembleDebug --no-daemon --parallel --build-cache --configure-on-demand
 
+      - name: Delete old release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --cleanup-tag -y || true
+
       - name: Create or Update Latest Release
         uses: ncipollo/release-action@v1
         with:
