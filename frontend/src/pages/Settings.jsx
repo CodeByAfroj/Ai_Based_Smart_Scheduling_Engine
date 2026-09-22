@@ -56,12 +56,19 @@ export default function Settings() {
   const [screenTimeData, setScreenTimeData] = useState(null);
 
   useEffect(() => {
-    setIsNativeApp(isTWA());
+    const native = isTWA();
+    setIsNativeApp(native);
     async function initPermissions() {
       const stPerm = await checkScreenTimePermission();
       const eaPerm = await checkExactAlarmPermission();
       setScreenTimePerm(stPerm);
       setExactAlarmPerm(eaPerm);
+
+      // Auto-prompt browser notification permission on PWA (non-native)
+      if (!native && 'Notification' in window && Notification.permission === 'default') {
+        const result = await Notification.requestPermission();
+        if (result === 'granted') setExactAlarmPerm(true);
+      }
     }
     initPermissions();
 
@@ -243,26 +250,28 @@ export default function Settings() {
                 )
               }
             />
-            <Row 
-              icon={Clock} 
-              iconColor="bg-indigo-500" 
-              title="Exact Hardware Clock Alarms" 
-              subtitle={isNativeApp ? "Allows waking phone from sleep & ringing lock-screen alarms" : "Browser system notification & audio alerts"}
-              right={
-                exactAlarmPerm ? (
-                  <div className="flex items-center gap-2">
-                    <Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />
-                  </div>
-                ) : (
-                  <button 
-                    onClick={handleRequestExactAlarm}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
-                  >
-                    Enable Alarms
-                  </button>
-                )
-              }
-            />
+            {isNativeApp && (
+              <Row 
+                icon={Clock} 
+                iconColor="bg-indigo-500" 
+                title="Exact Hardware Clock Alarms" 
+                subtitle="Allows waking phone from sleep & ringing lock-screen alarms"
+                right={
+                  exactAlarmPerm ? (
+                    <div className="flex items-center gap-2">
+                      <Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={handleRequestExactAlarm}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
+                    >
+                      Enable Alarms
+                    </button>
+                  )
+                }
+              />
+            )}
           </Section>
         </div>
 

@@ -118,29 +118,28 @@ export default function Dashboard() {
 
         {/* Profile Completion Banner (Full Width) */}
         {!notifDismissed && profileIncomplete && (
-          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-6 mb-6 flex flex-col lg:flex-row gap-5 shadow-sm">
-            <div className="flex items-start gap-4 flex-1">
-              <div className="bg-[var(--accent-base)] p-3 rounded-xl shrink-0">
-                <Bell size={24} className="text-white" />
+          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-4 sm:p-6 mb-6 flex flex-col gap-4 shadow-sm">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="bg-[var(--accent-base)] p-2.5 sm:p-3 rounded-xl shrink-0">
+                <Bell size={20} className="text-white" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wide">Setup Incomplete</p>
                   <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Recommended</span>
                 </div>
-                <h2 className="text-xl lg:text-2xl font-bold text-[var(--text-main)] mb-2 leading-tight">Complete your workspace to unlock smart scheduling</h2>
-                <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-4">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[var(--text-main)] mb-2 leading-tight">Complete your workspace to unlock smart scheduling</h2>
+                <p className="text-[var(--text-muted)] text-xs sm:text-sm leading-relaxed">
                   Your workspace is {readinessScore}% ready. Complete your profile preferences — timezone, work hours, notifications, and categories — to enable TaskPulse's autonomous scheduling engine.
                 </p>
-
               </div>
             </div>
-            <div className="flex flex-row lg:flex-col gap-3 lg:justify-center shrink-0">
-              <button onClick={() => navigate('/profile-setup')} className="btn-primary py-3 px-5 text-sm flex items-center gap-2 whitespace-nowrap">
-                <Bell size={16} /> Complete Profile Setup
+            <div className="flex items-center gap-2.5 mt-1">
+              <button onClick={() => navigate('/profile-setup')} className="btn-primary py-2 px-4 text-xs font-semibold flex items-center gap-1.5 rounded-lg">
+                <Bell size={14} /> Complete Setup
               </button>
-              <button onClick={() => setNotifDismissed(true)} className="btn-ghost py-3 px-5 text-sm whitespace-nowrap">
-                Maybe Later
+              <button onClick={() => setNotifDismissed(true)} className="btn-ghost py-2 px-4 text-xs font-semibold rounded-lg">
+                Dismiss
               </button>
             </div>
           </div>
@@ -278,13 +277,13 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500">
+              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-5 sm:p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
 
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(251,191,36,0.25)]">
                         <Zap size={12} fill="currentColor" /> AI Engine Ready
                       </span>
@@ -292,21 +291,20 @@ export default function Dashboard() {
                         Welcome to TaskPulse
                       </span>
                     </div>
-                    <span className="text-xs text-indigo-200/70 font-mono font-medium tracking-wider">Ready to Schedule</span>
+                    <span className="text-xs text-indigo-200/70 font-mono font-medium tracking-wider hidden sm:inline">Ready to Schedule</span>
                   </div>
 
-                  <h3 className="text-2xl font-black text-white mb-2 tracking-tight">Create Your First Task to Unlock AI Recommendations</h3>
-                  <p className="text-indigo-100/80 text-sm mb-6 leading-relaxed max-w-3xl">
+                  <h3 className="text-xl sm:text-2xl font-black text-white mb-2 tracking-tight">Create Your First Task to Unlock AI Recommendations</h3>
+                  <p className="text-indigo-100/80 text-xs sm:text-sm mb-5 sm:mb-6 leading-relaxed max-w-3xl">
                     TaskPulse evaluates your real-time energy levels, deadlines, and chronotype to auto-recommend the single best task to work on right now.
                   </p>
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10">
-                    <div className="flex flex-wrap items-center gap-4 text-xs w-full sm:w-auto">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white/5 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-white/10">
+                    <div className="flex flex-wrap items-center gap-3 text-xs">
                       <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-amber-400" /> Quick Setup</span>
-                      <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
                       <span className="bg-indigo-500/40 text-indigo-100 px-2.5 py-1 rounded-md font-semibold whitespace-nowrap border border-indigo-400/20">AI Flexible or Fixed</span>
                     </div>
-                    <button onClick={() => navigate('/tasks')} className="w-full sm:w-auto justify-center bg-white text-indigo-950 hover:bg-indigo-50 font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl shrink-0">
+                    <button onClick={() => navigate('/tasks')} className="w-full sm:w-auto justify-center bg-white text-indigo-950 hover:bg-indigo-50 font-extrabold text-xs px-5 py-2.5 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl">
                       + Create First Task <ArrowRight size={14} />
                     </button>
                   </div>
