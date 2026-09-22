@@ -270,25 +270,82 @@ export default function Settings() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
               </span>
-              <h3 className="text-sm font-semibold text-[var(--text-main)]">Live Screen Time Data Stream</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-main)]">Top App Usage (24h)</h3>
             </div>
             <button
               onClick={async () => {
                 const data = await getScreenTimeUsageData();
-                setScreenTimeData(data || { status: 'Active', source: isNativeApp ? 'Android UsageStats' : 'Web Focus Tracker' });
+                setScreenTimeData(data || { status: 'Active', source: isNativeApp ? 'Android UsageEvents' : 'Web Focus Tracker' });
               }}
               className="text-xs text-indigo-500 hover:text-indigo-400 font-medium underline"
             >
               Refresh Data
             </button>
           </div>
-          <div className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl p-3 font-mono text-xs text-[var(--text-muted)] overflow-x-auto">
-            {screenTimeData ? (
-              <pre className="text-emerald-500 dark:text-emerald-400">{JSON.stringify(screenTimeData, null, 2)}</pre>
+          <div className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl p-3 overflow-x-auto">
+            {screenTimeData && screenTimeData.apps && screenTimeData.apps.length > 0 ? (() => {
+              // System packages to filter out
+              const systemPrefixes = ['com.android.', 'android', 'com.google.android.gms', 'com.google.android.gsf', 'com.google.android.ext', 'com.google.android.providers', 'com.google.android.permissioncontroller', 'com.google.android.packageinstaller', 'com.miui.', 'com.qualcomm.', 'com.mediatek.'];
+              const filtered = screenTimeData.apps
+                .filter(app => {
+                  const pkg = app.package || '';
+                  return !systemPrefixes.some(prefix => pkg.startsWith(prefix)) && app.minutes >= 1;
+                })
+                .slice(0, 10);
+              
+              const maxMinutes = filtered.length > 0 ? filtered[0].minutes : 1;
+              
+              const getAppName = (pkg) => {
+                const parts = pkg.split('.');
+                const last = parts[parts.length - 1];
+                // Capitalize and clean
+                return last.charAt(0).toUpperCase() + last.slice(1).replace(/([A-Z])/g, ' $1').trim();
+              };
+
+              const formatTime = (mins) => {
+                if (mins >= 60) return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+                return `${mins}m`;
+              };
+
+              return (
+                <div className="space-y-2.5">
+                  {screenTimeData.current_app && (
+                    <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] mb-2 pb-2 border-b border-[var(--border-subtle)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Currently active: <span className="font-semibold text-[var(--text-main)]">{getAppName(screenTimeData.current_app)}</span></span>
+                    </div>
+                  )}
+                  {filtered.map((app, i) => (
+                    <div key={app.package} className="flex items-center gap-3">
+                      <span className="text-[11px] text-[var(--text-muted)] w-4 text-right font-mono">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-xs font-medium text-[var(--text-main)] truncate">{getAppName(app.package)}</span>
+                          <span className="text-[11px] text-[var(--text-muted)] font-mono shrink-0 ml-2">{formatTime(app.minutes)}</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                            style={{ width: `${Math.max(4, (app.minutes / maxMinutes) * 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {filtered.length === 0 && (
+                    <p className="text-xs text-[var(--text-muted)] text-center py-2">No significant app usage detected yet.</p>
+                  )}
+                </div>
+              );
+            })() : screenTimeData ? (
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                <span>{screenTimeData.status === 'Error' ? `Error: ${screenTimeData.message}` : 'No app usage data available. Ensure Usage Access is granted.'}</span>
+                <span className="text-indigo-400 font-medium">{isNativeApp ? 'Android TWA' : 'Web PWA'}</span>
+              </div>
             ) : (
-              <div className="flex items-center justify-between text-xs">
-                <span>Click "Refresh Data" to inspect live Screen Time payload...</span>
-                <span className="text-indigo-400 font-sans font-medium">{isNativeApp ? 'Android TWA Mode' : 'Web PWA Mode'}</span>
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+                <span>Tap "Refresh Data" to load your top apps...</span>
+                <span className="text-indigo-400 font-medium">{isNativeApp ? 'Android TWA' : 'Web PWA'}</span>
               </div>
             )}
           </div>
