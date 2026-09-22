@@ -197,12 +197,13 @@ public class MainActivity extends BridgeActivity {
         public void setExactAlarm(String title, long triggerTimeMillis) {
             try {
                 AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
-                Intent intent = new Intent(mContext, MainActivity.class);
+                Intent intent = new Intent(mContext, AlarmReceiver.class);
                 intent.putExtra("ALARM_TITLE", title);
 
-                PendingIntent pendingIntent = PendingIntent.getActivity(
+                int requestCode = (title + triggerTimeMillis).hashCode();
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(
                     mContext,
-                    (int) (triggerTimeMillis % 100000),
+                    requestCode,
                     intent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                 );
@@ -212,6 +213,29 @@ public class MainActivity extends BridgeActivity {
                         new AlarmManager.AlarmClockInfo(triggerTimeMillis, pendingIntent),
                         pendingIntent
                     );
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public void cancelAlarm(String title, long triggerTimeMillis) {
+            try {
+                AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
+                Intent intent = new Intent(mContext, AlarmReceiver.class);
+                intent.putExtra("ALARM_TITLE", title);
+
+                int requestCode = (title + triggerTimeMillis).hashCode();
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    mContext,
+                    requestCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+
+                if (alarmManager != null) {
+                    alarmManager.cancel(pendingIntent);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

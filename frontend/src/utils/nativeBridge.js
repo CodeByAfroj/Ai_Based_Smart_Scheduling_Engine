@@ -15,40 +15,46 @@ export const isTWA = () => {
 
 // 1. SCREEN TIME / ACTIVITY USAGE PERMISSION
 export async function checkScreenTimePermission() {
-  if (isTWA() && window.AndroidNative?.hasUsagePermission) {
-    try {
-      return Boolean(window.AndroidNative.hasUsagePermission());
-    } catch {
-      return false;
+  if (isTWA()) {
+    if (window.AndroidNative?.hasUsagePermission) {
+      try {
+        return Boolean(window.AndroidNative.hasUsagePermission());
+      } catch {
+        return false;
+      }
     }
+    return false; // Not granted until explicitly checked
   }
-  // On Web / Mac PWA: Web Focus & Idle detection is supported or active by default
+  // Web PWA: not applicable, return false so UI doesn't show "Granted" falsely
   if (typeof window !== 'undefined' && 'IdleDetector' in window) {
     try {
       return (await IdleDetector.requestPermission()) === 'granted';
     } catch {
-      return true;
+      return false;
     }
   }
-  // Web fallback: Active tab tracking is available
-  return true;
+  return false;
 }
 
 export async function requestScreenTimePermission() {
   if (isTWA()) {
     if (window.AndroidNative?.requestUsagePermission) {
       window.AndroidNative.requestUsagePermission();
-      return true;
+      // Permission is granted asynchronously in Android settings
+      // Return false so UI stays in "Grant Access" state until next check
+      return false;
     }
-  } else if (typeof window !== 'undefined' && 'IdleDetector' in window) {
+    return false;
+  }
+  if (typeof window !== 'undefined' && 'IdleDetector' in window) {
     try {
       const state = await IdleDetector.requestPermission();
       return state === 'granted';
     } catch {
-      return true;
+      return false;
     }
   }
-  return true; // Web fallback active
+  return false;
 }
 
 // 2. EXACT ALARMS PERMISSION
@@ -58,12 +64,12 @@ export async function checkExactAlarmPermission() {
       try {
         return Boolean(window.AndroidNative.hasExactAlarmPermission());
       } catch {
-        return true;
+        return false;
       }
     }
-    return true; // TWA default granted
+    return false; // Not granted until explicitly checked
   }
-  // On Web / Mac PWA: Check Browser Notification Permission
+  // Web PWA: Check Notification permission
   if (typeof window !== 'undefined' && 'Notification' in window) {
     return Notification.permission === 'granted';
   }
@@ -74,11 +80,10 @@ export async function requestExactAlarmPermission() {
   if (isTWA()) {
     if (window.AndroidNative?.requestExactAlarmPermission) {
       window.AndroidNative.requestExactAlarmPermission();
-      return true;
+      return false; // Opens settings, user must grant manually
     }
-    return true;
+    return false;
   }
-  // On Web / Mac PWA: Request Browser Notification Permission
   if (typeof window !== 'undefined' && 'Notification' in window) {
     const permission = await Notification.requestPermission();
     return permission === 'granted';
@@ -130,6 +135,15 @@ export function triggerExactAlarm(title, timestampMillis) {
         vibrate: [300, 100, 300, 100, 300]
       });
     }, delay);
+    return true;
+  }
+  return false;
+}
+
+// 5. CANCEL ALARM
+export function cancelAlarm(title, timestampMillis) {
+  if (isTWA() && window.AndroidNative?.cancelAlarm) {
+    window.AndroidNative.cancelAlarm(title, timestampMillis);
     return true;
   }
   return false;

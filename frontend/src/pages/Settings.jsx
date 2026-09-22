@@ -62,28 +62,30 @@ export default function Settings() {
       const eaPerm = await checkExactAlarmPermission();
       setScreenTimePerm(stPerm);
       setExactAlarmPerm(eaPerm);
-
-      // Auto-request at startup if not granted
-      if (!stPerm) {
-        const autoSt = await requestScreenTimePermission();
-        if (autoSt) setScreenTimePerm(true);
-      }
-      if (!eaPerm) {
-        const autoEa = await requestExactAlarmPermission();
-        if (autoEa) setExactAlarmPerm(true);
-      }
     }
     initPermissions();
+
+    // Re-check permissions when user returns from Android settings
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        const stPerm = await checkScreenTimePermission();
+        const eaPerm = await checkExactAlarmPermission();
+        setScreenTimePerm(stPerm);
+        setExactAlarmPerm(eaPerm);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   const handleRequestScreenTime = async () => {
-    const granted = await requestScreenTimePermission();
-    setScreenTimePerm(granted);
+    await requestScreenTimePermission();
+    // Permission is granted in Android settings, re-check on return (handled by visibilitychange)
   };
 
   const handleRequestExactAlarm = async () => {
-    const granted = await requestExactAlarmPermission();
-    setExactAlarmPerm(granted);
+    await requestExactAlarmPermission();
+    // Permission is granted in Android settings, re-check on return (handled by visibilitychange)
   };
   
   useEffect(() => {
