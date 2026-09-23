@@ -175,6 +175,11 @@ export function TaskProvider({ children }) {
   const deleteTask = async (id) => {
     // Optimistic update
     setTasks(prev => {
+      const taskToDelete = prev.find(t => t.id === id);
+      if (taskToDelete && taskToDelete.status === 'scheduled' && taskToDelete.scheduled_start) {
+        cancelAlarm(taskToDelete.name, new Date(taskToDelete.scheduled_start).getTime());
+      }
+      
       const updated = prev.filter(t => t.id !== id);
       localStorage.setItem('taskpulse_tasks', JSON.stringify(updated));
       return updated;
