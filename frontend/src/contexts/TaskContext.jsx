@@ -74,7 +74,17 @@ export function TaskProvider({ children }) {
           const alarmKey = `${task.id}_${startMillis}_${profile?.alarm_enabled}`;
           
           if (!window.__scheduledAlarms.has(alarmKey)) {
-            triggerExactAlarm(task.name, startMillis, profile?.alarm_enabled);
+            const isMeeting = task.type === 'meeting' || task.name.toLowerCase().includes('meeting');
+            const durationMins = task.duration_minutes || task.scheduled_duration || 30;
+            
+            triggerExactAlarm(
+              task.id, 
+              task.name, 
+              startMillis, 
+              profile?.alarm_enabled, 
+              isMeeting, 
+              durationMins
+            );
             window.__scheduledAlarms.add(alarmKey);
           }
         }
