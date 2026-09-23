@@ -377,13 +377,16 @@ Extract task parameters from user input. Return strictly valid JSON ONLY:
   "priority": 2,
   "priority_reason": "Short 2-4 word reason for priority",
   "fixed": false,
-  "is_screen_free": false
+  "is_screen_free": "<boolean, true if physical/offline task like reading or resting, false if it requires a device>"
 }}
 
 Priority scale: 1=Low, 2=Medium, 3=High, 5=Critical.
 If fixed meeting/event is mentioned, set "fixed": true and deadline = earliest_start.
 If no start time mentioned, set earliest_start to current time. Default deadline to earliest_start + 2 days if not specified.
-If the task is a physical, offline, or screen-free activity (e.g. reading a book, gym, running, meditating, cleaning, relaxing, taking a break, "mood off" or irrelevant offline activities), set "is_screen_free": true. If it inherently requires a device (e.g. coding, emails, meetings, watching a video, playing video games), set "is_screen_free": false. If the input is completely irrelevant to scheduling but still needs to be logged, make a best guess (e.g. "mood off" -> resting -> is_screen_free: true).
+CRITICAL RULE FOR is_screen_free:
+- TRUE: Physical, offline, or screen-free activities (e.g., reading a physical book, gym, running, meditating, cleaning, relaxing, taking a break, sleeping, "mood off" or irrelevant offline inputs).
+- FALSE: Tasks requiring a device or screen (e.g., coding, emails, meetings, watching a video, playing video games, web browsing).
+If the input is completely irrelevant to scheduling but still needs to be logged, make a best guess (e.g., "mood off" -> resting -> is_screen_free: true).
 """
 
     messages = [

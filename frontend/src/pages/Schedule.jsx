@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
-import { Play, Calendar as CalendarIcon, Clock, AlertTriangle, CheckCircle2, Zap, Info } from 'lucide-react';
+import { Play, Calendar as CalendarIcon, Clock, AlertTriangle, CheckCircle2, Zap, Info, SmartphoneOff, Smartphone } from 'lucide-react';
 import { nowIST, formatIST, formatDateIST } from '../utils/time';
 import { Section } from '../components/ui/LayoutBlocks';
 
@@ -126,9 +126,9 @@ export default function Schedule() {
                       <span className="flex items-center gap-1 bg-[var(--bg-app)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"><Clock size={10} /> {task.duration_minutes}m</span>
                       {task.fixed && <span className="text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-amber-200 dark:border-amber-500/20 flex items-center gap-1"><Zap size={10} /> Fixed</span>}
                       {task.is_screen_free ? (
-                        <span className="text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-indigo-200 dark:border-indigo-500/20 flex items-center gap-1">🚫 Screen-Free</span>
+                        <span className="text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-indigo-200 dark:border-indigo-500/20 flex items-center gap-1"><SmartphoneOff size={10} /> Screen-Free</span>
                       ) : (
-                        <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1">📱 On-Screen</span>
+                        <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1"><Smartphone size={10} /> On-Screen</span>
                       )}
                       {isOverdue && (
                         <span className="text-red-600 bg-red-50 dark:bg-red-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-red-200 dark:border-red-500/20">
@@ -176,9 +176,9 @@ export default function Schedule() {
                     <div className="flex gap-2">
                       {task.fixed && <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2 py-0.5 rounded-md">Fixed Event</span>}
                       {task.is_screen_free ? (
-                        <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wide text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-md">🚫 Screen-Free</span>
+                        <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold uppercase tracking-wide text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-md"><SmartphoneOff size={10} /> Screen-Free</span>
                       ) : (
-                        <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-md">📱 On-Screen</span>
+                        <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-md"><Smartphone size={10} /> On-Screen</span>
                       )}
                     </div>
                   </div>
