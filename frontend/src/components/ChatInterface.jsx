@@ -705,7 +705,8 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
         earliest_start: taskData.earliest_start, // Should already be ISO string from parsing
         deadline: taskData.deadline || (new Date(new Date(taskData.earliest_start).getTime() + (taskData.duration_minutes || 30) * 60000)).toISOString(),
         priority: taskData.priority || 1,
-        fixed: taskData.fixed || false
+        fixed: taskData.fixed || false,
+        is_screen_free: taskData.is_screen_free || false
       };
 
       // Create task via TaskContext so UI state is updated immediately without refresh
