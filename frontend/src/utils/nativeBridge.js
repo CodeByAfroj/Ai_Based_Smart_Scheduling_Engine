@@ -120,9 +120,9 @@ export async function getCurrentForegroundApp() {
 }
 
 // 4. SCHEDULE EXACT HARDWARE ALARM
-export function triggerExactAlarm(taskId, title, timestampMillis, alarmEnabled, isMeeting, durationMins, isScreenFree) {
+export function triggerExactAlarm(taskId, title, timestampMillis, alarmEnabled, isMeeting, durationMins, isScreenFree, focusModeEnabled) {
   if (isTWA() && window.AndroidNative?.setExactAlarm) {
-    window.AndroidNative.setExactAlarm(taskId, title, timestampMillis, alarmEnabled, isMeeting, durationMins, isScreenFree);
+    window.AndroidNative.setExactAlarm(taskId, title, timestampMillis, alarmEnabled, isMeeting, durationMins, isScreenFree, focusModeEnabled);
     return true;
   }
   // Web PWA fallback
@@ -179,4 +179,13 @@ export function clearMonitorDebugLogs() {
   if (isTWA() && window.AndroidNative?.clearMonitorDebugLogs) {
     window.AndroidNative.clearMonitorDebugLogs();
   }
+}
+
+// 7. STOP MONITOR SERVICE EARLY
+export function stopMonitorService() {
+  if (isTWA() && window.AndroidNative?.stopMonitorService) {
+    window.AndroidNative.stopMonitorService();
+    return true;
+  }
+  return false;
 }

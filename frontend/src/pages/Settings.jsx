@@ -51,6 +51,7 @@ export default function Settings() {
   const [notifPref, setNotifPref] = useState(profile?.notification_preference || 'text_and_sound');
   const [pushEnabled, setPushEnabled] = useState(profile?.push_notifications ?? true);
   const [alarmEnabled, setAlarmEnabled] = useState(profile?.alarm_enabled ?? true);
+  const [focusModeEnabled, setFocusModeEnabled] = useState(profile?.focus_mode_enabled ?? true);
 
   const [screenTimePerm, setScreenTimePerm] = useState(false);
   const [exactAlarmPerm, setExactAlarmPerm] = useState(false);
@@ -139,7 +140,7 @@ export default function Settings() {
 
   const handlePushToggle = async (val) => {
     setPushEnabled(val);
-    saveNotifConfigs(notifPref, val, alarmEnabled);
+    saveNotifConfigs(notifPref, val, alarmEnabled, focusModeEnabled);
     if (val && 'Notification' in window && 'serviceWorker' in navigator) {
       try {
         const permission = await Notification.requestPermission();
@@ -183,12 +184,12 @@ export default function Settings() {
     }
   };
 
-  const saveNotifConfigs = async (pref, push, alarm) => {
+  const saveNotifConfigs = async (pref, push, alarm, focus) => {
     try {
       await fetch(`${API_BASE}/profile/update`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...profile, notification_preference: pref, push_notifications: push, alarm_enabled: alarm }),
+        body: JSON.stringify({ ...profile, notification_preference: pref, push_notifications: push, alarm_enabled: alarm, focus_mode_enabled: focus }),
       });
       await fetchProfile();
     } catch { /* silent */ }
@@ -196,12 +197,17 @@ export default function Settings() {
 
   const setAndSavePref = (pref) => {
     setNotifPref(pref);
-    saveNotifConfigs(pref, pushEnabled, alarmEnabled);
+    saveNotifConfigs(pref, pushEnabled, alarmEnabled, focusModeEnabled);
   };
 
   const setAndSaveAlarm = (val) => {
     setAlarmEnabled(val);
-    saveNotifConfigs(notifPref, pushEnabled, val);
+    saveNotifConfigs(notifPref, pushEnabled, val, focusModeEnabled);
+  };
+
+  const setAndSaveFocusMode = (val) => {
+    setFocusModeEnabled(val);
+    saveNotifConfigs(notifPref, pushEnabled, alarmEnabled, val);
   };
 
   return (
@@ -241,6 +247,10 @@ export default function Settings() {
             <Row
               icon={Bell} iconColor="bg-orange-500" title="Task Start Alarms" subtitle="Alarm triggered exactly at task start time"
               right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
+            />
+            <Row
+              icon={Activity} iconColor="bg-indigo-500" title="Focus Mode" subtitle="Enable distraction tracking & screen-free monitoring"
+              right={<Toggle checked={focusModeEnabled} onChange={setAndSaveFocusMode} />}
             />
           </Section>
         </div>

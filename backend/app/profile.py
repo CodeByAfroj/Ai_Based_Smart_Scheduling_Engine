@@ -42,6 +42,7 @@ class ProfileUpdate(BaseModel):
     push_notifications: Optional[bool] = True
     desktop_notifications: Optional[bool] = True
     alarm_enabled: Optional[bool] = True
+    focus_mode_enabled: Optional[bool] = True
     email_summary: Optional[bool] = False
     notification_preference: Optional[str] = "text_and_sound"
     categories: Optional[List[str]] = []

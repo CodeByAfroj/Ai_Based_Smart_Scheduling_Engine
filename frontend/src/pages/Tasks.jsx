@@ -300,6 +300,12 @@ export default function Tasks() {
                   <span className="flex items-center gap-1 bg-[var(--bg-app)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"><Clock size={10} /> {task.duration_minutes}m</span>
 
                   {!task.fixed && <span className="flex items-center gap-1 bg-[var(--bg-app)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"><CalendarIcon size={10} /> {formatDateIST(task.deadline)}</span>}
+                  
+                  {task.is_screen_free ? (
+                    <span className="text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-indigo-200 dark:border-indigo-500/20 flex items-center gap-1">🚫 Screen-Free</span>
+                  ) : (
+                    <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1">📱 On-Screen</span>
+                  )}
 
                   {task.status === 'missed' && (
                     <span className="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-md uppercase tracking-wide">

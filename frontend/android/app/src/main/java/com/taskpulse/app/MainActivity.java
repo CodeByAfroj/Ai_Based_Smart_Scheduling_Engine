@@ -303,7 +303,7 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
-        public void setExactAlarm(String taskId, String title, long triggerTimeMillis, boolean alarmEnabled, boolean isMeeting, int durationMins, boolean isScreenFree) {
+        public void setExactAlarm(String taskId, String title, long triggerTimeMillis, boolean alarmEnabled, boolean isMeeting, int durationMins, boolean isScreenFree, boolean focusModeEnabled) {
             try {
                 AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
                 Intent intent = new Intent(mContext, AlarmReceiver.class);
@@ -313,6 +313,7 @@ public class MainActivity extends BridgeActivity {
                 intent.putExtra("IS_MEETING", isMeeting);
                 intent.putExtra("DURATION_MINS", durationMins);
                 intent.putExtra("IS_SCREEN_FREE", isScreenFree);
+                intent.putExtra("FOCUS_MODE_ENABLED", focusModeEnabled);
 
                 int requestCode = (title + triggerTimeMillis).hashCode();
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(
@@ -351,6 +352,16 @@ public class MainActivity extends BridgeActivity {
                 if (alarmManager != null) {
                     alarmManager.cancel(pendingIntent);
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @JavascriptInterface
+        public void stopMonitorService() {
+            try {
+                Intent serviceIntent = new Intent(mContext, TaskMonitorService.class);
+                mContext.stopService(serviceIntent);
             } catch (Exception e) {
                 e.printStackTrace();
             }

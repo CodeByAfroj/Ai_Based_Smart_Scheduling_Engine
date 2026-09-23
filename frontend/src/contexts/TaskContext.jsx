@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { triggerExactAlarm, cancelAlarm } from '../utils/nativeBridge';
+import { triggerExactAlarm, cancelAlarm, stopMonitorService } from '../utils/nativeBridge';
 
 const TaskContext = createContext();
 
@@ -84,7 +84,8 @@ export function TaskProvider({ children }) {
               profile?.alarm_enabled, 
               isMeeting, 
               durationMins,
-              task.is_screen_free || false
+              task.is_screen_free || false,
+              profile?.focus_mode_enabled ?? true
             );
             window.__scheduledAlarms.add(alarmKey);
           }
@@ -141,6 +142,10 @@ export function TaskProvider({ children }) {
       localStorage.setItem('taskpulse_tasks', JSON.stringify(updated));
       return updated;
     });
+
+    if (updates.status === 'completed') {
+      stopMonitorService();
+    }
 
     try {
       const res = await fetch(`${API_BASE}/tasks/${id}`, {
