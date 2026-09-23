@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
-import { Plus, Clock, Calendar as CalendarIcon, CheckCircle2, Circle, Trash2, Wand2, Lock, Zap, SmartphoneOff, Smartphone } from 'lucide-react';
+import { Plus, Clock, Calendar as CalendarIcon, CheckCircle2, Circle, Trash2, Wand2, Lock, Zap, MonitorOff, Monitor } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { localInputToIST, defaultLocalValue, formatIST, formatDateIST } from '../utils/time';
 import { Section, Row } from '../components/ui/LayoutBlocks';
@@ -302,9 +302,9 @@ export default function Tasks() {
                   {!task.fixed && <span className="flex items-center gap-1 bg-[var(--bg-app)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md"><CalendarIcon size={10} /> {formatDateIST(task.deadline)}</span>}
                   
                   {task.is_screen_free ? (
-                    <span className="text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-indigo-200 dark:border-indigo-500/20 flex items-center gap-1"><SmartphoneOff size={10} /> Screen-Free</span>
+                    <span className="text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-indigo-200 dark:border-indigo-500/20 flex items-center gap-1"><MonitorOff size={10} /> Screen-Free</span>
                   ) : (
-                    <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1"><Smartphone size={10} /> On-Screen</span>
+                    <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-md uppercase tracking-wide border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1"><Monitor size={10} /> On-Screen</span>
                   )}
 
                   {task.status === 'missed' && (
