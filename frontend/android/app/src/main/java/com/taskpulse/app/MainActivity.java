@@ -105,52 +105,40 @@ public class MainActivity extends BridgeActivity {
                     mContext.getPackageName()  // exclude our own app (TaskPulse)
                 ));
 
-                // Use UsageEvents for 100% exact screen time matching Digital Wellbeing
-                // queryAndAggregateUsageStats includes background/screen-off time for some apps
+                // queryUsageStats with INTERVAL_DAILY perfectly aligns with Digital Wellbeing's daily buckets.
+                // This prevents the timezone/bucket shift that causes inflated times.
+                java.util.List<android.app.usage.UsageStats> statsList = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime);
                 HashMap<String, Long> appForegroundTime = new HashMap<>();
-                HashMap<String, Long> lastForegroundTime = new HashMap<>();
 
-                android.app.usage.UsageEvents events = usm.queryEvents(startTime, endTime);
-                android.app.usage.UsageEvents.Event event = new android.app.usage.UsageEvents.Event();
+                if (statsList != null) {
+                    for (android.app.usage.UsageStats stat : statsList) {
+                        String pkg = stat.getPackageName();
+                        long timeInForeground = stat.getTotalTimeInForeground();
 
-                while (events.hasNextEvent()) {
-                    events.getNextEvent(event);
-                    String pkg = event.getPackageName();
-                    
-                    // Skip explicitly excluded packages early
-                    if (excludedPackages.contains(pkg)) continue;
-
-                    if (event.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
-                        lastForegroundTime.put(pkg, event.getTimeStamp());
-                    } else if (event.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_BACKGROUND) {
-                        Long start = lastForegroundTime.get(pkg);
-                        if (start != null) {
-                            long duration = event.getTimeStamp() - start;
-                            appForegroundTime.put(pkg, appForegroundTime.containsKey(pkg) ? appForegroundTime.get(pkg) + duration : duration);
-                            lastForegroundTime.remove(pkg);
+                        if (timeInForeground > 0) {
+                            appForegroundTime.put(pkg, appForegroundTime.containsKey(pkg) ? appForegroundTime.get(pkg) + timeInForeground : timeInForeground);
                         }
                     }
                 }
 
-                // Handle apps that are currently in the foreground
-                for (Map.Entry<String, Long> entry : lastForegroundTime.entrySet()) {
-                    long duration = endTime - entry.getValue();
-                    String pkg = entry.getKey();
-                    appForegroundTime.put(pkg, appForegroundTime.containsKey(pkg) ? appForegroundTime.get(pkg) + duration : duration);
-                }
-
-                // Filter out non-launchable apps (background services) AFTER calculating time
+                // Filter and cleanup
                 java.util.Iterator<Map.Entry<String, Long>> iterator = appForegroundTime.entrySet().iterator();
                 while (iterator.hasNext()) {
                     Map.Entry<String, Long> entry = iterator.next();
                     String pkg = entry.getKey();
                     long timeInForeground = entry.getValue();
 
-                    if (timeInForeground < 10000) {
+                    if (timeInForeground < 10000) { // under 10s
                         iterator.remove();
                         continue;
                     }
 
+                    if (excludedPackages.contains(pkg)) {
+                        iterator.remove();
+                        continue;
+                    }
+
+                    // Must have a launch intent (removes background services)
                     if (pm.getLaunchIntentForPackage(pkg) == null) {
                         iterator.remove();
                         continue;

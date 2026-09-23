@@ -1,7 +1,7 @@
 {
-  "nativeVersion": "1.0.9",
+  "nativeVersion": "1.0.10",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Bulletproof APK installer to prevent update loops forever."
+  "releaseNotes": "Use standard Android daily buckets for flawless screen time matching."
 }
 
 
