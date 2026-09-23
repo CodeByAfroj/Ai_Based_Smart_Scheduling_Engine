@@ -88,9 +88,6 @@ public class MainActivity extends BridgeActivity {
                 long startTime = calendar.getTimeInMillis();
                 long endTime = System.currentTimeMillis();
 
-                // queryAndAggregateUsageStats gives precise per-app totals for the exact window
-                java.util.Map<String, UsageStats> stats = usm.queryAndAggregateUsageStats(startTime, endTime);
-
                 // Packages to always exclude — these are internal Google/Android services
                 // that Digital Wellbeing also hides, even though they have launcher icons
                 java.util.Set<String> excludedPackages = new java.util.HashSet<>(java.util.Arrays.asList(
@@ -108,25 +105,55 @@ public class MainActivity extends BridgeActivity {
                     mContext.getPackageName()  // exclude our own app (TaskPulse)
                 ));
 
+                // Use UsageEvents for 100% exact screen time matching Digital Wellbeing
+                // queryAndAggregateUsageStats includes background/screen-off time for some apps
                 HashMap<String, Long> appForegroundTime = new HashMap<>();
+                HashMap<String, Long> lastForegroundTime = new HashMap<>();
 
-                if (stats != null) {
-                    for (UsageStats stat : stats.values()) {
-                        long timeInForeground = stat.getTotalTimeInForeground();
-                        if (timeInForeground < 10000) continue; // skip under 10 seconds
+                android.app.usage.UsageEvents events = usm.queryEvents(startTime, endTime);
+                android.app.usage.UsageEvents.Event event = new android.app.usage.UsageEvents.Event();
 
-                        String pkg = stat.getPackageName();
+                while (events.hasNextEvent()) {
+                    events.getNextEvent(event);
+                    String pkg = event.getPackageName();
+                    
+                    // Skip explicitly excluded packages early
+                    if (excludedPackages.contains(pkg)) continue;
 
-                        // Skip explicitly excluded packages
-                        if (excludedPackages.contains(pkg)) continue;
+                    if (event.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                        lastForegroundTime.put(pkg, event.getTimeStamp());
+                    } else if (event.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_BACKGROUND) {
+                        Long start = lastForegroundTime.get(pkg);
+                        if (start != null) {
+                            long duration = event.getTimeStamp() - start;
+                            appForegroundTime.put(pkg, appForegroundTime.containsKey(pkg) ? appForegroundTime.get(pkg) + duration : duration);
+                            lastForegroundTime.remove(pkg);
+                        }
+                    }
+                }
 
-                        // Skip internal Android/Google system packages by prefix
-                        if (pkg.startsWith("com.android.") || pkg.startsWith("android")) continue;
+                // Handle apps that are currently in the foreground
+                for (Map.Entry<String, Long> entry : lastForegroundTime.entrySet()) {
+                    long duration = endTime - entry.getValue();
+                    String pkg = entry.getKey();
+                    appForegroundTime.put(pkg, appForegroundTime.containsKey(pkg) ? appForegroundTime.get(pkg) + duration : duration);
+                }
 
-                        // Only include apps that appear in the app drawer (same as Digital Wellbeing)
-                        if (pm.getLaunchIntentForPackage(pkg) == null) continue;
+                // Filter out non-launchable apps (background services) AFTER calculating time
+                java.util.Iterator<Map.Entry<String, Long>> iterator = appForegroundTime.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, Long> entry = iterator.next();
+                    String pkg = entry.getKey();
+                    long timeInForeground = entry.getValue();
 
-                        appForegroundTime.put(pkg, timeInForeground);
+                    if (timeInForeground < 10000) {
+                        iterator.remove();
+                        continue;
+                    }
+
+                    if (pm.getLaunchIntentForPackage(pkg) == null) {
+                        iterator.remove();
+                        continue;
                     }
                 }
 
