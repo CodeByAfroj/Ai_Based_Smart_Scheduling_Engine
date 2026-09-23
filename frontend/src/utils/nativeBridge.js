@@ -120,9 +120,9 @@ export async function getCurrentForegroundApp() {
 }
 
 // 4. SCHEDULE EXACT HARDWARE ALARM
-export function triggerExactAlarm(title, timestampMillis) {
+export function triggerExactAlarm(title, timestampMillis, alarmEnabled = true) {
   if (isTWA() && window.AndroidNative?.setExactAlarm) {
-    window.AndroidNative.setExactAlarm(title, timestampMillis);
+    window.AndroidNative.setExactAlarm(title, timestampMillis, alarmEnabled);
     return true;
   }
   // Web PWA fallback

@@ -60,7 +60,8 @@ export function TaskProvider({ children }) {
 
   // Schedule exact OS alarms when tasks change
   useEffect(() => {
-    if (!profile?.alarm_enabled) return;
+    // If BOTH alarms and push notifications are disabled, we don't need to schedule the background receiver at all
+    if (!profile?.alarm_enabled && !profile?.push_notifications) return;
 
     const now = Date.now();
     if (!window.__scheduledAlarms) window.__scheduledAlarms = new Set();
@@ -70,16 +71,16 @@ export function TaskProvider({ children }) {
         const startMillis = new Date(task.scheduled_start).getTime();
         // Schedule if it's in the future
         if (startMillis > now) {
-          const alarmKey = `${task.id}_${startMillis}`;
+          const alarmKey = `${task.id}_${startMillis}_${profile?.alarm_enabled}`;
           
           if (!window.__scheduledAlarms.has(alarmKey)) {
-            triggerExactAlarm(task.name, startMillis);
+            triggerExactAlarm(task.name, startMillis, profile?.alarm_enabled);
             window.__scheduledAlarms.add(alarmKey);
           }
         }
       }
     });
-  }, [tasks, profile?.alarm_enabled]);
+  }, [tasks, profile?.alarm_enabled, profile?.push_notifications]);
 
   const addTask = async (newTaskData) => {
     // Optimistic UI update could go here, but let's wait for DB to get the ID

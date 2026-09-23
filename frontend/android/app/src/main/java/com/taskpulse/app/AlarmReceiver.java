@@ -52,12 +52,6 @@ public class AlarmReceiver extends BroadcastReceiver {
         
         androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent);
 
-        // Get the system alarm sound
-        Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        if (alarmSound == null) {
-            alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        }
-
         // Build the alarm notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
@@ -65,8 +59,6 @@ public class AlarmReceiver extends BroadcastReceiver {
             .setContentText("Your scheduled task is starting now!")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setSound(alarmSound)
-            .setVibrate(new long[]{0, 500, 200, 500, 200, 500})
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
@@ -74,12 +66,12 @@ public class AlarmReceiver extends BroadcastReceiver {
         NotificationManager notificationManager = 
             (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // Use unique notification ID based on title hash
-        int notificationId = title.hashCode();
-        notificationManager.notify(notificationId, builder.build());
-
-        // Also vibrate the device
-        triggerVibration(context);
+        // Only show the loud/visible alarm notification if the user has alarms enabled
+        boolean alarmEnabled = intent.getBooleanExtra("ALARM_ENABLED", true);
+        if (alarmEnabled) {
+            int notificationId = title.hashCode();
+            notificationManager.notify(notificationId, builder.build());
+        }
     }
 
     private void createNotificationChannel(Context context) {
@@ -95,33 +87,13 @@ public class AlarmReceiver extends BroadcastReceiver {
                 CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription("Alarm notifications for task deadlines");
-            channel.enableVibration(true);
-            channel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500});
-            channel.setSound(alarmSound, audioAttributes);
+            channel.setDescription("Alarm notifications for task deadlines");
+            
+            // Do NOT force vibration or sound, let standard OS Notification Channel rules apply
             channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-            channel.setBypassDnd(true);
 
             NotificationManager manager = context.getSystemService(NotificationManager.class);
             manager.createNotificationChannel(channel);
-        }
-    }
-
-    private void triggerVibration(Context context) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                VibratorManager vm = (VibratorManager) context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE);
-                Vibrator vibrator = vm.getDefaultVibrator();
-                vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 500, 200, 500, 200, 500}, -1));
-            } else {
-                Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(new long[]{0, 500, 200, 500, 200, 500}, -1));
-                } else {
-                    vibrator.vibrate(new long[]{0, 500, 200, 500, 200, 500}, -1);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 }

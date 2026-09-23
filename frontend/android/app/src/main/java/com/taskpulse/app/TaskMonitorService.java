@@ -39,6 +39,7 @@ public class TaskMonitorService extends Service {
     private boolean isMeetingMode;
     private long taskDurationMs;
     private long serviceStartTime;
+    private String lastLoggedApp = "";
 
     private final List<String> meetingApps = Arrays.asList(
             "us.zoom.videomeetings",
@@ -141,6 +142,13 @@ public class TaskMonitorService extends Service {
                 foregroundApp = event.getPackageName();
             }
         }
+
+        if (foregroundApp != null && !foregroundApp.equals(lastLoggedApp)) {
+            logToConsole("Currently using app: " + foregroundApp);
+            lastLoggedApp = foregroundApp;
+        }
+
+
 
         if (foregroundApp != null && distractionApps.contains(foregroundApp)) {
             logToConsole("DETECTED DISTRACTION: " + foregroundApp + ". Firing nudge notification!");

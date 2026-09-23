@@ -303,11 +303,12 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
-        public void setExactAlarm(String title, long triggerTimeMillis) {
+        public void setExactAlarm(String title, long triggerTimeMillis, boolean alarmEnabled) {
             try {
                 AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
                 Intent intent = new Intent(mContext, AlarmReceiver.class);
                 intent.putExtra("ALARM_TITLE", title);
+                intent.putExtra("ALARM_ENABLED", alarmEnabled);
 
                 int requestCode = (title + triggerTimeMillis).hashCode();
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(

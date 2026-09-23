@@ -235,15 +235,13 @@ export default function Settings() {
         <div data-tour="settings-notif">
           <Section title="Notifications">
             <Row
-              icon={Smartphone} iconColor="bg-red-500" title="Advance Reminders (Push)" subtitle="Prior start reminders"
+              icon={Smartphone} iconColor="bg-red-500" title="Push Notifications" subtitle="Distraction nudges and completion alerts"
               right={<Toggle checked={pushEnabled} onChange={handlePushToggle} />}
             />
-            {!isNativeApp && (
-              <Row
-                icon={Bell} iconColor="bg-orange-500" title="Deadline Alarms (OS Alerts)" subtitle="Task start alarms"
-                right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
-              />
-            )}
+            <Row
+              icon={Bell} iconColor="bg-orange-500" title="Task Start Alarms" subtitle="Alarm triggered exactly at task start time"
+              right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
+            />
           </Section>
         </div>
 
