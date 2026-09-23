@@ -8,7 +8,6 @@ import {
 } from 'lucide-react';
 import { formatIST, formatDateIST, nowIST } from '../utils/time'
 import { Section, Row } from '../components/ui/LayoutBlocks';
-import FocusRunnerModal from '../components/FocusRunnerModal';
 
 export default function Dashboard() {
   const { profile, readinessScore, token } = useAuth();
@@ -53,8 +52,6 @@ export default function Dashboard() {
 
   const [recommendation, setRecommendation] = useState(null);
   const [loadingRec, setLoadingRec] = useState(false);
-  const [focusTask, setFocusTask] = useState(null); // The task currently being focused on
-
   const fetchRecommendation = (forceRefresh = false) => {
     if (!token) return;
     
@@ -270,7 +267,7 @@ export default function Dashboard() {
                         <span className="hidden xs:inline">Mark</span> Done
                       </button>
                       <button
-                        onClick={() => setFocusTask(recTask)}
+                        onClick={() => navigate('/schedule', { state: { focusTaskId: recTask.task_id } })}
                         className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-black text-xs px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] hover:-translate-y-0.5"
                       >
                         Start Focus <Play size={12} fill="currentColor" />
@@ -496,22 +493,13 @@ export default function Dashboard() {
                         </div>
                       }
                       right={
-                        <div className="flex items-center gap-1">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setFocusTask(task); }}
-                            className="p-2 text-indigo-500 hover:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 rounded-lg transition-colors mr-1"
-                            title="Start Focus Mode"
-                          >
-                            <Play size={16} fill="currentColor" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'completed' }); }} 
-                            className="p-2 text-[var(--border-subtle)] hover:text-emerald-500 transition-colors"
-                            title="Mark as complete"
-                          >
-                            <CheckCircle2 size={20} className="fill-current text-[var(--bg-panel)]" />
-                          </button>
-                        </div>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'completed' }); }} 
+                          className="p-2 text-[var(--border-subtle)] hover:text-emerald-500 transition-colors"
+                          title="Mark as complete"
+                        >
+                          <CheckCircle2 size={20} className="fill-current text-[var(--bg-panel)]" />
+                        </button>
                       }
                     />
                   ))
@@ -522,17 +510,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      {focusTask && (
-        <FocusRunnerModal 
-          task={{ id: focusTask.task_id || focusTask.id, name: focusTask.name }} 
-          onClose={() => setFocusTask(null)} 
-          onComplete={(taskId, duration) => {
-            updateTask(taskId, { status: 'completed', duration_minutes: duration });
-            setFocusTask(null);
-          }}
-        />
-      )}
     </div>
   );
 }
