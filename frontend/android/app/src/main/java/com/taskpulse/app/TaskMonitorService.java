@@ -19,8 +19,11 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class TaskMonitorService extends Service {
@@ -56,6 +59,22 @@ public class TaskMonitorService extends Service {
         super.onCreate();
         handler = new Handler(Looper.getMainLooper());
         createNotificationChannel();
+        logToConsole("Service created.");
+    }
+
+    private void logToConsole(String message) {
+        String timestamp = new SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(new Date());
+        String logEntry = "[" + timestamp + "] " + message + "\n";
+        
+        SharedPreferences prefs = getSharedPreferences("TaskPulseLogs", Context.MODE_PRIVATE);
+        String existingLogs = prefs.getString("monitor_debug_logs", "");
+        
+        // Keep logs relatively short (e.g. last 10000 chars)
+        if (existingLogs.length() > 10000) {
+            existingLogs = existingLogs.substring(existingLogs.length() - 5000);
+        }
+        
+        prefs.edit().putString("monitor_debug_logs", existingLogs + logEntry).apply();
     }
 
     @Override
@@ -70,14 +89,19 @@ public class TaskMonitorService extends Service {
             startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification());
 
             if (isMeetingMode) {
+                logToConsole("Started MEETING mode for task " + currentTaskId + ". Duration: " + durationMinutes + "m. Waiting for end window.");
                 // Meeting Mode: Single check at the end
                 handler.postDelayed(this::checkMeetingCompletion, taskDurationMs);
             } else {
+                logToConsole("Started DISTRACTION mode for task " + currentTaskId + ". Duration: " + durationMinutes + "m. Polling every 5s.");
                 // Distraction Mode: Poll every 5s
                 startDistractionPolling();
                 
                 // Self-terminate after duration
-                handler.postDelayed(this::stopSelf, taskDurationMs);
+                handler.postDelayed(() -> {
+                    logToConsole("Task duration ended. Terminating service.");
+                    stopSelf();
+                }, taskDurationMs);
             }
         }
         return START_NOT_STICKY;
@@ -119,11 +143,13 @@ public class TaskMonitorService extends Service {
         }
 
         if (foregroundApp != null && distractionApps.contains(foregroundApp)) {
+            logToConsole("DETECTED DISTRACTION: " + foregroundApp + ". Firing nudge notification!");
             fireDistractionNudge(foregroundApp);
         }
     }
 
     private void checkMeetingCompletion() {
+        logToConsole("Checking meeting completion for apps: " + meetingApps.toString());
         UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
         long now = System.currentTimeMillis();
         
@@ -137,9 +163,14 @@ public class TaskMonitorService extends Service {
             }
         }
 
+        logToConsole("Total time in meeting apps: " + (totalMeetingTimeMs / 1000) + " seconds. Required: " + ((taskDurationMs * 0.7) / 1000) + " seconds.");
+
         if (totalMeetingTimeMs >= taskDurationMs * 0.7) {
             // Reached 70% of meeting duration
+            logToConsole("Threshold met. Auto-completing task.");
             fireAutoCompleteNotification();
+        } else {
+            logToConsole("Threshold NOT met. Task remains pending.");
         }
         
         stopSelf();
@@ -189,6 +220,7 @@ public class TaskMonitorService extends Service {
 
     @Override
     public void onDestroy() {
+        logToConsole("Service destroyed.");
         if (handler != null && distractionPoller != null) {
             handler.removeCallbacks(distractionPoller);
         }

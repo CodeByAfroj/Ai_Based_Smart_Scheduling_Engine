@@ -15,7 +15,9 @@ import {
   requestScreenTimePermission,
   checkExactAlarmPermission,
   requestExactAlarmPermission,
-  getScreenTimeUsageData
+  getScreenTimeUsageData,
+  getMonitorDebugLogs,
+  clearMonitorDebugLogs
 } from '../utils/nativeBridge';
 
 function urlBase64ToUint8Array(base64String) {
@@ -56,6 +58,20 @@ export default function Settings() {
   const [nativeVersion, setNativeVersion] = useState("Web");
   const [screenTimeData, setScreenTimeData] = useState(null);
   const [isRefreshingScreenTime, setIsRefreshingScreenTime] = useState(false);
+  const [debugLogs, setDebugLogs] = useState("");
+
+  useEffect(() => {
+    // Poll logs every 1s when Settings is open
+    let intervalId;
+    if (isNativeApp) {
+      intervalId = setInterval(() => {
+        setDebugLogs(getMonitorDebugLogs());
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isNativeApp]);
 
   useEffect(() => {
     const native = isTWA();
@@ -408,7 +424,31 @@ export default function Settings() {
               )}
             </div>
           )}
+          )}
         </Section>
+
+        {/* Developer Console (Native Service Logs) */}
+        {isNativeApp && (
+          <Section title="Developer Console (Native Service)">
+            <div className="p-4 bg-black rounded-b-2xl border-t border-[var(--border-subtle)]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-slate-400 font-mono">TaskMonitorService Logs</span>
+                <button 
+                  onClick={() => {
+                    clearMonitorDebugLogs();
+                    setDebugLogs("");
+                  }}
+                  className="text-xs text-red-400 hover:text-red-300 font-mono flex items-center gap-1"
+                >
+                  <RefreshCw size={12} /> Clear
+                </button>
+              </div>
+              <div className="h-48 overflow-y-auto font-mono text-[10px] text-green-400 whitespace-pre-wrap break-words leading-tight custom-scrollbar">
+                {debugLogs ? debugLogs : "Waiting for service logs..."}
+              </div>
+            </div>
+          </Section>
+        )}
 
         {/* Advanced & Configuration */}
         <Section title="Configuration">

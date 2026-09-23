@@ -77,6 +77,18 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
+        public String getMonitorDebugLogs() {
+            android.content.SharedPreferences prefs = mContext.getSharedPreferences("TaskPulseLogs", Context.MODE_PRIVATE);
+            return prefs.getString("monitor_debug_logs", "");
+        }
+
+        @JavascriptInterface
+        public void clearMonitorDebugLogs() {
+            android.content.SharedPreferences prefs = mContext.getSharedPreferences("TaskPulseLogs", Context.MODE_PRIVATE);
+            prefs.edit().remove("monitor_debug_logs").apply();
+        }
+
+        @JavascriptInterface
         public boolean hasUsagePermission() {
             UsageStatsManager usm = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);
             long now = System.currentTimeMillis();

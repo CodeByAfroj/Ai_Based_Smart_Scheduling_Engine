@@ -166,3 +166,17 @@ export function syncTaskState() {
   }
   return {};
 }
+
+// 7. DEVELOPER CONSOLE (NATIVE LOGS)
+export function getMonitorDebugLogs() {
+  if (isTWA() && window.AndroidNative?.getMonitorDebugLogs) {
+    return window.AndroidNative.getMonitorDebugLogs();
+  }
+  return "";
+}
+
+export function clearMonitorDebugLogs() {
+  if (isTWA() && window.AndroidNative?.clearMonitorDebugLogs) {
+    window.AndroidNative.clearMonitorDebugLogs();
+  }
+}
