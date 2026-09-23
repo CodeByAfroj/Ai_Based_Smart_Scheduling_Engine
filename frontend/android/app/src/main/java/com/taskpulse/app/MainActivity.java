@@ -311,13 +311,21 @@ public class MainActivity extends BridgeActivity {
                     android.widget.Toast.makeText(mContext, "Downloading update... please wait.", android.widget.Toast.LENGTH_LONG).show();
                 });
 
+                // Use app's private external directory to completely avoid filename collisions (-1.apk)
+                // and permission issues with the public Downloads folder.
+                File existingFile = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "TaskPulse_Update.apk");
+                if (existingFile.exists()) {
+                    existingFile.delete();
+                }
+
                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
                 request.setTitle("Downloading Update");
                 request.setDescription("TaskPulse native update is downloading...");
                 request.setMimeType("application/vnd.android.package-archive");
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                // Allow DownloadManager to append numbers if necessary (e.g. TaskPulse_Update-1.apk)
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "TaskPulse_Update.apk");
+                
+                // Save to private external files dir
+                request.setDestinationInExternalFilesDir(mContext, Environment.DIRECTORY_DOWNLOADS, "TaskPulse_Update.apk");
 
                 DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
                 final long downloadId = manager.enqueue(request);
@@ -327,22 +335,25 @@ public class MainActivity extends BridgeActivity {
                         long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
                         if (downloadId == id) {
                             try {
-                                DownloadManager dm = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
-                                Uri apkUri = dm.getUriForDownloadedFile(downloadId);
-                                String mimeType = dm.getMimeTypeForDownloadedFile(downloadId);
-                                
-                                if (apkUri != null) {
-                                    Intent installIntent = new Intent(Intent.ACTION_VIEW);
-                                    installIntent.setDataAndType(apkUri, mimeType != null ? mimeType : "application/vnd.android.package-archive");
-                                    installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                    mContext.startActivity(installIntent);
-                                } else {
+                                File file = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "TaskPulse_Update.apk");
+                                if (!file.exists()) {
                                     new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
-                                        android.widget.Toast.makeText(mContext, "Update failed to download. Please download manually.", android.widget.Toast.LENGTH_LONG).show();
+                                        android.widget.Toast.makeText(mContext, "Error: Downloaded file not found.", android.widget.Toast.LENGTH_LONG).show();
                                     });
+                                    return;
                                 }
+
+                                Uri apkUri = FileProvider.getUriForFile(mContext, mContext.getApplicationContext().getPackageName() + ".fileprovider", file);
+                                Intent installIntent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                                installIntent.setData(apkUri);
+                                installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                mContext.startActivity(installIntent);
                             } catch (Exception e) {
                                 e.printStackTrace();
+                                final String errMsg = e.getMessage();
+                                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                                    android.widget.Toast.makeText(mContext, "Install Error: " + errMsg, android.widget.Toast.LENGTH_LONG).show();
+                                });
                             }
                             mContext.unregisterReceiver(this);
                         }
