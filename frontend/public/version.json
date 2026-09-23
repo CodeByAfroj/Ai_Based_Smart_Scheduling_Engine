@@ -1,7 +1,7 @@
 {
-  "nativeVersion": "1.0.12",
+  "nativeVersion": "1.0.13",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Use ACTION_INSTALL_PACKAGE for maximum OEM compatibility."
+  "releaseNotes": "Rock-solid current foreground app tracking for distraction detection."
 }
 
 

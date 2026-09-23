@@ -199,14 +199,18 @@ public class MainActivity extends BridgeActivity {
             try {
                 UsageStatsManager usm = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);
                 long now = System.currentTimeMillis();
-                UsageEvents usageEvents = usm.queryEvents(now - 5000, now);
-
+                
+                // Get daily stats for the current time
+                java.util.List<android.app.usage.UsageStats> appList = usm.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, now - 1000 * 1000, now);
+                
                 String lastApp = "unknown";
-                while (usageEvents.hasNextEvent()) {
-                    UsageEvents.Event event = new UsageEvents.Event();
-                    usageEvents.getNextEvent(event);
-                    if (event.getEventType() == UsageEvents.Event.MOVE_TO_FOREGROUND) {
-                        lastApp = event.getPackageName();
+                if (appList != null && appList.size() > 0) {
+                    java.util.SortedMap<Long, android.app.usage.UsageStats> mySortedMap = new java.util.TreeMap<Long, android.app.usage.UsageStats>();
+                    for (android.app.usage.UsageStats usageStats : appList) {
+                        mySortedMap.put(usageStats.getLastTimeUsed(), usageStats);
+                    }
+                    if (!mySortedMap.isEmpty()) {
+                        lastApp = mySortedMap.get(mySortedMap.lastKey()).getPackageName();
                     }
                 }
 
