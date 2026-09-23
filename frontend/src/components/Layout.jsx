@@ -41,8 +41,6 @@ export default function Layout() {
     token,
     API_BASE,
   } = useAuth();
-  
-  const { tasks, updateTask } = useTasks();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
