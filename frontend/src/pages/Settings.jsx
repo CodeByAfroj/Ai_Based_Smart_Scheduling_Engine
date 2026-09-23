@@ -76,7 +76,7 @@ export default function Settings() {
   useEffect(() => {
     const native = isTWA();
     setIsNativeApp(native);
-    
+
     if (native && window.AndroidNative && window.AndroidNative.getNativeVersion) {
       setNativeVersion(window.AndroidNative.getNativeVersion());
     }
@@ -117,7 +117,7 @@ export default function Settings() {
     await requestExactAlarmPermission();
     // Permission is granted in Android settings, re-check on return (handled by visibilitychange)
   };
-  
+
   useEffect(() => {
     if (profile) {
       if (profile.notification_preference) setNotifPref(profile.notification_preference);
@@ -130,11 +130,11 @@ export default function Settings() {
   const { tracking, error: trackError, status: trackStatus, toggle: toggleTracking } = useLiveTracking();
 
   const notifOptions = [
-    { id: 'voice',         icon: Volume2,       label: 'Neural AI Voice',     desc: 'Reads alerts aloud',  color: 'bg-indigo-500' },
-    { id: 'text_and_sound',icon: MessageSquare,  label: 'Text + Sound Chime',  desc: 'Popup with chime',    color: 'bg-blue-500'   },
-    { id: 'sound',         icon: Volume2,        label: 'Sound Only',          desc: 'Audio chime only',    color: 'bg-emerald-500'},
-    { id: 'vibrate',       icon: Vibrate,        label: 'Vibrate / Haptic',    desc: 'Vibration pattern',   color: 'bg-amber-500'  },
-    { id: 'silent',        icon: VolumeX,        label: 'Silent / Visual Only',desc: 'Silent badge only',   color: 'bg-slate-500'  },
+    { id: 'voice', icon: Volume2, label: 'Neural AI Voice', desc: 'Reads alerts aloud', color: 'bg-indigo-500' },
+    { id: 'text_and_sound', icon: MessageSquare, label: 'Text + Sound Chime', desc: 'Popup with chime', color: 'bg-blue-500' },
+    { id: 'sound', icon: Volume2, label: 'Sound Only', desc: 'Audio chime only', color: 'bg-emerald-500' },
+    { id: 'vibrate', icon: Vibrate, label: 'Vibrate / Haptic', desc: 'Vibration pattern', color: 'bg-amber-500' },
+    { id: 'silent', icon: VolumeX, label: 'Silent / Visual Only', desc: 'Silent badge only', color: 'bg-slate-500' },
   ];
 
   const handlePushToggle = async (val) => {
@@ -146,7 +146,7 @@ export default function Settings() {
         if (permission === 'granted') {
           let registration = await navigator.serviceWorker.getRegistration();
           if (!registration) {
-             registration = await navigator.serviceWorker.register('/push-sw.js');
+            registration = await navigator.serviceWorker.register('/push-sw.js');
           }
           registration = await navigator.serviceWorker.ready;
           const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
@@ -207,56 +207,56 @@ export default function Settings() {
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         <h1 className="text-3xl font-bold text-[var(--text-main)] mb-6">Settings</h1>
 
         {/* Appearance */}
         <div data-tour="settings-theme">
           <Section title="Appearance">
-          <Row 
-            icon={Sun} iconColor="bg-amber-500" title="Light Mode" 
-            onClick={() => applyTheme('light')}
-            right={theme === 'light' && <CheckCircle2 size={20} className="text-blue-500" />}
-          />
-          <Row 
-            icon={Moon} iconColor="bg-slate-800" title="Dark Mode" 
-            onClick={() => applyTheme('dark')}
-            right={theme === 'dark' && <CheckCircle2 size={20} className="text-blue-500" />}
-          />
-          <Row 
-            icon={Monitor} iconColor="bg-blue-500" title="System Theme" 
-            onClick={() => applyTheme('system')}
-            right={theme === 'system' && <CheckCircle2 size={20} className="text-blue-500" />}
-          />
+            <Row
+              icon={Sun} iconColor="bg-amber-500" title="Light Mode"
+              onClick={() => applyTheme('light')}
+              right={theme === 'light' && <CheckCircle2 size={20} className="text-blue-500" />}
+            />
+            <Row
+              icon={Moon} iconColor="bg-slate-800" title="Dark Mode"
+              onClick={() => applyTheme('dark')}
+              right={theme === 'dark' && <CheckCircle2 size={20} className="text-blue-500" />}
+            />
+            <Row
+              icon={Monitor} iconColor="bg-blue-500" title="System Theme"
+              onClick={() => applyTheme('system')}
+              right={theme === 'system' && <CheckCircle2 size={20} className="text-blue-500" />}
+            />
           </Section>
         </div>
 
         {/* Notifications */}
         <div data-tour="settings-notif">
           <Section title="Notifications">
-          <Row 
-            icon={Smartphone} iconColor="bg-red-500" title="Advance Reminders (Push)" subtitle="Prior start reminders"
-            right={<Toggle checked={pushEnabled} onChange={handlePushToggle} />}
-          />
-          {!isNativeApp && (
-            <Row 
-              icon={Bell} iconColor="bg-orange-500" title="Deadline Alarms (OS Alerts)" subtitle="Task start alarms"
-              right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
+            <Row
+              icon={Smartphone} iconColor="bg-red-500" title="Advance Reminders (Push)" subtitle="Prior start reminders"
+              right={<Toggle checked={pushEnabled} onChange={handlePushToggle} />}
             />
-          )}
+            {!isNativeApp && (
+              <Row
+                icon={Bell} iconColor="bg-orange-500" title="Deadline Alarms (OS Alerts)" subtitle="Task start alarms"
+                right={<Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />}
+              />
+            )}
           </Section>
         </div>
 
         {/* Device & Hardware Permissions */}
         <div data-tour="settings-hardware-permissions">
-          <Section 
+          <Section
             title="Device & System Permissions"
             footer={isNativeApp ? `Android Native App Mode active (v${nativeVersion}): Hardware alarms & system screen time access enabled.` : "Web PWA Mode active (Mac/Desktop): In-app focus tracking & browser audio alarms active."}
           >
-            <Row 
-              icon={Activity} 
-              iconColor="bg-emerald-500" 
-              title="Analyze App Activity & Screen Time" 
+            <Row
+              icon={Activity}
+              iconColor="bg-emerald-500"
+              title="Analyze App Activity & Screen Time"
               subtitle={isNativeApp ? "Grants Android UsageStats access to analyze app activity" : "In-app focus & idle session analyzer (Web PWA)"}
               right={
                 screenTimePerm ? (
@@ -264,7 +264,7 @@ export default function Settings() {
                     <CheckCircle2 size={14} /> Granted
                   </span>
                 ) : (
-                  <button 
+                  <button
                     onClick={handleRequestScreenTime}
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
                   >
@@ -274,10 +274,10 @@ export default function Settings() {
               }
             />
             {isNativeApp && (
-              <Row 
-                icon={Clock} 
-                iconColor="bg-indigo-500" 
-                title="Exact Hardware Clock Alarms" 
+              <Row
+                icon={Clock}
+                iconColor="bg-indigo-500"
+                title="Exact Hardware Clock Alarms"
                 subtitle="Allows waking phone from sleep & ringing lock-screen alarms"
                 right={
                   exactAlarmPerm ? (
@@ -285,7 +285,7 @@ export default function Settings() {
                       <Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />
                     </div>
                   ) : (
-                    <button 
+                    <button
                       onClick={handleRequestExactAlarm}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all"
                     >
@@ -328,7 +328,7 @@ export default function Settings() {
               const filtered = screenTimeData.apps
                 .filter(app => app.minutes >= 1)
                 .slice(0, 10);
-              
+
               const maxMs = filtered.length > 0 ? (filtered[0].ms || filtered[0].minutes * 60000) : 1;
 
               const formatTime = (app) => {
@@ -352,7 +352,7 @@ export default function Settings() {
                           <span className="text-[11px] text-[var(--text-muted)] font-mono shrink-0 ml-2">{formatTime(app)}</span>
                         </div>
                         <div className="w-full h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
                             style={{ width: `${Math.max(4, ((app.ms || app.minutes * 60000) / maxMs) * 100)}%` }}
                           ></div>
@@ -383,21 +383,21 @@ export default function Settings() {
         {/* Alert Style */}
         <div data-tour="settings-alert-style">
           <Section title="Alert Style">
-          {notifOptions.map((opt) => (
-            <Row 
-              key={opt.id}
-              icon={opt.icon} iconColor={opt.color} 
-              title={opt.label} subtitle={opt.desc}
-              onClick={() => setAndSavePref(opt.id)}
-              right={notifPref === opt.id && <CheckCircle2 size={20} className="text-blue-500" />}
-            />
-          ))}
+            {notifOptions.map((opt) => (
+              <Row
+                key={opt.id}
+                icon={opt.icon} iconColor={opt.color}
+                title={opt.label} subtitle={opt.desc}
+                onClick={() => setAndSavePref(opt.id)}
+                right={notifPref === opt.id && <CheckCircle2 size={20} className="text-blue-500" />}
+              />
+            ))}
           </Section>
         </div>
 
         {/* Live Activity Tracking */}
         <Section title="Live Tracking" footer="Uses device motion (accelerometer) to detect if you're busy and auto-reschedule active tasks. iOS requires Safari motion permissions.">
-          <Row 
+          <Row
             icon={Activity} iconColor="bg-green-500" title="Live Activity Tracking"
             right={<Toggle checked={tracking} onChange={toggleTracking} />}
           />
@@ -424,7 +424,8 @@ export default function Settings() {
               )}
             </div>
           )}
-          )}
+
+
         </Section>
 
         {/* Developer Console (Native Service Logs) */}
@@ -433,7 +434,7 @@ export default function Settings() {
             <div className="p-4 bg-black rounded-b-2xl border-t border-[var(--border-subtle)]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-slate-400 font-mono">TaskMonitorService Logs</span>
-                <button 
+                <button
                   onClick={() => {
                     clearMonitorDebugLogs();
                     setDebugLogs("");
@@ -452,18 +453,18 @@ export default function Settings() {
 
         {/* Advanced & Configuration */}
         <Section title="Configuration">
-          <Row 
-            icon={Zap} iconColor="bg-indigo-500" title="Work Hours & Rules" 
+          <Row
+            icon={Zap} iconColor="bg-indigo-500" title="Work Hours & Rules"
             onClick={() => navigate('/profile-setup')}
             right={<ChevronRight size={20} className="text-slate-400" />}
           />
-          <Row 
-            icon={SettingsIcon} iconColor="bg-slate-600" title="Integrations" 
+          <Row
+            icon={SettingsIcon} iconColor="bg-slate-600" title="Integrations"
             onClick={() => navigate('/integrations')}
             right={<ChevronRight size={20} className="text-slate-400" />}
           />
-          <Row 
-            icon={Bell} iconColor="bg-pink-500" title="Notification History" 
+          <Row
+            icon={Bell} iconColor="bg-pink-500" title="Notification History"
             onClick={() => navigate('/notifications')}
             right={<ChevronRight size={20} className="text-slate-400" />}
           />
