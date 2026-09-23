@@ -203,6 +203,7 @@ async def query_endpoint(
                     "priority_reason": ai_reason,
                     "fixed": params.get("fixed", False),
                     "status": status,
+                    "is_screen_free": str(params.get("is_screen_free", "false")).lower() == "true",
                     "created_at": now_ist()
                 }
                 if scheduled_start:
