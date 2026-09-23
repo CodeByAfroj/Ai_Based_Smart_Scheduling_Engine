@@ -148,3 +148,21 @@ export function cancelAlarm(title, timestampMillis) {
   }
   return false;
 }
+
+// 6. DISTRACTION MONITOR SERVICE (NATIVE)
+export function stopDistractionMonitor() {
+  if (isTWA() && window.AndroidNative?.stopDistractionMonitor) {
+    window.AndroidNative.stopDistractionMonitor();
+  }
+}
+
+export function syncTaskState() {
+  if (isTWA() && window.AndroidNative?.syncTaskState) {
+    try {
+      return JSON.parse(window.AndroidNative.syncTaskState());
+    } catch (e) {
+      return {};
+    }
+  }
+  return {};
+}

@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import ChatButton from './ChatButton';
 import UserGuideTour from './UserGuideTour';
+import { syncTaskState } from '../utils/nativeBridge';
 
 export default function Layout() {
   const location = useLocation();
@@ -40,6 +41,8 @@ export default function Layout() {
     token,
     API_BASE,
   } = useAuth();
+  
+  const { tasks, updateTask } = useTasks();
 
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -61,6 +64,27 @@ export default function Layout() {
   const [customDateTimeMap, setCustomDateTimeMap] = useState({});
 
   const { tasks, fetchTasks, updateTask, deleteTask } = useTasks();
+
+  // Sync state from Native Distraction/Auto-Complete service
+  useEffect(() => {
+    const handleSync = () => {
+      const nativeState = syncTaskState();
+      Object.keys(nativeState).forEach(key => {
+        if (key.startsWith('complete_task_') && nativeState[key]) {
+          const taskId = key.replace('complete_task_', '');
+          updateTask(taskId, { status: 'completed' });
+        } else if (key.startsWith('undo_task_') && nativeState[key]) {
+          const taskId = key.replace('undo_task_', '');
+          updateTask(taskId, { status: 'pending' });
+        }
+      });
+    };
+    
+    // Check initially and whenever window gains focus
+    handleSync();
+    window.addEventListener('focus', handleSync);
+    return () => window.removeEventListener('focus', handleSync);
+  }, [updateTask]);
 
   const notifiedIdsRef = useRef(
     (() => { try { return new Set(JSON.parse(localStorage.getItem('tp_notified_ids') || '[]')); } catch { return new Set(); } })()

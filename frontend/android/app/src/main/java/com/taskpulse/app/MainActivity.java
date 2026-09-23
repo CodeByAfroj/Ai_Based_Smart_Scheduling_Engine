@@ -53,6 +53,30 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
+        public void stopDistractionMonitor() {
+            Intent serviceIntent = new Intent(mContext, TaskMonitorService.class);
+            mContext.stopService(serviceIntent);
+        }
+
+        @JavascriptInterface
+        public String syncTaskState() {
+            android.content.SharedPreferences prefs = mContext.getSharedPreferences("TaskPulseSync", Context.MODE_PRIVATE);
+            JSONObject state = new JSONObject();
+            try {
+                for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
+                    if (entry.getValue() instanceof Boolean) {
+                        state.put(entry.getKey(), entry.getValue());
+                    }
+                }
+                // Clear state after syncing
+                prefs.edit().clear().apply();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return state.toString();
+        }
+
+        @JavascriptInterface
         public boolean hasUsagePermission() {
             UsageStatsManager usm = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);
             long now = System.currentTimeMillis();

@@ -40,6 +40,18 @@ public class AlarmReceiver extends BroadcastReceiver {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        // Start Foreground TaskMonitorService
+        String taskId = intent.getStringExtra("TASK_ID");
+        boolean isMeeting = intent.getBooleanExtra("IS_MEETING", false);
+        int durationMins = intent.getIntExtra("DURATION_MINS", 30);
+        
+        Intent serviceIntent = new Intent(context, TaskMonitorService.class);
+        serviceIntent.putExtra("TASK_ID", taskId);
+        serviceIntent.putExtra("IS_MEETING", isMeeting);
+        serviceIntent.putExtra("DURATION_MINS", durationMins);
+        
+        androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent);
+
         // Get the system alarm sound
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
         if (alarmSound == null) {
