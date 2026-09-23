@@ -223,6 +223,23 @@ public class MainActivity extends BridgeActivity {
             }
         }
 
+        /**
+         * Forcefully brings the TaskPulse app back to the front of the screen.
+         * Used to yank the user out of a distraction app (e.g., Instagram) back to their task.
+         */
+        @JavascriptInterface
+        public void forceAppToForeground() {
+            try {
+                Intent intent = new Intent(mContext, MainActivity.class);
+                intent.setAction(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                mContext.startActivity(intent);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         @JavascriptInterface
         public boolean hasExactAlarmPermission() {
             try {

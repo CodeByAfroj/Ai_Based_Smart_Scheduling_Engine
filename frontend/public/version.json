@@ -1,7 +1,7 @@
 {
-  "nativeVersion": "1.0.13",
+  "nativeVersion": "1.0.14",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Rock-solid current foreground app tracking for distraction detection."
+  "releaseNotes": "Added forceAppToForeground backend method for distraction blocker."
 }
 
 
