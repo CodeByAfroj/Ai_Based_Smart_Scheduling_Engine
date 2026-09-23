@@ -292,6 +292,16 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void downloadAndInstallUpdate(String apkUrl) {
             try {
+                // Delete old update file if it exists to prevent -1, -2 appended names
+                File existingFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TaskPulse_Update.apk");
+                if (existingFile.exists()) {
+                    existingFile.delete();
+                }
+
+                new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                    android.widget.Toast.makeText(mContext, "Downloading update... please wait.", android.widget.Toast.LENGTH_LONG).show();
+                });
+
                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
                 request.setTitle("Downloading Update");
                 request.setDescription("TaskPulse native update is downloading...");
