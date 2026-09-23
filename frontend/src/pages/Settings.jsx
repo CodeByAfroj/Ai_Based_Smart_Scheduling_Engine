@@ -52,6 +52,7 @@ export default function Settings() {
   const [pushEnabled, setPushEnabled] = useState(profile?.push_notifications ?? true);
   const [alarmEnabled, setAlarmEnabled] = useState(profile?.alarm_enabled ?? true);
   const [focusModeEnabled, setFocusModeEnabled] = useState(profile?.focus_mode_enabled ?? true);
+  const [localAIEnabled, setLocalAIEnabled] = useState(false);
 
   const [screenTimePerm, setScreenTimePerm] = useState(false);
   const [exactAlarmPerm, setExactAlarmPerm] = useState(false);
@@ -80,6 +81,14 @@ export default function Settings() {
 
     if (native && window.AndroidNative && window.AndroidNative.getNativeVersion) {
       setNativeVersion(window.AndroidNative.getNativeVersion());
+    }
+
+    if (native) {
+      const savedLocalAI = localStorage.getItem('taskpulse_local_ai');
+      if (savedLocalAI) {
+        setLocalAIEnabled(savedLocalAI === 'true');
+        import('../utils/nativeBridge').then(m => m.setLocalAIEnabled(savedLocalAI === 'true'));
+      }
     }
 
     async function initPermissions() {
@@ -210,6 +219,12 @@ export default function Settings() {
     saveNotifConfigs(notifPref, pushEnabled, alarmEnabled, val);
   };
 
+  const handleLocalAIToggle = (val) => {
+    setLocalAIEnabled(val);
+    localStorage.setItem('taskpulse_local_ai', val.toString());
+    import('../utils/nativeBridge').then(m => m.setLocalAIEnabled(val));
+  };
+
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -252,6 +267,12 @@ export default function Settings() {
               icon={Activity} iconColor="bg-indigo-500" title="Focus Mode" subtitle="Enable distraction tracking & screen-free monitoring"
               right={<Toggle checked={focusModeEnabled} onChange={setAndSaveFocusMode} />}
             />
+            {isNativeApp && (
+              <Row
+                icon={Smartphone} iconColor="bg-teal-500" title="Local AI Distraction Engine" subtitle="Run ML model locally on-device for zero latency (Saves Battery)"
+                right={<Toggle checked={localAIEnabled} onChange={handleLocalAIToggle} />}
+              />
+            )}
           </Section>
         </div>
 

@@ -10,6 +10,10 @@ import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -17,16 +21,23 @@ import android.os.Looper;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.nio.FloatBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class TaskMonitorService extends Service {
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtSession;
+
+public class TaskMonitorService extends Service implements SensorEventListener {
 
     private static final String TAG = "TaskMonitorService";
     private static final String CHANNEL_ID = "taskpulse_monitor";
@@ -43,6 +54,15 @@ public class TaskMonitorService extends Service {
     private long serviceStartTime;
     private String lastLoggedApp = "";
     private long lastNudgeTime = 0;
+
+    // ML Properties
+    private boolean useLocalAI = false;
+    private SensorManager sensorManager;
+    private Sensor accelerometer;
+    private float[] magnitudeBuffer = new float[128];
+    private int bufferIndex = 0;
+    private OrtEnvironment ortEnv;
+    private OrtSession ortSession;
 
     private final List<String> meetingApps = Arrays.asList(
             "us.zoom.videomeetings",
@@ -63,7 +83,39 @@ public class TaskMonitorService extends Service {
         super.onCreate();
         handler = new Handler(Looper.getMainLooper());
         createNotificationChannel();
-        logToConsole("Service created.");
+        
+        SharedPreferences prefs = getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
+        useLocalAI = prefs.getBoolean("local_ai_enabled", false);
+        
+        if (useLocalAI) {
+            initLocalAI();
+        }
+        
+        logToConsole("Service created. Local AI Enabled: " + useLocalAI);
+    }
+
+    private void initLocalAI() {
+        try {
+            sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            if (sensorManager != null) {
+                accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            }
+            
+            ortEnv = OrtEnvironment.getEnvironment();
+            InputStream is = getAssets().open("activity_dl.onnx");
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[16384];
+            while ((nRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            byte[] modelBytes = buffer.toByteArray();
+            ortSession = ortEnv.createSession(modelBytes, new OrtSession.SessionOptions());
+            logToConsole("Successfully loaded ONNX Local AI Model.");
+        } catch (Exception e) {
+            logToConsole("Failed to init ONNX AI: " + e.getMessage());
+            useLocalAI = false;
+        }
     }
 
     private void logToConsole(String message) {
@@ -72,12 +124,9 @@ public class TaskMonitorService extends Service {
         
         SharedPreferences prefs = getSharedPreferences("TaskPulseLogs", Context.MODE_PRIVATE);
         String existingLogs = prefs.getString("monitor_debug_logs", "");
-        
-        // Keep logs relatively short (e.g. last 10000 chars)
         if (existingLogs.length() > 10000) {
             existingLogs = existingLogs.substring(existingLogs.length() - 5000);
         }
-        
         prefs.edit().putString("monitor_debug_logs", existingLogs + logEntry).apply();
     }
 
@@ -96,15 +145,17 @@ public class TaskMonitorService extends Service {
             startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification());
 
             if (isMeetingMode) {
-                logToConsole("Started MEETING mode for task " + currentTaskId + ". Duration: " + durationMinutes + "m. Waiting for end window.");
-                // Meeting Mode: Single check at the end
+                logToConsole("Started MEETING mode. Waiting for end window.");
                 handler.postDelayed(this::checkMeetingCompletion, taskDurationMs);
             } else {
-                logToConsole("Started DISTRACTION mode for task " + currentTaskId + ". Duration: " + durationMinutes + "m. Polling every 5s.");
-                // Distraction Mode: Poll every 5s
-                startDistractionPolling();
+                logToConsole("Started DISTRACTION mode for " + taskTitle);
+                if (isScreenFree && useLocalAI && accelerometer != null) {
+                    logToConsole("Registering Sensor for Local ONNX AI...");
+                    sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+                } else {
+                    startDistractionPolling();
+                }
                 
-                // Self-terminate after duration
                 handler.postDelayed(() -> {
                     logToConsole("Task duration ended. Terminating service.");
                     stopSelf();
@@ -112,6 +163,68 @@ public class TaskMonitorService extends Service {
             }
         }
         return START_NOT_STICKY;
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = event.values[0];
+            float y = event.values[1];
+            float z = event.values[2];
+            
+            // Calculate magnitude and remove gravity approximation (~9.8)
+            float magnitude = (float) Math.sqrt(x*x + y*y + z*z) - 9.8f;
+            
+            magnitudeBuffer[bufferIndex] = magnitude;
+            bufferIndex++;
+            
+            if (bufferIndex >= 128) {
+                runInference(magnitudeBuffer);
+                // Shift buffer or reset depending on overlap strategy. Here we reset for simplicity.
+                bufferIndex = 0;
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Not needed
+    }
+
+    private void runInference(float[] bufferData) {
+        try {
+            FloatBuffer floatBuffer = FloatBuffer.wrap(bufferData);
+            long[] shape = new long[]{1, 1, 128};
+            OnnxTensor tensor = OnnxTensor.createTensor(ortEnv, floatBuffer, shape);
+            String inputName = ortSession.getInputNames().iterator().next();
+            
+            OrtSession.Result result = ortSession.run(Collections.singletonMap(inputName, tensor));
+            float[][] output = (float[][]) result.get(0).getValue();
+            
+            // Assuming output[0] is probabilities for classes (e.g. 0: Resting, 1: Walking, 2: Phone Usage)
+            // If phone usage probability is highest, fire nudge
+            int maxIdx = 0;
+            float maxVal = output[0][0];
+            for (int i = 1; i < output[0].length; i++) {
+                if (output[0][i] > maxVal) {
+                    maxVal = output[0][i];
+                    maxIdx = i;
+                }
+            }
+            
+            long now = System.currentTimeMillis();
+            // If class 2 represents device usage (or sitting perfectly still on a desk) during a physical task
+            if (maxIdx == 2 && (now - lastNudgeTime > 180000)) {
+                logToConsole("LOCAL AI DETECTED DISTRACTION. Firing nudge.");
+                lastNudgeTime = now;
+                fireDistractionNudge("Local AI Screen-Free Violation");
+            }
+            
+            result.close();
+            tensor.close();
+        } catch (Exception e) {
+            Log.e(TAG, "ONNX Inference failed", e);
+        }
     }
 
     private Notification buildForegroundNotification() {
@@ -140,13 +253,9 @@ public class TaskMonitorService extends Service {
         if (isScreenFree) {
             android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
             if (pm.isInteractive()) {
-                logToConsole("DETECTED DISTRACTION: Screen is ON during a screen-free task!");
-                // 3 minute cooldown (180,000 ms)
                 if (now - lastNudgeTime > 180000) {
                     lastNudgeTime = now;
                     fireDistractionNudge("Screen");
-                } else {
-                    logToConsole("Skipping nudge, in 3-minute cooldown.");
                 }
             }
             return;
@@ -171,18 +280,15 @@ public class TaskMonitorService extends Service {
         }
 
         if (foregroundApp != null && distractionApps.contains(foregroundApp)) {
-            logToConsole("DETECTED DISTRACTION: " + foregroundApp + ". Firing nudge notification!");
             fireDistractionNudge(foregroundApp);
         }
     }
 
     private void checkMeetingCompletion() {
-        logToConsole("Checking meeting completion for apps: " + meetingApps.toString());
         UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
         long now = System.currentTimeMillis();
         
         Map<String, UsageStats> stats = usm.queryAndAggregateUsageStats(serviceStartTime, now);
-        
         long totalMeetingTimeMs = 0;
         for (String pkg : meetingApps) {
             UsageStats stat = stats.get(pkg);
@@ -191,78 +297,86 @@ public class TaskMonitorService extends Service {
             }
         }
 
-        logToConsole("Total time in meeting apps: " + (totalMeetingTimeMs / 1000) + " seconds. Required: " + ((taskDurationMs * 0.7) / 1000) + " seconds.");
-
         if (totalMeetingTimeMs >= taskDurationMs * 0.7) {
-            // Reached 70% of meeting duration
-            logToConsole("Threshold met. Auto-completing task.");
             fireAutoCompleteNotification();
         } else {
-            logToConsole("Threshold NOT met. Task remains pending.");
+            logToConsole("Meeting threshold not met.");
         }
-        
-        stopSelf();
     }
 
-    private void fireDistractionNudge(String appPkg) {
-        int durationMins = (int) (taskDurationMs / 60000);
-        String messageText = isScreenFree 
-            ? "You have a task <" + taskTitle + ">. Why are you here? This task takes " + durationMins + " minutes. If you spend time on the screen, you will never complete it on time. Please complete it!"
-            : "Get back to work on " + taskTitle + "! Deadline is approaching.";
-
+    private void fireDistractionNudge(String appName) {
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        
+        Intent intent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("Focus Mode: Distraction Detected")
-                .setContentText(messageText)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(messageText))
+                .setContentTitle("Distraction Alert!")
+                .setContentText(isScreenFree ? "Put the phone down! You're supposed to be doing: " + taskTitle : "You're supposed to be doing: " + taskTitle)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
-
-        NotificationManagerCompat.from(this).notify(2001, builder.build());
+                
+        try {
+            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+        } catch (SecurityException e) {
+            Log.e(TAG, "Missing permission to post notification");
+        }
     }
 
     private void fireAutoCompleteNotification() {
-        Intent undoIntent = new Intent(this, UndoReceiver.class);
-        undoIntent.setAction(UndoReceiver.ACTION_UNDO);
-        undoIntent.putExtra(UndoReceiver.EXTRA_TASK_ID, currentTaskId);
-        undoIntent.putExtra(UndoReceiver.EXTRA_NOTIFICATION_ID, 2002);
-        
-        PendingIntent undoPending = PendingIntent.getBroadcast(this, 0, undoIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_menu_agenda)
-                .setContentTitle("Meeting Finished")
-                .setContentText("Auto-completed meeting task.")
-                .addAction(android.R.drawable.ic_menu_revert, "Undo", undoPending)
+                .setSmallIcon(android.R.drawable.star_on)
+                .setContentTitle("Meeting Completed")
+                .setContentText("Great job on your meeting!")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true);
-
-        NotificationManagerCompat.from(this).notify(2002, builder.build());
-
-        // Save auto-complete so React can pick it up
-        SharedPreferences prefs = getSharedPreferences("TaskPulseSync", Context.MODE_PRIVATE);
-        prefs.edit().putBoolean("complete_task_" + currentTaskId, true).apply();
+        try {
+            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+        } catch (SecurityException e) {
+            Log.e(TAG, "Missing permission to post notification");
+        }
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID, "Task Monitor", NotificationManager.IMPORTANCE_DEFAULT);
-            getSystemService(NotificationManager.class).createNotificationChannel(channel);
+                    CHANNEL_ID,
+                    "TaskPulse Monitor",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Background monitoring for distractions");
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
         }
-    }
-
-    @Override
-    public void onDestroy() {
-        logToConsole("Service destroyed.");
-        if (handler != null) {
-            handler.removeCallbacksAndMessages(null);
-        }
-        super.onDestroy();
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null; // Not bound
+        return null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
+        }
+        if (sensorManager != null && accelerometer != null) {
+            sensorManager.unregisterListener(this);
+        }
+        try {
+            if (ortSession != null) ortSession.close();
+            if (ortEnv != null) ortEnv.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to close ONNX env");
+        }
+        logToConsole("Service destroyed.");
     }
 }

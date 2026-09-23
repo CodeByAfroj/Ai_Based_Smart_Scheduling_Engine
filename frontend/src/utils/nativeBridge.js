@@ -189,3 +189,12 @@ export function stopMonitorService() {
   }
   return false;
 }
+
+// 8. LOCAL AI ENGINE
+export function setLocalAIEnabled(enabled) {
+  if (isTWA() && window.AndroidNative?.setLocalAIEnabled) {
+    window.AndroidNative.setLocalAIEnabled(enabled);
+    return true;
+  }
+  return false;
+}

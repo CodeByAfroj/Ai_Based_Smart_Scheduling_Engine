@@ -443,5 +443,11 @@ public class MainActivity extends BridgeActivity {
                 e.printStackTrace();
             }
         }
+        
+        @JavascriptInterface
+        public void setLocalAIEnabled(boolean enabled) {
+            SharedPreferences prefs = mContext.getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
+            prefs.edit().putBoolean("local_ai_enabled", enabled).apply();
+        }
     }
 }
