@@ -291,7 +291,8 @@ Example `create_task` JSON:
     "deadline": "YYYY-MM-DDTHH:MM:SS+05:30",
     "priority": 3,
     "priority_reason": "Short 2-4 word reason (e.g. 'Important Client Meeting')",
-    "fixed": false
+    "fixed": false,
+    "is_screen_free": "<boolean, true if physical/offline task like reading or resting, false if it requires a device>"
   }}
 }}
 ```
@@ -306,7 +307,8 @@ Example `update_task` JSON:
     "priority": 3,
     "priority_reason": "Short 2-4 word reason for priority",
     "status": "completed (optional)",
-    "fixed": false
+    "fixed": false,
+    "is_screen_free": "<boolean>"
   }}
 }}
 ```
