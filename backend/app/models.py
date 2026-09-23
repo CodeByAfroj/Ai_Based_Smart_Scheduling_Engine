@@ -16,6 +16,7 @@ class Task(BaseModel):
     predecessors: Optional[List[str]] = []
     reminders: Optional[List[int]] = []  # minutes before start to remind
     priority_reason: Optional[str] = None
+    is_screen_free: bool = False
 
 class NotificationResponse(BaseModel):
     id: str

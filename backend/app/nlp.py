@@ -376,12 +376,14 @@ Extract task parameters from user input. Return strictly valid JSON ONLY:
   "deadline": "YYYY-MM-DDTHH:MM:SS+05:30",
   "priority": 2,
   "priority_reason": "Short 2-4 word reason for priority",
-  "fixed": false
+  "fixed": false,
+  "is_screen_free": false
 }}
 
 Priority scale: 1=Low, 2=Medium, 3=High, 5=Critical.
 If fixed meeting/event is mentioned, set "fixed": true and deadline = earliest_start.
 If no start time mentioned, set earliest_start to current time. Default deadline to earliest_start + 2 days if not specified.
+If the task is a physical, offline, or screen-free activity (e.g. reading a book, gym, running, meditating, cleaning), set "is_screen_free": true. If it requires a device (e.g. coding, emails, meetings, watching a video), set "is_screen_free": false.
 """
 
     messages = [

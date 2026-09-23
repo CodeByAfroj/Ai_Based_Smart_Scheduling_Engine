@@ -83,7 +83,8 @@ export function TaskProvider({ children }) {
               startMillis, 
               profile?.alarm_enabled, 
               isMeeting, 
-              durationMins
+              durationMins,
+              task.is_screen_free || false
             );
             window.__scheduledAlarms.add(alarmKey);
           }

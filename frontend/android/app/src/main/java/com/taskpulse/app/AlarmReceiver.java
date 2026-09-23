@@ -44,11 +44,14 @@ public class AlarmReceiver extends BroadcastReceiver {
         String taskId = intent.getStringExtra("TASK_ID");
         boolean isMeeting = intent.getBooleanExtra("IS_MEETING", false);
         int durationMins = intent.getIntExtra("DURATION_MINS", 30);
+        boolean isScreenFree = intent.getBooleanExtra("IS_SCREEN_FREE", false);
         
         Intent serviceIntent = new Intent(context, TaskMonitorService.class);
         serviceIntent.putExtra("TASK_ID", taskId);
+        serviceIntent.putExtra("ALARM_TITLE", title); // Need this for the firm nudge message
         serviceIntent.putExtra("IS_MEETING", isMeeting);
         serviceIntent.putExtra("DURATION_MINS", durationMins);
+        serviceIntent.putExtra("IS_SCREEN_FREE", isScreenFree);
         
         androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent);
 

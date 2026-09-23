@@ -27,6 +27,7 @@ class TaskCreate(BaseModel):
     predecessors: Optional[List[str]] = []
     reminders: Optional[List[int]] = []
     priority_reason: Optional[str] = None
+    is_screen_free: bool = False
 
 class TaskUpdate(BaseModel):
     name: Optional[str] = None
@@ -37,6 +38,7 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None # "pending", "scheduled", "completed"
     reminders: Optional[List[int]] = None
     priority_reason: Optional[str] = None
+    is_screen_free: Optional[bool] = None
 
 def get_task_collection():
     return get_database()["tasks"]

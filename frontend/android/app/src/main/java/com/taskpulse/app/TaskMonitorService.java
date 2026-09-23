@@ -36,10 +36,13 @@ public class TaskMonitorService extends Service {
     private Runnable distractionPoller;
 
     private String currentTaskId;
+    private String taskTitle;
     private boolean isMeetingMode;
+    private boolean isScreenFree;
     private long taskDurationMs;
     private long serviceStartTime;
     private String lastLoggedApp = "";
+    private long lastNudgeTime = 0;
 
     private final List<String> meetingApps = Arrays.asList(
             "us.zoom.videomeetings",
@@ -82,7 +85,10 @@ public class TaskMonitorService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             currentTaskId = intent.getStringExtra("TASK_ID");
+            taskTitle = intent.getStringExtra("ALARM_TITLE");
+            if (taskTitle == null) taskTitle = "your current task";
             isMeetingMode = intent.getBooleanExtra("IS_MEETING", false);
+            isScreenFree = intent.getBooleanExtra("IS_SCREEN_FREE", false);
             int durationMinutes = intent.getIntExtra("DURATION_MINS", 20);
             taskDurationMs = durationMinutes * 60 * 1000L;
             serviceStartTime = System.currentTimeMillis();
@@ -111,7 +117,7 @@ public class TaskMonitorService extends Service {
     private Notification buildForegroundNotification() {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("TaskPulse")
-                .setContentText(isMeetingMode ? "Monitoring meeting..." : "Focus mode active")
+                .setContentText(isMeetingMode ? "Monitoring meeting..." : (isScreenFree ? "Screen-Free Focus active" : "Focus mode active"))
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
@@ -129,8 +135,24 @@ public class TaskMonitorService extends Service {
     }
 
     private void checkDistraction() {
-        UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
         long now = System.currentTimeMillis();
+        
+        if (isScreenFree) {
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (pm.isInteractive()) {
+                logToConsole("DETECTED DISTRACTION: Screen is ON during a screen-free task!");
+                // 3 minute cooldown (180,000 ms)
+                if (now - lastNudgeTime > 180000) {
+                    lastNudgeTime = now;
+                    fireDistractionNudge("Screen");
+                } else {
+                    logToConsole("Skipping nudge, in 3-minute cooldown.");
+                }
+            }
+            return;
+        }
+
+        UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
         android.app.usage.UsageEvents events = usm.queryEvents(now - 10000, now);
         
         android.app.usage.UsageEvents.Event event = new android.app.usage.UsageEvents.Event();
@@ -147,8 +169,6 @@ public class TaskMonitorService extends Service {
             logToConsole("Currently using app: " + foregroundApp);
             lastLoggedApp = foregroundApp;
         }
-
-
 
         if (foregroundApp != null && distractionApps.contains(foregroundApp)) {
             logToConsole("DETECTED DISTRACTION: " + foregroundApp + ". Firing nudge notification!");
@@ -185,10 +205,16 @@ public class TaskMonitorService extends Service {
     }
 
     private void fireDistractionNudge(String appPkg) {
+        int durationMins = (int) (taskDurationMs / 60000);
+        String messageText = isScreenFree 
+            ? "You have a task <" + taskTitle + ">. Why are you here? This task takes " + durationMins + " minutes. If you spend time on the screen, you will never complete it on time. Please complete it!"
+            : "Get back to work on " + taskTitle + "! Deadline is approaching.";
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("Focus Mode")
-                .setContentText("Get back to work! Deadline is approaching.")
+                .setContentTitle("Focus Mode: Distraction Detected")
+                .setContentText(messageText)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(messageText))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setAutoCancel(true);
 

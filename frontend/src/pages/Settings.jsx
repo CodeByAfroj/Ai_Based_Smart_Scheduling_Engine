@@ -279,9 +279,9 @@ export default function Settings() {
                 subtitle="Allows waking phone from sleep & ringing lock-screen alarms"
                 right={
                   exactAlarmPerm ? (
-                    <div className="flex items-center gap-2">
-                      <Toggle checked={alarmEnabled} onChange={setAndSaveAlarm} />
-                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                      <CheckCircle2 size={14} /> Granted
+                    </span>
                   ) : (
                     <button
                       onClick={handleRequestExactAlarm}
@@ -296,87 +296,7 @@ export default function Settings() {
           </Section>
         </div>
 
-        {/* Live Screen Time Data Inspector */}
-        <div className="mb-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-2xl p-4 sm:p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-              <h3 className="text-sm font-semibold text-[var(--text-main)]">Top App Usage (24h)</h3>
-            </div>
-            <button
-              onClick={async () => {
-                setIsRefreshingScreenTime(true);
-                const data = await getScreenTimeUsageData();
-                setScreenTimeData(data || { status: 'Active', source: isNativeApp ? 'Android UsageEvents' : 'Web Focus Tracker' });
-                setIsRefreshingScreenTime(false);
-              }}
-              disabled={isRefreshingScreenTime}
-              className="flex items-center gap-1.5 px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-lg text-xs font-medium hover:bg-indigo-500/20 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingScreenTime ? 'animate-spin' : ''}`} />
-              {isRefreshingScreenTime ? 'Refreshing...' : 'Refresh Data'}
-            </button>
-          </div>
-          <div className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl p-3 overflow-x-auto">
-            {screenTimeData && screenTimeData.apps && screenTimeData.apps.length > 0 ? (() => {
-              // Native layer already filters system apps — just take top 10 with ≥1 min
-              const filtered = screenTimeData.apps
-                .filter(app => app.minutes >= 1)
-                .slice(0, 10);
 
-              const maxMs = filtered.length > 0 ? (filtered[0].ms || filtered[0].minutes * 60000) : 1;
-
-              const formatTime = (app) => {
-                const ms = app.ms || app.minutes * 60000;
-                const totalMins = Math.round(ms / 60000);
-                if (totalMins >= 60) return `${Math.floor(totalMins / 60)}h ${totalMins % 60}m`;
-                return `${totalMins}m`;
-              };
-
-              return (
-                <div className="space-y-2.5">
-                  {filtered.map((app, i) => (
-                    <div key={app.package} className="flex items-center gap-3">
-                      <span className="text-[11px] text-[var(--text-muted)] w-4 text-right font-mono">{i + 1}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          {/* Use resolved display name from native; fallback to package last segment */}
-                          <span className="text-xs font-medium text-[var(--text-main)] truncate">
-                            {app.name || app.package.split('.').pop()}
-                          </span>
-                          <span className="text-[11px] text-[var(--text-muted)] font-mono shrink-0 ml-2">{formatTime(app)}</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
-                            style={{ width: `${Math.max(4, ((app.ms || app.minutes * 60000) / maxMs) * 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {filtered.length === 0 && (
-                    <p className="text-xs text-[var(--text-muted)] text-center py-2">No significant app usage detected yet.</p>
-                  )}
-                </div>
-              );
-            })() : screenTimeData ? (
-
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                <span>{screenTimeData.status === 'Error' ? `Error: ${screenTimeData.message}` : 'No app usage data available. Ensure Usage Access is granted.'}</span>
-                <span className="text-indigo-400 font-medium">{isNativeApp ? 'Android TWA' : 'Web PWA'}</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                <span>Tap "Refresh Data" to load your top apps...</span>
-                <span className="text-indigo-400 font-medium">{isNativeApp ? 'Android TWA' : 'Web PWA'}</span>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Alert Style */}
         <div data-tour="settings-alert-style">

@@ -45,6 +45,7 @@ export default function Tasks() {
   const [deadline, setDeadline] = useState(() => defaultLocalValue(86400000 * 2));    // 2 days from now
   const [priority, setPriority] = useState(1);
   const [reminders, setReminders] = useState([]);
+  const [isScreenFree, setIsScreenFree] = useState(false);
 
   const handleReminderToggle = (mins) => {
     setReminders(prev => prev.includes(mins) ? prev.filter(m => m !== mins) : [...prev, mins]);
@@ -75,7 +76,8 @@ export default function Tasks() {
       deadline: isFixed ? localInputToIST(earliestStart) : localInputToIST(deadline),
       priority: parseInt(priority),
       fixed: isFixed,
-      reminders: reminders
+      reminders: reminders,
+      is_screen_free: isScreenFree
     });
     sessionStorage.setItem('taskpulse_showform', 'false');
     setShowForm(false);
@@ -84,6 +86,7 @@ export default function Tasks() {
     setEarliestStart(defaultLocalValue(60000));
     setDeadline(defaultLocalValue(86400000 * 2));
     setReminders([]);
+    setIsScreenFree(false);
   };
 
   const toggleStatus = (task) => {
@@ -210,6 +213,19 @@ export default function Tasks() {
                       {mins}m before
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="px-4 py-3 flex items-center justify-between border-b border-[var(--border-subtle)]">
+                <div>
+                  <label className="block text-[13px] font-bold text-[var(--text-main)] mb-0.5">Screen-Free Task</label>
+                  <p className="text-[11px] text-[var(--text-muted)]">Block phone usage completely during this task</p>
+                </div>
+                <div 
+                  className={`w-11 h-6 rounded-full p-1 cursor-pointer transition-colors ${isScreenFree ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                  onClick={() => setIsScreenFree(!isScreenFree)}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${isScreenFree ? 'translate-x-5' : 'translate-x-0'}`} />
                 </div>
               </div>
 

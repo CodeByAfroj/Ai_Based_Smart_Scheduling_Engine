@@ -303,7 +303,7 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
-        public void setExactAlarm(String taskId, String title, long triggerTimeMillis, boolean alarmEnabled, boolean isMeeting, int durationMins) {
+        public void setExactAlarm(String taskId, String title, long triggerTimeMillis, boolean alarmEnabled, boolean isMeeting, int durationMins, boolean isScreenFree) {
             try {
                 AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
                 Intent intent = new Intent(mContext, AlarmReceiver.class);
@@ -312,6 +312,7 @@ public class MainActivity extends BridgeActivity {
                 intent.putExtra("ALARM_ENABLED", alarmEnabled);
                 intent.putExtra("IS_MEETING", isMeeting);
                 intent.putExtra("DURATION_MINS", durationMins);
+                intent.putExtra("IS_SCREEN_FREE", isScreenFree);
 
                 int requestCode = (title + triggerTimeMillis).hashCode();
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(
