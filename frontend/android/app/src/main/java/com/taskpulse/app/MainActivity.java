@@ -319,12 +319,6 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void downloadAndInstallUpdate(String apkUrl) {
             try {
-                // Delete old update file if it exists to prevent -1, -2 appended names
-                File existingFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TaskPulse_Update.apk");
-                if (existingFile.exists()) {
-                    existingFile.delete();
-                }
-
                 new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                     android.widget.Toast.makeText(mContext, "Downloading update... please wait.", android.widget.Toast.LENGTH_LONG).show();
                 });
@@ -332,7 +326,9 @@ public class MainActivity extends BridgeActivity {
                 DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl));
                 request.setTitle("Downloading Update");
                 request.setDescription("TaskPulse native update is downloading...");
+                request.setMimeType("application/vnd.android.package-archive");
                 request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                // Allow DownloadManager to append numbers if necessary (e.g. TaskPulse_Update-1.apk)
                 request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "TaskPulse_Update.apk");
 
                 DownloadManager manager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
@@ -343,12 +339,20 @@ public class MainActivity extends BridgeActivity {
                         long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
                         if (downloadId == id) {
                             try {
-                                File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TaskPulse_Update.apk");
-                                Uri apkUri = FileProvider.getUriForFile(mContext, mContext.getApplicationContext().getPackageName() + ".fileprovider", file);
-                                Intent installIntent = new Intent(Intent.ACTION_VIEW);
-                                installIntent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                                installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                mContext.startActivity(installIntent);
+                                DownloadManager dm = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+                                Uri apkUri = dm.getUriForDownloadedFile(downloadId);
+                                String mimeType = dm.getMimeTypeForDownloadedFile(downloadId);
+                                
+                                if (apkUri != null) {
+                                    Intent installIntent = new Intent(Intent.ACTION_VIEW);
+                                    installIntent.setDataAndType(apkUri, mimeType != null ? mimeType : "application/vnd.android.package-archive");
+                                    installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                    mContext.startActivity(installIntent);
+                                } else {
+                                    new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                                        android.widget.Toast.makeText(mContext, "Update failed to download. Please download manually.", android.widget.Toast.LENGTH_LONG).show();
+                                    });
+                                }
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
