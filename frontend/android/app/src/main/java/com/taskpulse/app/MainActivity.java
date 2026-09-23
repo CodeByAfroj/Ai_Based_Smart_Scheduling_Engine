@@ -76,41 +76,61 @@ public class MainActivity extends BridgeActivity {
         public String getScreenTimeUsage() {
             try {
                 UsageStatsManager usm = (UsageStatsManager) mContext.getSystemService(Context.USAGE_STATS_SERVICE);
-                
-                // Align with Android Digital Wellbeing: Start at midnight of the current day
+                android.content.pm.PackageManager pm = mContext.getPackageManager();
+
+                // Align with Android Digital Wellbeing: Start at midnight of the current local day
                 Calendar calendar = Calendar.getInstance();
                 calendar.set(Calendar.HOUR_OF_DAY, 0);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
-                
+
                 long startTime = calendar.getTimeInMillis();
                 long endTime = System.currentTimeMillis();
 
-                // queryAndAggregateUsageStats perfectly splits time boundaries (unlike queryUsageStats)
+                // queryAndAggregateUsageStats gives precise per-app totals for the exact window
                 java.util.Map<String, UsageStats> stats = usm.queryAndAggregateUsageStats(startTime, endTime);
+
+                // Packages to always exclude — these are internal Google/Android services
+                // that Digital Wellbeing also hides, even though they have launcher icons
+                java.util.Set<String> excludedPackages = new java.util.HashSet<>(java.util.Arrays.asList(
+                    "com.google.android.apps.wellbeing",
+                    "com.google.android.googlequicksearchbox",
+                    "com.android.launcher3",
+                    "com.miui.home",
+                    "com.sec.android.app.launcher",
+                    "com.huawei.android.launcher",
+                    "com.google.android.apps.nexuslauncher",
+                    "com.android.systemui",
+                    "com.android.settings",
+                    "com.google.android.packageinstaller",
+                    "com.android.packageinstaller",
+                    mContext.getPackageName()  // exclude our own app (TaskPulse)
+                ));
+
                 HashMap<String, Long> appForegroundTime = new HashMap<>();
-                String currentForegroundApp = "unknown";
-                android.content.pm.PackageManager pm = mContext.getPackageManager();
 
                 if (stats != null) {
                     for (UsageStats stat : stats.values()) {
                         long timeInForeground = stat.getTotalTimeInForeground();
-                        if (timeInForeground > 0) {
-                            String pkg = stat.getPackageName();
-                            
-                            // Filter out background services by checking if the app is launchable from the app drawer
-                            // This perfectly mirrors Digital Wellbeing's visibility list.
-                            if (pm.getLaunchIntentForPackage(pkg) == null) {
-                                continue;
-                            }
-                            
-                            appForegroundTime.put(pkg, timeInForeground);
-                        }
+                        if (timeInForeground < 10000) continue; // skip under 10 seconds
+
+                        String pkg = stat.getPackageName();
+
+                        // Skip explicitly excluded packages
+                        if (excludedPackages.contains(pkg)) continue;
+
+                        // Skip internal Android/Google system packages by prefix
+                        if (pkg.startsWith("com.android.") || pkg.startsWith("android")) continue;
+
+                        // Only include apps that appear in the app drawer (same as Digital Wellbeing)
+                        if (pm.getLaunchIntentForPackage(pkg) == null) continue;
+
+                        appForegroundTime.put(pkg, timeInForeground);
                     }
                 }
 
-                // Convert to sorted JSON array (highest usage first)
+                // Sort highest usage first
                 ArrayList<Map.Entry<String, Long>> sortedApps = new ArrayList<>(appForegroundTime.entrySet());
                 Collections.sort(sortedApps, new Comparator<Map.Entry<String, Long>>() {
                     @Override
@@ -122,26 +142,38 @@ public class MainActivity extends BridgeActivity {
                 JSONArray appArray = new JSONArray();
                 for (Map.Entry<String, Long> entry : sortedApps) {
                     long totalMs = entry.getValue();
-                    if (totalMs > 5000) { // Skip apps with less than 5 seconds
-                        long minutes = Math.max(1, totalMs / (1000 * 60));
-                        JSONObject obj = new JSONObject();
-                        obj.put("package", entry.getKey());
-                        obj.put("minutes", minutes);
-                        appArray.put(obj);
-                    }
+                    String pkg = entry.getKey();
+
+                    // Resolve the real human-readable app name (e.g., "WhatsApp", "Chrome")
+                    String appName = pkg;
+                    try {
+                        android.content.pm.ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+                        appName = pm.getApplicationLabel(info).toString();
+                    } catch (Exception ignored) {}
+
+                    // Calculate exact minutes (no artificial Math.max rounding)
+                    long totalMinutes = totalMs / (1000 * 60);
+                    if (totalMinutes < 1) continue; // skip sub-minute usage
+
+                    JSONObject obj = new JSONObject();
+                    obj.put("package", pkg);
+                    obj.put("name", appName);       // ← real display name now included
+                    obj.put("minutes", totalMinutes);
+                    obj.put("ms", totalMs);         // raw ms for frontend precision
+                    appArray.put(obj);
                 }
 
                 JSONObject result = new JSONObject();
                 result.put("status", "Active");
                 result.put("source", "Android UsageEvents (Real-Time)");
                 result.put("app_count", appArray.length());
-                result.put("current_app", currentForegroundApp != null ? currentForegroundApp : "unknown");
                 result.put("apps", appArray);
                 return result.toString();
             } catch (Exception e) {
                 return "{\"status\":\"Error\", \"message\":\"" + e.getMessage() + "\"}";
             }
         }
+
 
         /**
          * Returns the currently active foreground app (real-time).

@@ -308,49 +308,37 @@ export default function Settings() {
           </div>
           <div className="bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-xl p-3 overflow-x-auto">
             {screenTimeData && screenTimeData.apps && screenTimeData.apps.length > 0 ? (() => {
-              // System packages to filter out
-              const systemPrefixes = ['com.android.', 'android', 'com.google.android.gms', 'com.google.android.gsf', 'com.google.android.ext', 'com.google.android.providers', 'com.google.android.permissioncontroller', 'com.google.android.packageinstaller', 'com.miui.', 'com.qualcomm.', 'com.mediatek.'];
+              // Native layer already filters system apps — just take top 10 with ≥1 min
               const filtered = screenTimeData.apps
-                .filter(app => {
-                  const pkg = app.package || '';
-                  return !systemPrefixes.some(prefix => pkg.startsWith(prefix)) && app.minutes >= 1;
-                })
+                .filter(app => app.minutes >= 1)
                 .slice(0, 10);
               
-              const maxMinutes = filtered.length > 0 ? filtered[0].minutes : 1;
-              
-              const getAppName = (pkg) => {
-                const parts = pkg.split('.');
-                const last = parts[parts.length - 1];
-                // Capitalize and clean
-                return last.charAt(0).toUpperCase() + last.slice(1).replace(/([A-Z])/g, ' $1').trim();
-              };
+              const maxMs = filtered.length > 0 ? (filtered[0].ms || filtered[0].minutes * 60000) : 1;
 
-              const formatTime = (mins) => {
-                if (mins >= 60) return `${Math.floor(mins / 60)}h ${mins % 60}m`;
-                return `${mins}m`;
+              const formatTime = (app) => {
+                const ms = app.ms || app.minutes * 60000;
+                const totalMins = Math.round(ms / 60000);
+                if (totalMins >= 60) return `${Math.floor(totalMins / 60)}h ${totalMins % 60}m`;
+                return `${totalMins}m`;
               };
 
               return (
                 <div className="space-y-2.5">
-                  {screenTimeData.current_app && (
-                    <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)] mb-2 pb-2 border-b border-[var(--border-subtle)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span>Currently active: <span className="font-semibold text-[var(--text-main)]">{getAppName(screenTimeData.current_app)}</span></span>
-                    </div>
-                  )}
                   {filtered.map((app, i) => (
                     <div key={app.package} className="flex items-center gap-3">
                       <span className="text-[11px] text-[var(--text-muted)] w-4 text-right font-mono">{i + 1}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-xs font-medium text-[var(--text-main)] truncate">{getAppName(app.package)}</span>
-                          <span className="text-[11px] text-[var(--text-muted)] font-mono shrink-0 ml-2">{formatTime(app.minutes)}</span>
+                          {/* Use resolved display name from native; fallback to package last segment */}
+                          <span className="text-xs font-medium text-[var(--text-main)] truncate">
+                            {app.name || app.package.split('.').pop()}
+                          </span>
+                          <span className="text-[11px] text-[var(--text-muted)] font-mono shrink-0 ml-2">{formatTime(app)}</span>
                         </div>
                         <div className="w-full h-1.5 bg-[var(--border-subtle)] rounded-full overflow-hidden">
                           <div 
                             className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
-                            style={{ width: `${Math.max(4, (app.minutes / maxMinutes) * 100)}%` }}
+                            style={{ width: `${Math.max(4, ((app.ms || app.minutes * 60000) / maxMs) * 100)}%` }}
                           ></div>
                         </div>
                       </div>
@@ -362,6 +350,7 @@ export default function Settings() {
                 </div>
               );
             })() : screenTimeData ? (
+
               <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                 <span>{screenTimeData.status === 'Error' ? `Error: ${screenTimeData.message}` : 'No app usage data available. Ensure Usage Access is granted.'}</span>
                 <span className="text-indigo-400 font-medium">{isNativeApp ? 'Android TWA' : 'Web PWA'}</span>
