@@ -255,8 +255,8 @@ public class TaskMonitorService extends Service {
     @Override
     public void onDestroy() {
         logToConsole("Service destroyed.");
-        if (handler != null && distractionPoller != null) {
-            handler.removeCallbacks(distractionPoller);
+        if (handler != null) {
+            handler.removeCallbacksAndMessages(null);
         }
         super.onDestroy();
     }
