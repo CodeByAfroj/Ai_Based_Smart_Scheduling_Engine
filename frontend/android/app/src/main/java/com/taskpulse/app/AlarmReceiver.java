@@ -69,7 +69,6 @@ public class AlarmReceiver extends BroadcastReceiver {
             .setVibrate(new long[]{0, 500, 200, 500, 200, 500})
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-            .setFullScreenIntent(pendingIntent, true) // Shows on lock screen
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
         NotificationManager notificationManager = 

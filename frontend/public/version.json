@@ -1,7 +1,7 @@
 {
-  "nativeVersion": "1.0.16",
+  "nativeVersion": "1.0.17",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Added real-time Developer Console to Settings to view TaskMonitorService logs."
+  "releaseNotes": "Removed aggressive full-screen intents from task alarms."
 }
 
 
