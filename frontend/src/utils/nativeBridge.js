@@ -148,3 +148,67 @@ export function cancelAlarm(title, timestampMillis) {
   }
   return false;
 }
+
+// 6. FOCUS MODE (DISTRACTION BLOCKER)
+let focusModeInterval = null;
+
+export function forceAppToForeground() {
+  if (isTWA() && window.AndroidNative?.forceAppToForeground) {
+    window.AndroidNative.forceAppToForeground();
+  }
+}
+
+export function startFocusMode(allowedApps, onDistractionDetected) {
+  if (!isTWA()) return; // Only works on native app
+  
+  // Stop any existing interval just in case
+  stopFocusMode();
+  
+  const packageToAppMap = {
+    'com.whatsapp': 'WhatsApp',
+    'com.android.chrome': 'Chrome',
+    'com.google.android.youtube': 'YouTube',
+    'com.instagram.android': 'Instagram',
+    'com.facebook.katana': 'Facebook',
+    'com.twitter.android': 'X (Twitter)',
+    'com.zhiliaoapp.musically': 'TikTok',
+    'com.snapchat.android': 'Snapchat',
+    'com.netflix.mediaclient': 'Netflix'
+  };
+
+  focusModeInterval = setInterval(async () => {
+    const data = await getCurrentForegroundApp();
+    if (data && data.current_app && data.current_app !== 'unknown') {
+      const currentPkg = data.current_app;
+      
+      // Ignore our own app, launcher, and system ui
+      if (currentPkg === 'com.taskpulse.app' || 
+          currentPkg === 'com.android.launcher3' || 
+          currentPkg.includes('launcher') || 
+          currentPkg === 'com.android.systemui') {
+        return;
+      }
+      
+      // Check if it's in the allowed list
+      const isAllowed = allowedApps.some(allowed => {
+        // e.g. if allowed is "Chrome", we check if the current package maps to Chrome, 
+        // or if the package name itself includes the allowed app string.
+        const mappedName = packageToAppMap[currentPkg] || currentPkg;
+        return mappedName.toLowerCase().includes(allowed.toLowerCase());
+      });
+      
+      if (!isAllowed) {
+        console.warn(`[FOCUS MODE] Distraction detected: ${currentPkg}`);
+        const appName = packageToAppMap[currentPkg] || currentPkg.split('.').pop();
+        onDistractionDetected(appName);
+      }
+    }
+  }, 3000);
+}
+
+export function stopFocusMode() {
+  if (focusModeInterval) {
+    clearInterval(focusModeInterval);
+    focusModeInterval = null;
+  }
+}
