@@ -1,7 +1,7 @@
 {
-  "nativeVersion": "1.0.22",
+  "nativeVersion": "1.0.23",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Introduces Focus Mode master toggle and early service termination."
+  "releaseNotes": "Fix icon exports and background service cancellation loop."
 }
 
 
