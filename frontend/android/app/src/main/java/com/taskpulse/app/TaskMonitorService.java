@@ -178,12 +178,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             latestAccel[0] = event.values[0];
             latestAccel[1] = event.values[1];
             latestAccel[2] = event.values[2];
-        } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            latestGyro[0] = event.values[0];
-            latestGyro[1] = event.values[1];
-            latestGyro[2] = event.values[2];
             
-            // Sync logic: we collect a frame every time gyro fires
+            // Sync logic: we collect a frame every time accelerometer fires
             // Format: (1, 6, 128). Data ordered by channel, then time.
             sensorBuffer[0 * 128 + bufferIndex] = latestAccel[0];
             sensorBuffer[1 * 128 + bufferIndex] = latestAccel[1];
@@ -197,6 +193,10 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 runInference(sensorBuffer);
                 bufferIndex = 0;
             }
+        } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+            latestGyro[0] = event.values[0];
+            latestGyro[1] = event.values[1];
+            latestGyro[2] = event.values[2];
         }
     }
 
