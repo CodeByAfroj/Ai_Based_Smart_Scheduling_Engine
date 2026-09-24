@@ -350,6 +350,10 @@ export default function Settings() {
                 <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
                   <AlertCircle size={14} /> {trackError}
                 </div>
+              ) : trackStatus?.isNativeMode ? (
+                <div className="flex items-center gap-2 text-emerald-500">
+                  <Smartphone size={14} /> Local AI active. Check console below.
+                </div>
               ) : trackStatus ? (
                 <div className="flex items-center justify-between">
                   <div>

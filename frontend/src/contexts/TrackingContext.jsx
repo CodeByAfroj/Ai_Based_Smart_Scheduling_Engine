@@ -62,6 +62,7 @@ export function TrackingProvider({ children }) {
       if (isTWA()) {
         // Mobile Native: Only use Local AI, do not hit backend
         setLocalAIEnabled(true);
+        setStatus({ isNativeMode: true });
       } else {
         // Web PWA: Use web sensors and Render backend API
         window.addEventListener('devicemotion', handleMotion);
