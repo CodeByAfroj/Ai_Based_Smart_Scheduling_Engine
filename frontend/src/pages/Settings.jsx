@@ -125,6 +125,7 @@ export default function Settings() {
       if (profile.notification_preference) setNotifPref(profile.notification_preference);
       if (profile.push_notifications !== undefined) setPushEnabled(profile.push_notifications);
       if (profile.alarm_enabled !== undefined) setAlarmEnabled(profile.alarm_enabled);
+      if (profile.focus_mode_enabled !== undefined) setFocusModeEnabled(profile.focus_mode_enabled);
     }
   }, [profile]);
 

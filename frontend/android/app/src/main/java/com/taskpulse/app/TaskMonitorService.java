@@ -34,9 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import ai.onnxruntime.OnnxTensor;
-import ai.onnxruntime.OrtEnvironment;
-import ai.onnxruntime.OrtSession;
+
 
 public class TaskMonitorService extends Service implements SensorEventListener {
 
@@ -65,8 +63,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     private int bufferIndex = 0;
     private float[] latestAccel = new float[3];
     private float[] latestGyro = new float[3];
-    private OrtEnvironment ortEnv;
-    private OrtSession ortSession;
+    private HeuristicActivityTracker heuristicTracker;
 
     private final List<String> meetingApps = Arrays.asList(
             "us.zoom.videomeetings",
@@ -105,19 +102,10 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
                 gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             }
-            ortEnv = OrtEnvironment.getEnvironment();
-            InputStream is = getAssets().open("activity_dl.onnx");
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
-            byte[] data = new byte[16384];
-            while ((nRead = is.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, nRead);
-            }
-            byte[] modelBytes = buffer.toByteArray();
-            ortSession = ortEnv.createSession(modelBytes, new OrtSession.SessionOptions());
-            logToConsole("Successfully loaded ONNX Local AI Model (DL Mode).");
+            heuristicTracker = new HeuristicActivityTracker();
+            logToConsole("Successfully loaded Heuristic Activity Tracker.");
         } catch (Exception e) {
-            logToConsole("Failed to init ONNX AI: " + e.getMessage());
+            logToConsole("Failed to init Heuristic Tracker: " + e.getMessage());
             useLocalAI = false;
         }
     }
@@ -217,37 +205,15 @@ public class TaskMonitorService extends Service implements SensorEventListener {
 
     private void runInference(float[] bufferData) {
         try {
-            if (ortEnv == null || ortSession == null) return;
+            if (heuristicTracker == null) return;
             
-            FloatBuffer floatBuffer = FloatBuffer.wrap(bufferData);
-            long[] shape = new long[]{1, 6, 128};
-            OnnxTensor tensor = OnnxTensor.createTensor(ortEnv, floatBuffer, shape);
-            String inputName = ortSession.getInputNames().iterator().next();
+            HeuristicActivityTracker.ActivityResult result = heuristicTracker.analyze(bufferData);
             
-            OrtSession.Result result = ortSession.run(Collections.singletonMap(inputName, tensor));
-            float[][] output = (float[][]) result.get(0).getValue();
+            String activityLabel = result.activity;
+            float confidence = result.confidence;
+            boolean isBusy = result.isBusy;
             
-            int maxIdx = 0;
-            float maxVal = output[0][0];
-            for (int i = 1; i < output[0].length; i++) {
-                if (output[0][i] > maxVal) {
-                    maxVal = output[0][i];
-                    maxIdx = i;
-                }
-            }
-            
-            // Softmax for probability conversion
-            float sumExp = 0;
-            for (int i = 0; i < output[0].length; i++) {
-                sumExp += (float) Math.exp(output[0][i]);
-            }
-            float confidence = (float) Math.exp(maxVal) / sumExp;
-            
-            String[] labels = {"walking", "walking_upstairs", "walking_downstairs", "sitting", "standing", "laying"};
-            String activityLabel = maxIdx >= 0 && maxIdx < labels.length ? labels[maxIdx] : "unknown";
-            boolean isBusy = (maxIdx <= 2);
-            
-            logToConsole(String.format(Locale.US, "DL Inference: %s (conf: %.2f)", activityLabel, confidence));
+            logToConsole(String.format(Locale.US, "Heuristic Inference: %s (conf: %.2f)", activityLabel, confidence));
             
             String statusJson = String.format(Locale.US, "{\"activity\": \"%s\", \"confidence\": %.2f, \"busy\": %b}", 
                 activityLabel, confidence, isBusy);
@@ -261,10 +227,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 fireDistractionNudge("Local AI Screen-Free Violation");
             }
             
-            result.close();
-            tensor.close();
         } catch (Exception e) {
-            Log.e(TAG, "DL Inference failed", e);
+            Log.e(TAG, "Heuristic Inference failed", e);
         }
     }
 
@@ -413,10 +377,9 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             sensorManager.unregisterListener(this);
         }
         try {
-            if (ortSession != null) ortSession.close();
-            if (ortEnv != null) ortEnv.close();
+            // Nothing to close for heuristic tracker
         } catch (Exception e) {
-            Log.e(TAG, "Failed to close ONNX env");
+            Log.e(TAG, "Failed to clean up AI resources");
         }
         logToConsole("Service destroyed.");
     }
