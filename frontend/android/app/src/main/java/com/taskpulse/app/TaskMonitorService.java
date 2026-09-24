@@ -213,6 +213,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 }
             }
             
+            logToConsole(String.format(Locale.US, "AI Inference: class=%d conf=%.2f", maxIdx, maxVal));
+            
             long now = System.currentTimeMillis();
             // If class 2 represents device usage (or sitting perfectly still on a desk) during a physical task
             if (maxIdx == 2 && (now - lastNudgeTime > 180000)) {
