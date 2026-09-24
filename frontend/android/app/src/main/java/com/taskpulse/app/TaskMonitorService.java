@@ -130,8 +130,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 logToConsole("Started Continuous Local AI from Settings.");
                 startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification("Activity Tracking Active"));
                 if (sensorManager != null && accelerometer != null && gyroscope != null) {
-                    sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-                    sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
+                    sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                    sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
                 }
                 return START_NOT_STICKY;
             }
@@ -154,8 +154,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 logToConsole("Started DISTRACTION mode for " + taskTitle);
                 if (isScreenFree && useLocalAI && accelerometer != null && gyroscope != null) {
                     logToConsole("Registering Sensor for Local ONNX AI...");
-                    sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-                    sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
+                    sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+                    sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
                 } else {
                     startDistractionPolling();
                 }
