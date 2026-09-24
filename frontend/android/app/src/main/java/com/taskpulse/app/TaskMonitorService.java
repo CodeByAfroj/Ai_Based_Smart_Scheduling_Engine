@@ -174,10 +174,10 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            // Android is m/s^2. UCI HAR total_acc is in g (1g = 9.81m/s^2)
-            latestAccel[0] = event.values[0] / 9.81f;
-            latestAccel[1] = event.values[1] / 9.81f;
-            latestAccel[2] = event.values[2] / 9.81f;
+            // Android is m/s^2. WISDM dataset is ALSO in m/s^2. DO NOT divide by 9.81!
+            latestAccel[0] = event.values[0];
+            latestAccel[1] = event.values[1];
+            latestAccel[2] = event.values[2];
         } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
             latestGyro[0] = event.values[0];
             latestGyro[1] = event.values[1];
