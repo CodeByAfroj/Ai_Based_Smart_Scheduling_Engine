@@ -26,8 +26,10 @@ const AutoUpdater = () => {
           installedVersion = window.AndroidNative.getNativeVersion();
         }
 
-        // Simple version string comparison
-        if (data.nativeVersion && data.nativeVersion !== installedVersion) {
+        // Semantic version string comparison to only update if server has a NEWER version
+        const isNewer = (remote, local) => remote.localeCompare(local, undefined, { numeric: true, sensitivity: 'base' }) > 0;
+
+        if (data.nativeVersion && isNewer(data.nativeVersion, installedVersion)) {
           setUpdateInfo({
             ...data,
             installedVersion
