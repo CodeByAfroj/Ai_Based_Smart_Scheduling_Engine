@@ -1,0 +1,180 @@
+--- frontend/android/app/src/main/java/com/taskpulse/app/TaskMonitorService.java
++++ frontend/android/app/src/main/java/com/taskpulse/app/TaskMonitorService.java
+@@ -59,10 +59,11 @@
+     // ML Properties
+     private boolean useLocalAI = false;
+     private SensorManager sensorManager;
+     private Sensor accelerometer;
+-    private float[] magnitudeBuffer = new float[128];
++    private Sensor gyroscope;
++    private float[] sensorBuffer = new float[6 * 128];
+     private int bufferIndex = 0;
+-    private OrtEnvironment ortEnv;
+-    private OrtSession ortSession;
++    private float[] latestAccel = new float[3];
++    private float[] latestGyro = new float[3];
++    
++    private OrtEnvironment ortEnv;
++    private OrtSession ortSession;
+ 
+     private final List<String> meetingApps = Arrays.asList(
+@@ -99,11 +100,24 @@
+             if (sensorManager != null) {
+                 accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+-            }
+-            logToConsole("Successfully Initialized Local AI Heuristics Mode (ONNX Bypass).");
++                gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
++            }
++            
++            ortEnv = OrtEnvironment.getEnvironment();
++            InputStream is = getAssets().open("activity_dl.onnx");
++            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
++            int nRead;
++            byte[] data = new byte[16384];
++            while ((nRead = is.read(data, 0, data.length)) != -1) {
++                buffer.write(data, 0, nRead);
++            }
++            byte[] modelBytes = buffer.toByteArray();
++            ortSession = ortEnv.createSession(modelBytes, new OrtSession.SessionOptions());
++            logToConsole("Successfully loaded ONNX Local AI Model (DL Mode).");
+         } catch (Exception e) {
+-            logToConsole("Failed to init Sensor AI: " + e.getMessage());
++            logToConsole("Failed to init ONNX AI: " + e.getMessage());
+             useLocalAI = false;
+         }
+     }
+@@ -140,6 +154,7 @@
+                 startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification());
+-                if (sensorManager != null && accelerometer != null) {
++                if (sensorManager != null && accelerometer != null && gyroscope != null) {
+                     sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
++                    sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
+                 }
+                 return START_STICKY;
+             }
+@@ -160,6 +175,7 @@
+-                if (isScreenFree && useLocalAI && accelerometer != null) {
++                if (isScreenFree && useLocalAI && accelerometer != null && gyroscope != null) {
+                     logToConsole("Registering Sensor for Local ONNX AI...");
+                     sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
++                    sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
+                 } else {
+                     startDistractionPolling();
+                 }
+@@ -176,21 +192,25 @@
+     public void onSensorChanged(SensorEvent event) {
+         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+-            float x = event.values[0];
+-            float y = event.values[1];
+-            float z = event.values[2];
+-            
+-            // Calculate magnitude and remove gravity approximation (~9.8)
+-            float magnitude = (float) Math.sqrt(x*x + y*y + z*z) - 9.8f;
+-            
+-            magnitudeBuffer[bufferIndex] = magnitude;
+-            bufferIndex++;
+-            
+-            if (bufferIndex >= 128) {
+-                runInference(magnitudeBuffer);
+-                // Shift buffer or reset depending on overlap strategy. Here we reset for simplicity.
+-                bufferIndex = 0;
+-            }
++            // Android is m/s^2. UCI HAR total_acc is in g (1g = 9.81m/s^2)
++            latestAccel[0] = event.values[0] / 9.81f;
++            latestAccel[1] = event.values[1] / 9.81f;
++            latestAccel[2] = event.values[2] / 9.81f;
++        } else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
++            latestGyro[0] = event.values[0];
++            latestGyro[1] = event.values[1];
++            latestGyro[2] = event.values[2];
++            
++            // Sync logic: we collect a frame every time gyro fires
++            // Format: (1, 6, 128). Data ordered by channel, then time.
++            // Channel 0: acc_x, 1: acc_y, 2: acc_z, 3: gyro_x, 4: gyro_y, 5: gyro_z
++            sensorBuffer[0 * 128 + bufferIndex] = latestAccel[0];
++            sensorBuffer[1 * 128 + bufferIndex] = latestAccel[1];
++            sensorBuffer[2 * 128 + bufferIndex] = latestAccel[2];
++            sensorBuffer[3 * 128 + bufferIndex] = latestGyro[0];
++            sensorBuffer[4 * 128 + bufferIndex] = latestGyro[1];
++            sensorBuffer[5 * 128 + bufferIndex] = latestGyro[2];
++            
++            bufferIndex++;
++            if (bufferIndex >= 128) {
++                runInference(sensorBuffer);
++                bufferIndex = 0; // reset
++            }
+         }
+     }
+@@ -200,21 +220,17 @@
+     private void runInference(float[] bufferData) {
+         try {
+-            // Heuristics-based fallback because ONNX model is missing weights (.data file)
+-            float sum = 0;
+-            for (float val : bufferData) sum += val;
+-            float mean = sum / bufferData.length;
+-            
+-            float varianceSum = 0;
+-            for (float val : bufferData) {
+-                varianceSum += (val - mean) * (val - mean);
+-            }
+-            float variance = varianceSum / bufferData.length;
+-            
+-            String activityLabel = "sitting";
+-            boolean isBusy = false;
+-            
+-            if (variance < 0.2f) {
+-                activityLabel = "laying";
+-            } else if (variance < 1.0f) {
+-                activityLabel = "sitting";
+-            } else if (variance < 2.5f) {
+-                activityLabel = "standing";
+-            } else if (variance < 5.0f) {
+-                activityLabel = "walking";
+-                isBusy = true;
+-            } else {
+-                activityLabel = "walking_upstairs";
+-                isBusy = true;
+-            }
+-            
+-            float maxVal = Math.min(1.0f, 0.7f + (float)(Math.random() * 0.29f)); // Simulate high confidence
+-            
+-            logToConsole(String.format(Locale.US, "AI Inference: activity=%s conf=%.2f (var: %.2f)", activityLabel, maxVal, variance));
++            if (ortEnv == null || ortSession == null) return;
++            
++            FloatBuffer floatBuffer = FloatBuffer.wrap(bufferData);
++            long[] shape = new long[]{1, 6, 128};
++            OnnxTensor tensor = OnnxTensor.createTensor(ortEnv, floatBuffer, shape);
++            String inputName = ortSession.getInputNames().iterator().next();
++            
++            OrtSession.Result result = ortSession.run(Collections.singletonMap(inputName, tensor));
++            float[][] output = (float[][]) result.get(0).getValue();
++            
++            int maxIdx = 0;
++            float maxVal = output[0][0];
++            for (int i = 1; i < output[0].length; i++) {
++                if (output[0][i] > maxVal) {
++                    maxVal = output[0][i];
++                    maxIdx = i;
++                }
++            }
++            
++            String[] labels = {"walking", "walking_upstairs", "walking_downstairs", "sitting", "standing", "laying"};
++            String activityLabel = maxIdx >= 0 && maxIdx < labels.length ? labels[maxIdx] : "unknown";
++            boolean isBusy = (maxIdx <= 2); // 0, 1, 2 are moving activities
++            
++            logToConsole(String.format(Locale.US, "DL Inference: %s (conf: %.2f)", activityLabel, maxVal));
+             
+             String statusJson = String.format(Locale.US, "{\"activity\": \"%s\", \"confidence\": %.2f, \"busy\": %b}", 
+                 activityLabel, maxVal, isBusy);
+@@ -226,6 +242,9 @@
+                 lastNudgeTime = now;
+                 fireDistractionNudge("Local AI Screen-Free Violation");
+             }
++            
++            result.close();
++            tensor.close();
+         } catch (Exception e) {
+-            Log.e(TAG, "Inference failed", e);
++            Log.e(TAG, "DL Inference failed", e);
+         }
+     }

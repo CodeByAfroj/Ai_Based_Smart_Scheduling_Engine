@@ -83,8 +83,6 @@ export default function Settings() {
       setNativeVersion(window.AndroidNative.getNativeVersion());
     }
 
-    }
-
     async function initPermissions() {
       const stPerm = await checkScreenTimePermission();
       const eaPerm = await checkExactAlarmPermission();
