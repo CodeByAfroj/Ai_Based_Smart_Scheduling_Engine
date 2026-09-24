@@ -449,5 +449,11 @@ public class MainActivity extends BridgeActivity {
             android.content.SharedPreferences prefs = mContext.getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
             prefs.edit().putBoolean("local_ai_enabled", enabled).apply();
         }
+
+        @JavascriptInterface
+        public String getLocalAIStatus() {
+            android.content.SharedPreferences prefs = mContext.getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
+            return prefs.getString("local_ai_status", "null");
+        }
     }
 }

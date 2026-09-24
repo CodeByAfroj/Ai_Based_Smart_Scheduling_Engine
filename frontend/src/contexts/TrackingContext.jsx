@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { setLocalAIEnabled, isTWA } from '../utils/nativeBridge';
+import { setLocalAIEnabled, isTWA, getLocalAIStatus } from '../utils/nativeBridge';
 
 import { useTasks } from './TaskContext';
 
@@ -63,6 +63,12 @@ export function TrackingProvider({ children }) {
         // Mobile Native: Only use Local AI, do not hit backend
         setLocalAIEnabled(true);
         setStatus({ isNativeMode: true });
+        timerRef.current = setInterval(() => {
+          const localStatus = getLocalAIStatus();
+          if (localStatus) {
+            setStatus(localStatus);
+          }
+        }, 1000);
       } else {
         // Web PWA: Use web sensors and Render backend API
         window.addEventListener('devicemotion', handleMotion);

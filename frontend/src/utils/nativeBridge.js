@@ -198,3 +198,17 @@ export function setLocalAIEnabled(enabled) {
   }
   return false;
 }
+
+export function getLocalAIStatus() {
+  if (isTWA() && window.AndroidNative?.getLocalAIStatus) {
+    try {
+      const json = window.AndroidNative.getLocalAIStatus();
+      if (json && json !== "null") {
+        return JSON.parse(json);
+      }
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}

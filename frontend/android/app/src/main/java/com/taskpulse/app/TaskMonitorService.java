@@ -215,6 +215,11 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             
             logToConsole(String.format(Locale.US, "AI Inference: class=%d conf=%.2f", maxIdx, maxVal));
             
+            String statusJson = String.format(Locale.US, "{\"activity\": \"%s\", \"confidence\": %.2f, \"busy\": %b}", 
+                (maxIdx == 2 ? "Distracted" : "Focused"), maxVal, (maxIdx == 2));
+            SharedPreferences prefs = getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
+            prefs.edit().putString("local_ai_status", statusJson).apply();
+            
             long now = System.currentTimeMillis();
             // If class 2 represents device usage (or sitting perfectly still on a desk) during a physical task
             if (maxIdx == 2 && (now - lastNudgeTime > 180000)) {
