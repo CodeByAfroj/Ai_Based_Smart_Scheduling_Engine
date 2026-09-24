@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { setLocalAIEnabled } from '../utils/nativeBridge';
+import { setLocalAIEnabled, isTWA } from '../utils/nativeBridge';
 
 import { useTasks } from './TaskContext';
 
@@ -55,27 +55,36 @@ export function TrackingProvider({ children }) {
     } catch { /* silent */ }
   };
 
-
-
   // React to tracking state changes
   useEffect(() => {
     if (tracking) {
-      window.addEventListener('devicemotion', handleMotion);
-      timerRef.current = setInterval(sendBuffer, 5000);
       localStorage.setItem('taskpulse_tracking', 'true');
-      setLocalAIEnabled(true);
+      if (isTWA()) {
+        // Mobile Native: Only use Local AI, do not hit backend
+        setLocalAIEnabled(true);
+        setStatus({ activity: 'Monitoring via Local AI', confidence: 1.0, busy: false });
+      } else {
+        // Web PWA: Use web sensors and Render backend API
+        window.addEventListener('devicemotion', handleMotion);
+        timerRef.current = setInterval(sendBuffer, 5000);
+      }
     } else {
-      window.removeEventListener('devicemotion', handleMotion);
-      clearInterval(timerRef.current);
+      localStorage.setItem('taskpulse_tracking', 'false');
+      if (isTWA()) {
+        setLocalAIEnabled(false);
+      } else {
+        window.removeEventListener('devicemotion', handleMotion);
+        clearInterval(timerRef.current);
+      }
       setStatus(null);
       bufferRef.current = [];
-      localStorage.setItem('taskpulse_tracking', 'false');
-      setLocalAIEnabled(false);
     }
 
     return () => {
-      window.removeEventListener('devicemotion', handleMotion);
-      clearInterval(timerRef.current);
+      if (!isTWA()) {
+        window.removeEventListener('devicemotion', handleMotion);
+        clearInterval(timerRef.current);
+      }
     };
   }, [tracking, token]); // re-run if token changes or tracking state changes
 
