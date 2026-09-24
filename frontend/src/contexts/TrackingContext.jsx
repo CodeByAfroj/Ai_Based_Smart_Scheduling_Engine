@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { setLocalAIEnabled } from '../utils/nativeBridge';
+
 import { useTasks } from './TaskContext';
 
 const TrackingContext = createContext();
@@ -53,18 +55,22 @@ export function TrackingProvider({ children }) {
     } catch { /* silent */ }
   };
 
+
+
   // React to tracking state changes
   useEffect(() => {
     if (tracking) {
       window.addEventListener('devicemotion', handleMotion);
       timerRef.current = setInterval(sendBuffer, 5000);
       localStorage.setItem('taskpulse_tracking', 'true');
+      setLocalAIEnabled(true);
     } else {
       window.removeEventListener('devicemotion', handleMotion);
       clearInterval(timerRef.current);
       setStatus(null);
       bufferRef.current = [];
       localStorage.setItem('taskpulse_tracking', 'false');
+      setLocalAIEnabled(false);
     }
 
     return () => {

@@ -267,12 +267,6 @@ export default function Settings() {
               icon={Activity} iconColor="bg-indigo-500" title="Focus Mode" subtitle="Enable distraction tracking & screen-free monitoring"
               right={<Toggle checked={focusModeEnabled} onChange={setAndSaveFocusMode} />}
             />
-            {isNativeApp && (
-              <Row
-                icon={Smartphone} iconColor="bg-teal-500" title="Local AI Distraction Engine" subtitle="Run ML model locally on-device for zero latency (Saves Battery)"
-                right={<Toggle checked={localAIEnabled} onChange={handleLocalAIToggle} />}
-              />
-            )}
           </Section>
         </div>
 
