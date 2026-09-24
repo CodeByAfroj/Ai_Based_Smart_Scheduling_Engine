@@ -448,6 +448,15 @@ public class MainActivity extends BridgeActivity {
         public void setLocalAIEnabled(boolean enabled) {
             android.content.SharedPreferences prefs = mContext.getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
             prefs.edit().putBoolean("local_ai_enabled", enabled).apply();
+            
+            if (enabled) {
+                android.content.Intent intent = new android.content.Intent(mContext, TaskMonitorService.class);
+                intent.setAction("START_BACKGROUND_AI");
+                mContext.startService(intent);
+            } else {
+                android.content.Intent intent = new android.content.Intent(mContext, TaskMonitorService.class);
+                mContext.stopService(intent);
+            }
         }
 
         @JavascriptInterface

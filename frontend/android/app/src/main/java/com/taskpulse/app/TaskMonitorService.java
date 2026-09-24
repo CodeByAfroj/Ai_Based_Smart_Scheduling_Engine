@@ -101,20 +101,9 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             if (sensorManager != null) {
                 accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             }
-            
-            ortEnv = OrtEnvironment.getEnvironment();
-            InputStream is = getAssets().open("activity_dl.onnx");
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
-            byte[] data = new byte[16384];
-            while ((nRead = is.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, nRead);
-            }
-            byte[] modelBytes = buffer.toByteArray();
-            ortSession = ortEnv.createSession(modelBytes, new OrtSession.SessionOptions());
-            logToConsole("Successfully loaded ONNX Local AI Model.");
+            logToConsole("Successfully Initialized Local AI Heuristics Mode (ONNX Bypass).");
         } catch (Exception e) {
-            logToConsole("Failed to init ONNX AI: " + e.getMessage());
+            logToConsole("Failed to init Sensor AI: " + e.getMessage());
             useLocalAI = false;
         }
     }
@@ -134,6 +123,16 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
+            String action = intent.getAction();
+            if ("START_BACKGROUND_AI".equals(action)) {
+                logToConsole("Started Continuous Local AI from Settings.");
+                startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification());
+                if (sensorManager != null && accelerometer != null) {
+                    sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+                }
+                return START_STICKY;
+            }
+
             currentTaskId = intent.getStringExtra("TASK_ID");
             taskTitle = intent.getStringExtra("ALARM_TITLE");
             if (taskTitle == null) taskTitle = "your current task";
@@ -194,26 +193,23 @@ public class TaskMonitorService extends Service implements SensorEventListener {
 
     private void runInference(float[] bufferData) {
         try {
-            FloatBuffer floatBuffer = FloatBuffer.wrap(bufferData);
-            long[] shape = new long[]{1, 1, 128};
-            OnnxTensor tensor = OnnxTensor.createTensor(ortEnv, floatBuffer, shape);
-            String inputName = ortSession.getInputNames().iterator().next();
+            // Heuristics-based fallback because ONNX model is missing weights (.data file)
+            float sum = 0;
+            for (float val : bufferData) sum += val;
+            float mean = sum / bufferData.length;
             
-            OrtSession.Result result = ortSession.run(Collections.singletonMap(inputName, tensor));
-            float[][] output = (float[][]) result.get(0).getValue();
-            
-            // Assuming output[0] is probabilities for classes (e.g. 0: Resting, 1: Walking, 2: Phone Usage)
-            // If phone usage probability is highest, fire nudge
-            int maxIdx = 0;
-            float maxVal = output[0][0];
-            for (int i = 1; i < output[0].length; i++) {
-                if (output[0][i] > maxVal) {
-                    maxVal = output[0][i];
-                    maxIdx = i;
-                }
+            float varianceSum = 0;
+            for (float val : bufferData) {
+                varianceSum += (val - mean) * (val - mean);
             }
+            float variance = varianceSum / bufferData.length;
             
-            logToConsole(String.format(Locale.US, "AI Inference: class=%d conf=%.2f", maxIdx, maxVal));
+            // If variance is high, phone is being moved -> Distracted (Class 2)
+            // If variance is low, phone is resting -> Focused (Class 0)
+            int maxIdx = variance > 0.5f ? 2 : 0;
+            float maxVal = variance > 0.5f ? Math.min(variance / 2.0f, 0.99f) : (1.0f - variance);
+            
+            logToConsole(String.format(Locale.US, "AI Inference: class=%d conf=%.2f (var: %.2f)", maxIdx, maxVal, variance));
             
             String statusJson = String.format(Locale.US, "{\"activity\": \"%s\", \"confidence\": %.2f, \"busy\": %b}", 
                 (maxIdx == 2 ? "Distracted" : "Focused"), maxVal, (maxIdx == 2));
@@ -221,17 +217,13 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             prefs.edit().putString("local_ai_status", statusJson).apply();
             
             long now = System.currentTimeMillis();
-            // If class 2 represents device usage (or sitting perfectly still on a desk) during a physical task
             if (maxIdx == 2 && (now - lastNudgeTime > 180000)) {
                 logToConsole("LOCAL AI DETECTED DISTRACTION. Firing nudge.");
                 lastNudgeTime = now;
                 fireDistractionNudge("Local AI Screen-Free Violation");
             }
-            
-            result.close();
-            tensor.close();
         } catch (Exception e) {
-            Log.e(TAG, "ONNX Inference failed", e);
+            Log.e(TAG, "Inference failed", e);
         }
     }
 
