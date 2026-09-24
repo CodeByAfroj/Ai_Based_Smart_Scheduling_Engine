@@ -83,12 +83,6 @@ export default function Settings() {
       setNativeVersion(window.AndroidNative.getNativeVersion());
     }
 
-    if (native) {
-      const savedLocalAI = localStorage.getItem('taskpulse_local_ai');
-      if (savedLocalAI) {
-        setLocalAIEnabled(savedLocalAI === 'true');
-        import('../utils/nativeBridge').then(m => m.setLocalAIEnabled(savedLocalAI === 'true'));
-      }
     }
 
     async function initPermissions() {
@@ -219,11 +213,7 @@ export default function Settings() {
     saveNotifConfigs(notifPref, pushEnabled, alarmEnabled, val);
   };
 
-  const handleLocalAIToggle = (val) => {
-    setLocalAIEnabled(val);
-    localStorage.setItem('taskpulse_local_ai', val.toString());
-    import('../utils/nativeBridge').then(m => m.setLocalAIEnabled(val));
-  };
+
 
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">

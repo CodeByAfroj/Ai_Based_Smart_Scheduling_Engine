@@ -145,7 +145,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                     sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
                     sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
                 }
-                return START_STICKY;
+                return START_NOT_STICKY;
             }
 
             currentTaskId = intent.getStringExtra("TASK_ID");
@@ -236,14 +236,21 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 }
             }
             
+            // Softmax for probability conversion
+            float sumExp = 0;
+            for (int i = 0; i < output[0].length; i++) {
+                sumExp += (float) Math.exp(output[0][i]);
+            }
+            float confidence = (float) Math.exp(maxVal) / sumExp;
+            
             String[] labels = {"walking", "walking_upstairs", "walking_downstairs", "sitting", "standing", "laying"};
             String activityLabel = maxIdx >= 0 && maxIdx < labels.length ? labels[maxIdx] : "unknown";
             boolean isBusy = (maxIdx <= 2);
             
-            logToConsole(String.format(Locale.US, "DL Inference: %s (conf: %.2f)", activityLabel, maxVal));
+            logToConsole(String.format(Locale.US, "DL Inference: %s (conf: %.2f)", activityLabel, confidence));
             
             String statusJson = String.format(Locale.US, "{\"activity\": \"%s\", \"confidence\": %.2f, \"busy\": %b}", 
-                activityLabel, maxVal, isBusy);
+                activityLabel, confidence, isBusy);
             SharedPreferences prefs = getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
             prefs.edit().putString("local_ai_status", statusJson).apply();
             
