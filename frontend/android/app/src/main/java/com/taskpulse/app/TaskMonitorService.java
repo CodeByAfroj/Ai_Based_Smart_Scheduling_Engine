@@ -128,7 +128,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             String action = intent.getAction();
             if ("START_BACKGROUND_AI".equals(action)) {
                 logToConsole("Started Continuous Local AI from Settings.");
-                startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification());
+                startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification("Activity Tracking Active"));
                 if (sensorManager != null && accelerometer != null && gyroscope != null) {
                     sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
                     sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME);
@@ -145,7 +145,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             taskDurationMs = durationMinutes * 60 * 1000L;
             serviceStartTime = System.currentTimeMillis();
 
-            startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification());
+            startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification(isMeetingMode ? "Monitoring meeting..." : (isScreenFree ? "Screen-Free Focus active" : "Focus mode active")));
 
             if (isMeetingMode) {
                 logToConsole("Started MEETING mode. Waiting for end window.");
@@ -227,10 +227,10 @@ public class TaskMonitorService extends Service implements SensorEventListener {
         }
     }
 
-    private Notification buildForegroundNotification() {
+    private Notification buildForegroundNotification(String text) {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("TaskPulse")
-                .setContentText(isMeetingMode ? "Monitoring meeting..." : (isScreenFree ? "Screen-Free Focus active" : "Focus mode active"))
+                .setContentText(text)
                 .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();

@@ -1,7 +1,7 @@
 {
-  "nativeVersion": "1.0.33",
+  "nativeVersion": "1.0.34",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Removed activity tracking from distraction alerts."
+  "releaseNotes": "Fixed foreground notification text for Live Activity tracking."
 }
 
 
