@@ -83,6 +83,7 @@ async def get_profile(user_id: str = Depends(get_current_user_id)):
         "push_notifications": settings.get("push_notifications", True),
         "desktop_notifications": settings.get("desktop_notifications", True),
         "alarm_enabled": settings.get("alarm_enabled", True),
+        "focus_mode_enabled": settings.get("focus_mode_enabled", True),
         "email_summary": settings.get("email_summary", False),
         "notification_preference": settings.get("notification_preference", "text_and_sound"),
         "categories": settings.get("categories", []),
