@@ -63,7 +63,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     private int bufferIndex = 0;
     private float[] latestAccel = new float[3];
     private float[] latestGyro = new float[3];
-    private HeuristicActivityTracker heuristicTracker;
+    private SmartHarTracker heuristicTracker;
 
     private final List<String> meetingApps = Arrays.asList(
             "us.zoom.videomeetings",
@@ -102,8 +102,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
                 gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             }
-            heuristicTracker = new HeuristicActivityTracker();
-            logToConsole("Successfully loaded Heuristic Activity Tracker.");
+            heuristicTracker = new SmartHarTracker(this);
+            logToConsole("Successfully loaded TFLite Smart HAR Tracker.");
         } catch (Exception e) {
             logToConsole("Failed to init Heuristic Tracker: " + e.getMessage());
             useLocalAI = false;
@@ -207,7 +207,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
         try {
             if (heuristicTracker == null) return;
             
-            HeuristicActivityTracker.ActivityResult result = heuristicTracker.analyze(bufferData);
+            SmartHarTracker.ActivityResult result = heuristicTracker.analyze(bufferData);
             
             String activityLabel = result.activity;
             float confidence = result.confidence;
@@ -375,6 +375,9 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             // Nothing to close for heuristic tracker
         } catch (Exception e) {
             Log.e(TAG, "Failed to clean up AI resources");
+        }
+        if (heuristicTracker != null) {
+            heuristicTracker.close();
         }
         logToConsole("Service destroyed.");
     }

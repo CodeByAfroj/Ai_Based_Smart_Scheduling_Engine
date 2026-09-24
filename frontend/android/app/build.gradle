@@ -3,6 +3,9 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.taskpulse.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    aaptOptions {
+        noCompress "tflite"
+    }
     defaultConfig {
         applicationId "com.taskpulse.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -52,6 +55,7 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    implementation "org.tensorflow:tensorflow-lite:2.14.0"
 }
 
 apply from: 'capacitor.build.gradle'
