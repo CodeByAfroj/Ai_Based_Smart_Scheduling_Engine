@@ -210,6 +210,11 @@ export default function Settings() {
   const setAndSaveFocusMode = (val) => {
     setFocusModeEnabled(val);
     saveNotifConfigs(notifPref, pushEnabled, alarmEnabled, val);
+    
+    // Automatically stop/start the background service notification based on the toggle
+    if (window.AndroidNative && typeof window.AndroidNative.setLocalAIEnabled === 'function') {
+      window.AndroidNative.setLocalAIEnabled(val);
+    }
   };
 
 
