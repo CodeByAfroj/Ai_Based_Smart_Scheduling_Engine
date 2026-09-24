@@ -220,13 +220,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             SharedPreferences prefs = getSharedPreferences("TaskPulsePrefs", Context.MODE_PRIVATE);
             prefs.edit().putString("local_ai_status", statusJson).apply();
             
-            long now = System.currentTimeMillis();
-            if (isBusy && (now - lastNudgeTime > 180000)) {
-                logToConsole("LOCAL AI DETECTED DISTRACTION. Firing nudge.");
-                lastNudgeTime = now;
-                fireDistractionNudge("Local AI Screen-Free Violation");
-            }
-            
+            // (Removed distraction nudge logic per user request. This activity tracker 
+            // is not intended to be bound to focus mode distraction alerts.)            
         } catch (Exception e) {
             Log.e(TAG, "Heuristic Inference failed", e);
         }

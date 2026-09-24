@@ -1,7 +1,7 @@
 {
-  "nativeVersion": "1.0.32",
+  "nativeVersion": "1.0.33",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Replaced Deep Learning with lightweight Heuristic tracker and fixed focus mode bugs."
+  "releaseNotes": "Removed activity tracking from distraction alerts."
 }
 
 
