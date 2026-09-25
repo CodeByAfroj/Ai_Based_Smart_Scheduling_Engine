@@ -54,7 +54,7 @@ export default function Dashboard() {
   const [loadingRec, setLoadingRec] = useState(false);
   const fetchRecommendation = (forceRefresh = false) => {
     if (!token) return;
-    
+
     const activeTasksString = tasks.filter(t => t.status !== 'completed').map(t => t.id).sort().join(',');
     const CACHE_KEY = `taskpulse_ai_rec_cache_${activeTasksString}`;
     const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -146,7 +146,7 @@ export default function Dashboard() {
         )}
 
         {/* Two-Column Flex Layout */}
-        <div className="flex flex-col lg:flex-row gap-6">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
 
           {/* Main Content Area (Left) */}
           <div className="flex-1 min-w-0 flex flex-col gap-6">
@@ -340,45 +340,63 @@ export default function Dashboard() {
                     const isActive = !isCompleted && now >= start && now <= end;
 
                     return (
-                      <div key={task.id} className="group flex items-start gap-4 p-3 hover:bg-[var(--bg-hover)] rounded-xl transition-all duration-300">
-                        <div className="flex flex-col items-center pt-0.5">
-                          {/* Timeline Dot */}
-                          <div className={`w-3 h-3 rounded-full border-[2.5px] shrink-0 transition-all duration-300 ${isActive ? 'bg-[var(--accent-base)] border-[var(--accent-base)] shadow-[0_0_10px_var(--accent-base)] scale-125' :
-                            isCompleted ? 'bg-green-500 border-green-500' :
-                              isPast ? 'bg-slate-400 border-slate-400 dark:bg-slate-500 dark:border-slate-500' :
-                                'bg-[var(--bg-panel)] border-slate-300 dark:border-slate-600 group-hover:border-[var(--accent-base)]'
-                            }`} />
-
-                          {/* Connecting Line */}
-                          {i < todayTasks.length - 1 && (
-                            <div className={`w-0.5 h-full min-h-[2.5rem] my-1 rounded-full transition-colors ${isCompleted ? 'bg-green-500/40' :
-                              isPast ? 'bg-slate-400/40' :
-                                'bg-slate-200 dark:bg-slate-700/50 group-hover:bg-[var(--border-subtle)]'
-                              }`} />
-                          )}
+                      <div key={task.id} className="relative flex items-stretch gap-4 group">
+                        {/* Vertical Line Connector */}
+                        {i < todayTasks.length - 1 && (
+                          <div className={`absolute left-[11px] top-8 bottom-[-16px] w-[2px] rounded-full transition-colors ${
+                            isCompleted ? 'bg-green-500/40' :
+                            isPast ? 'bg-slate-200 dark:bg-slate-700/50' :
+                            'bg-slate-200 dark:bg-slate-700/50 group-hover:bg-[var(--border-subtle)]'
+                          }`} />
+                        )}
+                        
+                        {/* Timeline Dot (Fixed Width Container for Alignment) */}
+                        <div className="flex flex-col items-center pt-4 w-6 shrink-0 relative z-10">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center border-[2px] transition-all duration-300 bg-[var(--bg-panel)] ${
+                            isActive ? 'border-[var(--accent-base)] shadow-[0_0_10px_var(--accent-base)] scale-110' :
+                            isCompleted ? 'border-green-500 bg-green-500' :
+                            isPast ? 'border-slate-300 dark:border-slate-600' :
+                            'border-slate-300 dark:border-slate-600 group-hover:border-[var(--accent-base)]'
+                          }`}>
+                            {isActive && <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent-base)] animate-pulse" />}
+                            {isCompleted && <CheckCircle2 size={12} className="text-white" />}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-[11px] font-bold tracking-wide uppercase mb-1 transition-colors ${isActive ? 'text-[var(--accent-base)]' :
+
+                        {/* Task Card (Consistent Sizing and Padding) */}
+                        <div className={`flex-1 min-w-0 p-4 rounded-xl border transition-all duration-300 ${
+                          isActive ? 'bg-[var(--accent-light)] border-[var(--accent-base)]/30 shadow-sm' :
+                          isCompleted ? 'bg-[var(--bg-app)]/50 border-transparent opacity-60' :
+                          'bg-[var(--bg-app)] border-[var(--border-subtle)] hover:shadow-sm'
+                        }`}>
+                          <p className={`text-[11px] font-black tracking-widest uppercase mb-1.5 transition-colors ${
+                            isActive ? 'text-[var(--accent-base)]' :
                             isCompleted ? 'text-green-500' :
-                              isPast ? 'text-[var(--text-muted)]' :
-                                'text-[var(--text-muted)]'
-                            }`}>
+                            isPast ? 'text-[var(--text-muted)]' :
+                            'text-[var(--text-muted)]'
+                          }`}>
                             {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })} – {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                           </p>
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm font-bold truncate transition-colors ${isPast ? 'text-[var(--text-muted)] line-through decoration-[var(--text-muted)]/40' :
-                              'text-[var(--text-main)] group-hover:text-[var(--accent-base)]'
-                              }`}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className={`text-sm font-bold truncate transition-colors ${
+                              isPast ? 'text-[var(--text-muted)] line-through decoration-[var(--text-muted)]/40' :
+                              'text-[var(--text-main)]'
+                            }`}>
                               {task.name}
                             </p>
                             {isCompleted && (
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-sm shadow-sm flex items-center gap-1">
-                                <CheckCircle2 size={10} /> Completed
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 rounded-md shadow-sm">
+                                Completed
                               </span>
                             )}
                             {!isCompleted && task.fixed && (
-                              <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-sm shadow-sm">
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-md shadow-sm">
                                 Fixed
+                              </span>
+                            )}
+                            {!isCompleted && !task.fixed && (
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)] bg-[var(--bg-hover)] border border-[var(--border-subtle)] px-1.5 py-0.5 rounded-md">
+                                {task.duration_minutes}m
                               </span>
                             )}
                           </div>
@@ -400,11 +418,11 @@ export default function Dashboard() {
           </div>
 
           {/* RIGHT SIDEBAR */}
-          <div className="flex flex-col gap-6 lg:w-72 xl:w-80 lg:shrink-0">
+          <div className="flex flex-col gap-5 lg:w-72 xl:w-80 lg:shrink-0">
 
             {/* Workspace Readiness */}
-            <Section>
-              <div data-tour="workspace-readiness" className="p-5 flex items-center justify-between gap-4">
+            <Section className="!mb-0">
+              <div data-tour="workspace-readiness" className="p-6 flex items-center justify-between gap-4">
                 <div className="relative w-16 h-16 shrink-0">
                   <svg viewBox="0 0 80 80" className="w-16 h-16">
                     <circle cx="40" cy="40" r="34" fill="none" stroke="var(--border-subtle)" strokeWidth="8" />
@@ -420,35 +438,35 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1">
                   <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Account Setup</p>
-                  <h3 className="font-bold text-[15px] text-[var(--text-main)] leading-tight mb-1">Workspace Readiness</h3>
+                  <h3 className="font-bold text-[16px] text-[var(--text-main)] leading-tight mb-1">Workspace Readiness</h3>
                   <p className={`text-[12px] font-semibold leading-snug ${readinessScore === 100 ? 'text-green-500' : 'text-indigo-500'}`}>
                     {readinessScore === 100 ? 'All systems configured! ✓' : `+${Math.round((100 - readinessScore) * 0.35)}% efficiency boost available`}
                   </p>
                 </div>
               </div>
               {readinessScore < 100 && (
-                <Row 
-                  isButton 
-                  title="Complete Profile & Preferences" 
-                  onClick={() => navigate('/profile-setup')} 
+                <Row
+                  isButton
+                  title="Complete Profile & Preferences"
+                  onClick={() => navigate('/profile-setup')}
                   className="bg-[var(--bg-app)] hover:bg-[var(--bg-hover)] text-[14px] font-semibold text-[var(--text-main)] border-t border-[var(--border-subtle)]"
                 />
               )}
             </Section>
 
             {/* Stats Row - Real Data */}
-            <Section>
+            <Section className="!mb-0">
               <div className="grid grid-cols-2 divide-x divide-[var(--border-subtle)]">
-                <div className="p-4 text-center">
+                <div className="p-5 text-center">
                   <div className="flex justify-center mb-1.5">
-                    <CheckCircle2 size={16} className="text-emerald-500" />
+                    <CheckCircle2 size={18} className="text-emerald-500" />
                   </div>
                   <p className="text-3xl font-black text-[var(--text-main)] tracking-tight">{completedTasks.length}</p>
                   <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">Tasks</p>
                 </div>
-                <div className="p-4 text-center">
+                <div className="p-5 text-center">
                   <div className="flex justify-center mb-1.5">
-                    <BarChart3 size={16} className="text-indigo-500" />
+                    <BarChart3 size={18} className="text-indigo-500" />
                   </div>
                   <p className="text-3xl font-black text-[var(--text-main)] tracking-tight">{(totalFocusMinutes / 60).toFixed(1)}<span className="text-xl text-[var(--text-muted)]">h</span></p>
                   <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mt-1">Focus Time</p>
@@ -458,8 +476,9 @@ export default function Dashboard() {
 
             {/* Top Priority Action Items */}
             <div data-tour="priority-inbox">
-              <Section 
-                title={<div className="flex items-center gap-2"><Zap size={16} className="text-amber-500" /> Priority Inbox</div>} 
+              <Section
+                className="!mb-0"
+                title={<div className="flex items-center gap-2"><Zap size={16} className="text-amber-500" /> Priority Inbox</div>}
                 footer={topPriorityTasks.length > 0 ? `TOP ${topPriorityTasks.length} URGENT` : undefined}
               >
                 {topPriorityTasks.length === 0 ? (
@@ -474,10 +493,10 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   topPriorityTasks.map(task => (
-                    <Row 
+                    <Row
                       key={task.id}
-                      onClick={() => {}}
-                      icon={Circle} 
+                      onClick={() => { }}
+                      icon={Circle}
                       iconColor="bg-transparent text-[var(--text-muted)]"
                       title={task.name}
                       subtitle={
@@ -493,8 +512,8 @@ export default function Dashboard() {
                         </div>
                       }
                       right={
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'completed' }); }} 
+                        <button
+                          onClick={(e) => { e.stopPropagation(); updateTask(task.id, { status: 'completed' }); }}
                           className="p-2 text-[var(--border-subtle)] hover:text-emerald-500 transition-colors"
                           title="Mark as complete"
                         >

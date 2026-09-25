@@ -37,6 +37,18 @@ export default function Tasks() {
     }
   }, [location.hash, loadingTasks, tasks.length]);
 
+  useEffect(() => {
+    if (location.state?.openCreate) {
+      setShowForm(true);
+      sessionStorage.setItem('taskpulse_showform', 'true');
+      // Consume the state so it doesn't re-trigger on reload
+      window.history.replaceState({}, document.title);
+      
+      // Smooth scroll to top where form is
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [location.state]);
+
   // Form State
   const [name, setName] = useState('');
   const [duration, setDuration] = useState(60);
@@ -108,13 +120,10 @@ export default function Tasks() {
 
   return (
     <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto xl:mx-0 px-5 sm:px-8 lg:px-12">
 
         <div data-tour="tasks-header" className="flex items-center justify-between mb-6 scroll-mt-24">
           <h1 className="text-3xl font-bold text-[var(--text-main)]">Tasks</h1>
-          <button onClick={toggleForm} className="btn-primary py-2 px-4 rounded-full flex items-center gap-1.5 text-sm">
-            <Plus size={16} /> New Task
-          </button>
         </div>
 
         {showForm && (
