@@ -184,7 +184,7 @@ export default function ChatButton() {
           ease-[cubic-bezier(0.175,0.885,0.32,1.15)]
           ${isChatOpen 
             ? 'opacity-100 scale-100 translate-y-0 translate-x-0 pointer-events-auto rounded-t-2xl sm:rounded-2xl' 
-            : 'opacity-0 scale-50 translate-y-32 translate-x-16 pointer-events-none rounded-[100%]'}
+            : 'opacity-0 scale-[0.05] pointer-events-none rounded-[100%]'}
         `}
       >
         <ChatErrorBoundary>
