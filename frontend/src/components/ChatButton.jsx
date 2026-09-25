@@ -249,7 +249,7 @@ export default function ChatButton() {
         className={`
           fixed z-[99999] shadow-xl bg-[var(--accent-base)] text-white border border-white/20
           transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center
-          ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none hidden' : ''}
+          ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none' : ''}
           ${isCollapsed && !isChatOpen 
             ? 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-0 w-14 h-14 rounded-l-full translate-x-7 opacity-70 hover:opacity-100' 
             : 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-6 w-14 h-14 rounded-full hover:scale-105 hover:opacity-100'}
@@ -284,7 +284,7 @@ export default function ChatButton() {
           z-[99998]
           ${isChatOpen 
             ? 'opacity-100 pointer-events-auto rounded-none sm:rounded-2xl' 
-            : 'opacity-0 pointer-events-none hidden'}
+            : 'opacity-0 pointer-events-none'}
         `}
       >
         <ChatErrorBoundary>
