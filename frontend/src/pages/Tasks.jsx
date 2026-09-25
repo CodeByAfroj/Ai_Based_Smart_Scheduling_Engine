@@ -85,7 +85,7 @@ export default function Tasks() {
       name,
       duration_minutes: parseInt(duration),
       earliest_start: localInputToIST(earliestStart),
-      deadline: isFixed ? localInputToIST(new Date(new Date(earliestStart).getTime() + parseInt(duration) * 60000)) : localInputToIST(deadline),
+      deadline: isFixed ? localInputToIST(earliestStart) : localInputToIST(deadline),
       priority: parseInt(priority),
       fixed: isFixed,
       reminders: reminders,

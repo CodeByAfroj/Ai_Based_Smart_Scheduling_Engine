@@ -192,9 +192,10 @@ export default function ChatButton() {
           transition-all
           duration-300
           ease-[cubic-bezier(0.175,0.885,0.32,1.15)]
+          transform-gpu will-change-transform
           ${isChatOpen 
-            ? 'opacity-100 scale-100 pointer-events-auto' 
-            : 'opacity-0 scale-50 pointer-events-none translate-y-20 translate-x-10'}
+            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' 
+            : 'opacity-0 translate-y-10 scale-95 pointer-events-none'}
         `}
       >
         <ChatErrorBoundary>
