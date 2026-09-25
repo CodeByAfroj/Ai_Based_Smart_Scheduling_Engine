@@ -21,8 +21,8 @@ import androidx.core.app.NotificationCompat;
  */
 public class AlarmReceiver extends BroadcastReceiver {
 
-    private static final String CHANNEL_ID = "taskpulse_alarms_v2";
-    private static final String CHANNEL_NAME = "Task Alarms V2";
+    private static final String CHANNEL_ID = "taskpulse_alarms_v3";
+    private static final String CHANNEL_NAME = "Task Alarms V3";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -84,6 +84,9 @@ public class AlarmReceiver extends BroadcastReceiver {
     private void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+            if (alarmSound == null) {
+                alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+            }
 
             AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
