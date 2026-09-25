@@ -168,16 +168,19 @@ export default function ChatButton() {
           sm:max-w-[420px]
           sm:h-[600px]
           sm:max-h-[calc(100vh-8rem)]
-          sm:rounded-2xl
           bg-white
-          shadow-2xl
+          shadow-[0_20px_60px_rgba(0,0,0,0.3)]
           border
           border-[var(--border-subtle)]
           overflow-hidden
           z-[99998]
+          origin-bottom-right
           transition-all
-          duration-300
-          ${isChatOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none hidden'}
+          duration-[600ms]
+          ease-[cubic-bezier(0.175,0.885,0.32,1.15)]
+          ${isChatOpen 
+            ? 'opacity-100 scale-100 translate-y-0 translate-x-0 pointer-events-auto rounded-t-2xl sm:rounded-2xl' 
+            : 'opacity-0 scale-50 translate-y-32 translate-x-16 pointer-events-none rounded-[100%]'}
         `}
       >
         <ChatErrorBoundary>
