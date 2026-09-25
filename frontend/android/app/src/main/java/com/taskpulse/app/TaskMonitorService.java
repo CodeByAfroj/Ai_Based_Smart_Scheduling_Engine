@@ -63,7 +63,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     private int bufferIndex = 0;
     private float[] latestAccel = new float[3];
     private float[] latestGyro = new float[3];
-    private SmartHarTracker heuristicTracker;
+    private HeuristicActivityTracker heuristicTracker;
 
     private final List<String> meetingApps = Arrays.asList(
             "us.zoom.videomeetings",
@@ -102,7 +102,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
                 gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             }
-            heuristicTracker = new SmartHarTracker(this);
+            heuristicTracker = new HeuristicActivityTracker(this);
             logToConsole("Successfully loaded TFLite Smart HAR Tracker.");
         } catch (Exception e) {
             logToConsole("Failed to init Heuristic Tracker: " + e.getMessage());
@@ -209,7 +209,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
         try {
             if (heuristicTracker == null) return;
             
-            SmartHarTracker.ActivityResult result = heuristicTracker.analyze(bufferData);
+            HeuristicActivityTracker.ActivityResult result = heuristicTracker.analyze(bufferData);
             
             String activityLabel = result.activity;
             float confidence = result.confidence;
