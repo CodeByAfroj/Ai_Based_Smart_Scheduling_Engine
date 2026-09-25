@@ -177,103 +177,52 @@ export default function Dashboard() {
                   <div className="h-9 bg-white/10 rounded-lg w-32 shrink-0 animate-pulse"></div>
                 </div>
               </div>
-            ) : activeTasks.length > 0 && recommendation && recTask && recTask.name === 'Rest & Recharge' ? (
-              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-7 shadow-[0_0_40px_rgba(148,163,184,0.15)] border border-slate-500/30 relative overflow-hidden transition-all duration-500">
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-slate-500/20 rounded-full blur-3xl"></div>
+            ) : activeTasks.length > 0 && recommendation && recTask ? (
+              <div data-tour="ai-recommendation" className="bg-gradient-to-br from-[#2a2266] to-[#16113a] rounded-[24px] p-5 sm:p-8 relative overflow-hidden flex flex-col justify-between shadow-xl min-h-[320px] sm:min-h-[400px]">
+                {/* Background decorative sweeps */}
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-400/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-400/10 to-transparent rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none"></div>
 
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="bg-gradient-to-r from-blue-400 to-blue-500 text-blue-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(59,130,246,0.25)]">
-                        <Moon size={12} fill="currentColor" /> Rest Time
-                      </span>
-                      <span className="bg-white/10 backdrop-blur-sm text-white/90 text-xs font-semibold px-3 py-1 rounded-full border border-white/10">
-                        {recommendation.current_energy_level}
-                      </span>
-                    </div>
-                    <button onClick={() => fetchRecommendation(true)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-colors border border-white/10">
-                      <RefreshCw size={14} className={loadingRec ? "animate-spin" : ""} />
+                <div className="relative z-10 flex-1">
+                  {/* Top Badges */}
+                  <div className="flex flex-col items-start gap-2.5 mb-6 sm:mb-8">
+                    <span className="flex items-center gap-2 border border-blue-400/50 text-blue-300 font-bold text-[10px] tracking-widest uppercase px-3.5 py-1.5 rounded-full shadow-[0_0_12px_rgba(59,130,246,0.1)] bg-blue-500/10">
+                      <Zap size={13} fill="currentColor" /> AI RECOMMENDATION
+                    </span>
+                    <span className="flex items-center gap-2 border border-white/15 bg-white/10 text-slate-100 text-xs sm:text-sm font-medium px-3.5 py-1.5 rounded-full backdrop-blur-md">
+                      {recommendation.current_energy_level || 'Active Working Window'}
+                    </span>
+                  </div>
+
+                  {/* Main Content */}
+                  <h2 className="text-white text-xl sm:text-2xl font-bold mb-2">{recTask.name !== 'Rest & Recharge' ? recTask.name : ''}</h2>
+                  <p className="text-indigo-50/90 text-[14px] sm:text-[17px] leading-relaxed font-medium mb-6 sm:mb-10 max-w-2xl">
+                    {recTask.reason_detail || "TaskPulse has identified the perfect task for your current context and energy levels. Dive in now to maximize your productivity."}
+                  </p>
+                </div>
+
+                {/* Bottom Actions */}
+                <div className="relative z-10 mt-auto">
+                  <hr className="border-t border-white/20 mb-4 sm:mb-5" />
+                  
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={() => updateTask(recTask.task_id, { status: 'completed' })}
+                      className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium text-[13px] sm:text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors duration-200"
+                    >
+                      <CheckCircle2 size={16} className="text-emerald-400" /> Done
+                    </button>
+                    <button
+                      onClick={() => navigate('/schedule', { state: { focusTaskId: recTask.task_id } })}
+                      className="flex-[1.5] bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[13px] sm:text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(79,70,229,0.4)] transition-all duration-200"
+                    >
+                      <span>Start Focus</span> <Play fill="currentColor" size={13} />
                     </button>
                   </div>
 
-                  <h3 className="text-2xl font-black text-white mb-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-100">{recTask.name}</h3>
-                  <p className="text-slate-300 text-sm mb-6 leading-relaxed max-w-3xl">
-                    {recTask.reason_detail || "It's currently your designated sleep time. TaskPulse recommends taking this time to rest and recharge for maximum productivity tomorrow."}
+                  <p className="text-center text-indigo-200/50 text-[10px] sm:text-[11px] mt-4 sm:mt-6 font-medium tracking-wide">
+                    Adaptive schedule dynamically tuned for maximum productivity
                   </p>
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-3 bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10">
-                    <div className="flex flex-wrap items-center gap-4 text-xs w-full sm:w-auto">
-                      <span className="flex items-center gap-1.5 font-bold text-white"><Clock size={14} className="text-blue-400" /> {recTask.recommended_time_slot || "Overnight"}</span>
-                      <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></div>
-                      <span className="bg-blue-500/20 text-blue-200 px-2.5 py-1 rounded-md font-semibold whitespace-nowrap border border-blue-400/20">{recTask.reason_badge || "Sleep Time"}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : activeTasks.length > 0 && recommendation && recTask && recTask.name !== 'Rest & Recharge' ? (
-              <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-6 sm:p-7 shadow-[0_0_40px_rgba(99,102,241,0.18)] border border-indigo-500/35 relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_50px_rgba(99,102,241,0.35)] hover:border-indigo-400/50">
-
-                {/* Background decorative elements */}
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-colors duration-500"></div>
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl group-hover:bg-purple-500/30 transition-colors duration-500"></div>
-
-                <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700">
-                  <Zap size={200} />
-                </div>
-
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2.5">
-                    <div className="flex items-center gap-2 flex-wrap min-w-0">
-                      <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 shadow-[0_0_15px_rgba(251,191,36,0.25)] shrink-0">
-                        <Zap size={12} fill="currentColor" /> AI Recommendation
-                      </span>
-                      <span className="whitespace-nowrap inline-flex items-center text-[11px] sm:text-xs font-semibold px-2.5 py-1 rounded-lg sm:rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white/90 shadow-sm max-w-full truncate">
-                        {recommendation.current_energy_level}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs text-indigo-200/80 font-mono font-medium tracking-wider bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg shrink-0">Score: {recTask.score} pts</span>
-                      <button onClick={() => fetchRecommendation(true)} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-indigo-200/80 hover:text-white transition-colors border border-white/10">
-                        <RefreshCw size={14} className={loadingRec ? "animate-spin" : ""} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <h3 className="text-2xl font-black text-white mb-2 tracking-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-indigo-200 transition-all duration-300">{recTask.name}</h3>
-                  <p className="text-indigo-100/85 text-sm mb-5 leading-relaxed max-w-3xl">{recTask.reason_detail}</p>
-
-                  {/* Modern Glassmorphic Integrated Recommendation Footer */}
-                  <div className="pt-4 border-t border-white/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-2.5 text-xs">
-                      <span className="inline-flex items-center gap-1.5 font-bold text-white bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg">
-                        <Clock size={13} className="text-amber-400" /> {recTask.duration_minutes} mins
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-semibold text-indigo-100 bg-indigo-500/30 border border-indigo-400/25 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                        {recTask.reason_badge}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-indigo-200/90 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                        Slot: <strong className="text-white ml-1">{recTask.recommended_time_slot}</strong>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                      <button
-                        onClick={() => updateTask(recTask.task_id, { status: 'completed' })}
-                        className="flex-1 sm:flex-none justify-center bg-white/10 hover:bg-white/20 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl border border-white/15 transition-all duration-200 flex items-center gap-1.5 shadow-sm"
-                        title="Mark complete in one tap"
-                      >
-                        <CheckCircle2 size={14} className="text-green-400" />
-                        <span className="hidden xs:inline">Mark</span> Done
-                      </button>
-                      <button
-                        onClick={() => navigate('/schedule', { state: { focusTaskId: recTask.task_id } })}
-                        className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-black text-xs px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] hover:-translate-y-0.5"
-                      >
-                        Start Focus <Play size={12} fill="currentColor" />
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </div>
             ) : (
