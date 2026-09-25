@@ -178,14 +178,14 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : activeTasks.length > 0 && recommendation && recTask ? (
-              <div data-tour="ai-recommendation" className="bg-gradient-to-br from-[#2a2266] to-[#16113a] rounded-[24px] p-5 sm:p-8 relative overflow-hidden flex flex-col justify-between shadow-xl min-h-[320px] sm:min-h-[400px]">
+              <div data-tour="ai-recommendation" className="bg-gradient-to-br from-[#2a2266] to-[#16113a] rounded-[24px] p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between shadow-xl min-h-[280px] sm:min-h-[280px]">
                 {/* Background decorative sweeps */}
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-bl from-indigo-400/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-purple-400/10 to-transparent rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none"></div>
 
                 <div className="relative z-10 flex-1">
                   {/* Top Badges */}
-                  <div className="flex flex-col items-start gap-2.5 mb-6 sm:mb-8">
+                  <div className="flex flex-col items-start gap-2.5 mb-5 sm:mb-5">
                     <span className="flex items-center gap-2 border border-blue-400/50 text-blue-300 font-bold text-[10px] tracking-widest uppercase px-3.5 py-1.5 rounded-full shadow-[0_0_12px_rgba(59,130,246,0.1)] bg-blue-500/10">
                       <Zap size={13} fill="currentColor" /> AI RECOMMENDATION
                     </span>
@@ -196,14 +196,14 @@ export default function Dashboard() {
 
                   {/* Main Content */}
                   <h2 className="text-white text-xl sm:text-2xl font-bold mb-2">{recTask.name !== 'Rest & Recharge' ? recTask.name : ''}</h2>
-                  <p className="text-indigo-50/90 text-[14px] sm:text-[17px] leading-relaxed font-medium mb-6 sm:mb-10 max-w-2xl">
+                  <p className="text-indigo-50/90 text-[14px] sm:text-[16px] leading-relaxed font-medium mb-5 sm:mb-6 max-w-2xl">
                     {recTask.reason_detail || "TaskPulse has identified the perfect task for your current context and energy levels. Dive in now to maximize your productivity."}
                   </p>
                 </div>
 
                 {/* Bottom Actions */}
                 <div className="relative z-10 mt-auto">
-                  <hr className="border-t border-white/20 mb-4 sm:mb-5" />
+                  <hr className="border-t border-white/20 mb-4 sm:mb-4" />
                   
                   <div className="flex gap-3 w-full">
                     <button
@@ -220,7 +220,7 @@ export default function Dashboard() {
                     </button>
                   </div>
 
-                  <p className="text-center text-indigo-200/50 text-[10px] sm:text-[11px] mt-4 sm:mt-6 font-medium tracking-wide">
+                  <p className="text-center text-indigo-200/50 text-[10px] sm:text-[11px] mt-4 sm:mt-4 font-medium tracking-wide">
                     Adaptive schedule dynamically tuned for maximum productivity
                   </p>
                 </div>
