@@ -1,247 +1,328 @@
-import { useAuth } from '../contexts/AuthContext';
-import { useTasks } from '../contexts/TaskContext';
-import { BarChart3, Activity, Clock, CheckCircle2, ListTodo, Calendar, PieChart as PieChartIcon } from 'lucide-react';
-import { nowIST, formatDateIST } from '../utils/time';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import React, { useMemo } from "react";
+import { useTasks } from "../contexts/TaskContext";
 
-export default function Analytics() {
-  const { token } = useAuth();
-  const { tasks, loadingTasks: loading } = useTasks();
+// deterministic pseudo-random, so the tree looks the same on every render
+function seeded(i) {
+  const x = Math.sin(i * 999.7) * 10000;
+  return x - Math.floor(x);
+}
 
-  if (loading) return <div className="p-10 text-center text-[var(--text-muted)]">Loading analytics...</div>;
+function TreeSVG({ tasks }) {
+  const geometry = useMemo(() => {
+    const done = tasks.filter((t) => t.done);
+    const smalls = done.filter((t) => t.size === "small").length;
+    const mediums = done.filter((t) => t.size === "medium").length;
+    const larges = done.filter((t) => t.size === "large").length;
+    const total = done.length;
 
-  const completed = tasks.filter(t => t.status === 'completed');
-  const scheduled = tasks.filter(t => t.status === 'scheduled');
-  const pending = tasks.filter(t => t.status === 'pending');
-  const totalDuration = tasks.reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0);
-  const completedDuration = completed.reduce((acc, curr) => acc + (curr.duration_minutes || 0), 0);
-  const completionRate = tasks.length > 0 ? Math.round((completed.length / tasks.length) * 100) : 0;
-  const scheduledRate = tasks.length > 0 ? Math.round((scheduled.length / tasks.length) * 100) : 0;
+    if (total === 0) return { total: 0 };
 
-  // Priority breakdown
-  const highPriority = tasks.filter(t => (t.priority || 1) >= 3);
-  const highCompleted = highPriority.filter(t => t.status === 'completed');
-  const highCompletionRate = highPriority.length > 0 ? Math.round((highCompleted.length / highPriority.length) * 100) : 0;
+    const trunkH = Math.min(22 + total * 4, 175);
+    const baseY = 376,
+      topY = baseY - trunkH;
+    const trunkWTop = Math.max(6, 16 - total * 0.3);
+    const trunkPath = `M ${200 - 15} ${baseY} C ${200 - 16} ${baseY - trunkH * 0.5}, ${
+      200 - trunkWTop - 2
+    } ${topY + 16}, ${200 - trunkWTop} ${topY}
+       L ${200 + trunkWTop} ${topY} C ${200 + trunkWTop + 2} ${topY + 16}, ${
+      200 + 16
+    } ${baseY - trunkH * 0.5}, ${200 + 15} ${baseY} Z`;
 
-  // Per-day breakdown for the chart (last 7 days)
-  const chartData = [];
-  for (let i = 6; i >= 0; i--) {
-    const istNow = new Date(nowIST());
-    istNow.setHours(0, 0, 0, 0);
-    istNow.setDate(istNow.getDate() - i);
-    const dayStr = istNow.toLocaleDateString('en-US', { weekday: 'short' });
-    
-    const dayCompleted = completed.filter(t => {
-      const updatedStr = t.updated_at ? t.updated_at : t.created_at;
-      return formatDateIST(updatedStr) === formatDateIST(istNow.toISOString());
-    });
-    
-    chartData.push({
-      name: dayStr,
-      completed: dayCompleted.length
-    });
-  }
-
-  // Status Distribution for Pie Chart
-  const statusData = [
-    { name: 'Completed', value: completed.length, color: '#10b981' }, // Emerald 500
-    { name: 'Scheduled', value: scheduled.length, color: '#3b82f6' }, // Blue 500
-    { name: 'Pending', value: pending.length, color: '#94a3b8' },    // Slate 400
-  ].filter(d => d.value > 0);
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[var(--bg-panel)] border border-[var(--border-subtle)] p-3 rounded-xl shadow-lg">
-          <p className="font-bold text-[var(--text-main)] mb-1">{label}</p>
-          <p className="text-sm text-[var(--accent-base)] font-semibold">
-            {payload[0].value} {payload[0].value === 1 ? 'task' : 'tasks'} completed
-          </p>
-        </div>
-      );
+    // branches: one per medium task
+    const branches = [];
+    const branchTips = [];
+    const branchCount = Math.min(mediums, 10);
+    for (let i = 0; i < branchCount; i++) {
+      const r1 = seeded(i),
+        r2 = seeded(i + 50);
+      const side = i % 2 === 0 ? -1 : 1;
+      const startY = topY + trunkH * 0.55 * r1;
+      const angle = side * (35 + r2 * 30);
+      const len = 55 + r2 * 35;
+      const rad = (angle * Math.PI) / 180;
+      const sx = 200,
+        sy = startY;
+      const ex = sx + Math.sin(rad) * len,
+        ey = sy - Math.cos(rad) * len * 0.85;
+      const midx = sx + Math.sin(rad) * len * 0.5 + side * 8,
+        midy = sy - Math.cos(rad) * len * 0.5;
+      branches.push({
+        d: `M ${sx} ${sy} Q ${midx} ${midy} ${ex} ${ey}`,
+        w: Math.max(6 - i * 0.3, 2),
+      });
+      branchTips.push({ x: ex, y: ey });
     }
-    return null;
-  };
+
+    // canopy leaves
+    const canopyCx = 200,
+      canopyCy = topY - 10;
+    const canopyR = 35 + Math.min(total, 40) * 2.2;
+    const leafCount = Math.min(smalls + mediums * 3, 90);
+    const leaves = [];
+    for (let i = 0; i < leafCount; i++) {
+      const a = seeded(i) * Math.PI * 2;
+      const rr = Math.pow(seeded(i + 200), 0.6) * canopyR;
+      const lx = canopyCx + Math.cos(a) * rr * 1.15;
+      const ly = canopyCy + Math.sin(a) * rr * 0.85 - rr * 0.15;
+      const size = 5 + seeded(i + 300) * 5;
+      const rot = seeded(i + 400) * 360;
+      const roll = seeded(i + 500);
+      const fill = roll > 0.75 ? "var(--leaf-bright)" : roll > 0.35 ? "var(--leaf)" : "var(--leaf-dark)";
+      leaves.push({ lx, ly, size, rot, fill, shadowR: 6 + seeded(i + 300) * 4 });
+    }
+
+    // blossoms: one per large task
+    const blossoms = [];
+    for (let i = 0; i < larges; i++) {
+      let cx, cy;
+      if (branchTips.length > 0) {
+        const tip = branchTips[i % branchTips.length];
+        cx = tip.x;
+        cy = tip.y;
+      } else {
+        const a = seeded(i + 600) * Math.PI * 2;
+        cx = canopyCx + Math.cos(a) * canopyR * 0.9;
+        cy = canopyCy + Math.sin(a) * canopyR * 0.7;
+      }
+      blossoms.push({ cx, cy });
+    }
+
+    // fireflies
+    const fCount = Math.min(3 + Math.floor(total / 4), 7);
+    const fireflies = Array.from({ length: fCount }, (_, i) => ({
+      x: canopyCx + (seeded(i + 700) - 0.5) * canopyR * 2.4,
+      y: canopyCy + (seeded(i + 750) - 0.5) * canopyR * 1.8 + 10,
+      delay: seeded(i + 800) * 5,
+    }));
+
+    // ground grass flecks
+    const grass = Array.from({ length: 14 }, (_, g) => ({
+      x: 200 + (seeded(g + 900) - 0.5) * 180,
+      h: 4 + seeded(g + 950) * 7,
+    }));
+
+    return { total, trunkPath, baseY, topY, branches, leaves, blossoms, fireflies, grass, canopyCx, canopyCy };
+  }, [tasks]);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] p-4 sm:p-6 lg:p-10 pb-28 lg:pb-10">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[var(--text-main)] mb-1">Analytics & Activity</h1>
-          <p className="text-sm text-[var(--text-muted)]">Real-time task completion metrics and scheduling performance</p>
-        </div>
+    <svg viewBox="0 0 400 400" className="w-full h-full block">
+      <defs>
+        <linearGradient id="trunkShade" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="var(--trunk-dark)" />
+          <stop offset="45%" stopColor="transparent" />
+          <stop offset="100%" stopColor="var(--trunk-light)" stopOpacity="0.4" />
+        </linearGradient>
+        <radialGradient id="groundGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#4F6B4E" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#4F6B4E" stopOpacity="0" />
+        </radialGradient>
+        <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">Completion Rate</h3>
-              <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                <CheckCircle2 size={16} />
-              </div>
-            </div>
-            <div className="flex items-end gap-2">
-              <span className="text-3xl sm:text-4xl font-bold text-[var(--text-main)]">{completionRate}%</span>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] mt-2">{completed.length} of {tasks.length} tasks completed</p>
-          </div>
+      {geometry.total === 0 ? (
+        <>
+          <ellipse cx={200} cy={376} rx={70} ry={9} fill="url(#groundGlow)" />
+          <path
+            d="M200 376 C 198 348, 202 332, 200 316"
+            stroke="var(--trunk)"
+            strokeWidth={4}
+            fill="none"
+            strokeLinecap="round"
+          />
+          <g filter="url(#softGlow)">
+            <ellipse cx={190} cy={317} rx={11} ry={5.5} fill="var(--leaf)" transform="rotate(-25 190 317)" />
+            <ellipse cx={210} cy={317} rx={11} ry={5.5} fill="var(--leaf)" transform="rotate(25 210 317)" />
+          </g>
+        </>
+      ) : (
+        <>
+          <ellipse cx={200} cy={374} rx={120} ry={16} fill="url(#groundGlow)" />
+          {geometry.grass.map((g, i) => (
+            <path
+              key={i}
+              d={`M ${g.x} 378 q 2 -${g.h} 4 0`}
+              stroke="var(--leaf-dark)"
+              strokeWidth={1.4}
+              fill="none"
+              opacity={0.5}
+              strokeLinecap="round"
+            />
+          ))}
 
-          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">Focus Time</h3>
-              <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                <Clock size={16} />
-              </div>
-            </div>
-            <div className="flex items-end gap-2">
-              <span className="text-3xl sm:text-4xl font-bold text-[var(--text-main)]">{(completedDuration / 60).toFixed(1)}h</span>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] mt-2">{(totalDuration / 60).toFixed(1)}h total across all tasks</p>
-          </div>
+          <path d={`M ${200 - 24} 376 Q ${200 - 15} 362 ${200 - 13} ${geometry.baseY}`} stroke="var(--trunk-dark)" strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.7} />
+          <path d={`M ${200 + 24} 376 Q ${200 + 15} 362 ${200 + 13} ${geometry.baseY}`} stroke="var(--trunk-dark)" strokeWidth={3} fill="none" strokeLinecap="round" opacity={0.7} />
 
-          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">Scheduled</h3>
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                <Calendar size={16} />
-              </div>
-            </div>
-            <div className="flex items-end gap-2">
-              <span className="text-3xl sm:text-4xl font-bold text-[var(--text-main)]">{scheduled.length}</span>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] mt-2">{pending.length} pending • {scheduledRate}% auto-scheduled</p>
-          </div>
+          <path d={geometry.trunkPath} fill="var(--trunk)" />
+          <path d={geometry.trunkPath} fill="url(#trunkShade)" />
 
-          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-[var(--text-muted)] uppercase text-xs tracking-wider">High Priority</h3>
-              <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center text-red-600 dark:text-red-400">
-                <Activity size={16} />
-              </div>
-            </div>
-            <div className="flex items-end gap-2">
-              <span className="text-3xl sm:text-4xl font-bold text-[var(--text-main)]">{highCompletionRate}%</span>
-            </div>
-            <p className="text-xs text-[var(--text-muted)] mt-2">{highCompleted.length} of {highPriority.length} high-priority done</p>
-          </div>
-        </div>
+          {geometry.branches.map((b, i) => (
+            <path key={i} d={b.d} fill="none" stroke="var(--trunk)" strokeWidth={b.w} strokeLinecap="round" />
+          ))}
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Bar Chart */}
-          <div className="lg:col-span-2 bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-bold text-[var(--text-main)] flex items-center gap-2"><BarChart3 size={18} className="text-[var(--accent-base)]" /> Tasks Completed (Last 7 Days)</h2>
-            </div>
-            {tasks.length === 0 ? (
-              <div className="h-64 flex items-center justify-center text-[var(--text-muted)] text-sm">
-                No task data yet. Create and complete tasks to see analytics here.
-              </div>
-            ) : (
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} allowDecimals={false} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-hover)' }} />
-                    <Bar dataKey="completed" fill="var(--accent-base)" radius={[6, 6, 0, 0]} maxBarSize={50} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-
-          {/* Pie Chart */}
-          <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6 shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-bold text-[var(--text-main)] flex items-center gap-2"><PieChartIcon size={18} className="text-[var(--accent-base)]" /> Status Overview</h2>
-            </div>
-            {tasks.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-[var(--text-muted)] text-sm">
-                No data available.
-              </div>
-            ) : (
-              <div className="flex-1 h-64 w-full flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-panel)' }}
-                      itemStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
+          <g className="origin-[200px_210px] animate-[sway_7s_ease-in-out_infinite] motion-reduce:animate-none">
+            <g filter="url(#softGlow)" opacity={0.22}>
+              {geometry.leaves.map((l, i) => (
+                <circle key={i} cx={l.lx} cy={l.ly} r={l.shadowR} fill="var(--leaf-dark)" />
+              ))}
+            </g>
+            {geometry.leaves.map((l, i) => (
+              <ellipse
+                key={i}
+                cx={l.lx}
+                cy={l.ly}
+                rx={l.size}
+                ry={l.size * 0.6}
+                fill={l.fill}
+                opacity={0.95}
+                transform={`rotate(${l.rot} ${l.lx} ${l.ly})`}
+              />
+            ))}
+            {geometry.blossoms.map((b, i) => (
+              <g key={i} filter="url(#softGlow)">
+                {Array.from({ length: 5 }, (_, p) => {
+                  const pa = p * ((Math.PI * 2) / 5);
+                  const petalR = 7;
+                  return (
+                    <circle
+                      key={p}
+                      cx={b.cx + Math.cos(pa) * petalR}
+                      cy={b.cy + Math.sin(pa) * petalR}
+                      r={petalR * 0.85}
+                      fill="var(--flower)"
+                      opacity={0.95}
                     />
-                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </div>
+                  );
+                })}
+                <circle cx={b.cx} cy={b.cy} r={5} fill="var(--flower-core)" />
+              </g>
+            ))}
+          </g>
 
-        {/* Task Breakdown Table */}
-        <div className="bg-[var(--bg-panel)] rounded-2xl border border-[var(--border-subtle)] p-5 sm:p-6 shadow-sm overflow-hidden flex flex-col">
-          <h2 className="font-bold text-[var(--text-main)] flex items-center gap-2 mb-5"><ListTodo size={18} className="text-[var(--accent-base)]" /> Task Breakdown</h2>
-          {tasks.length === 0 ? (
-            <p className="text-sm text-[var(--text-muted)] py-4 text-center">No tasks to analyze yet.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-5 sm:mx-0">
-              <div className="inline-block min-w-full align-middle px-5 sm:px-0">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--border-subtle)]">
-                      <th className="text-left py-3 px-3 text-xs font-bold text-[var(--text-muted)] uppercase whitespace-nowrap">Task</th>
-                      <th className="text-left py-3 px-3 text-xs font-bold text-[var(--text-muted)] uppercase whitespace-nowrap">Duration</th>
-                      <th className="text-left py-3 px-3 text-xs font-bold text-[var(--text-muted)] uppercase whitespace-nowrap">Priority</th>
-                      <th className="text-left py-3 px-3 text-xs font-bold text-[var(--text-muted)] uppercase whitespace-nowrap">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasks.slice(0, 10).map(task => (
-                      <tr key={task.id} className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--bg-hover)] transition-colors">
-                        <td className="py-3 px-3 font-semibold text-[var(--text-main)]">
-                          <div className="truncate max-w-[150px] sm:max-w-[300px]" title={task.name}>{task.name}</div>
-                        </td>
-                        <td className="py-3 px-3 text-[var(--text-muted)] whitespace-nowrap">{task.duration_minutes}m</td>
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full inline-block ${
-                            (task.priority || 1) >= 3 ? 'bg-red-100/50 dark:bg-red-500/10 text-red-700 dark:text-red-400 border border-red-200/50 dark:border-red-800/50' :
-                            (task.priority || 1) >= 2 ? 'bg-amber-100/50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/50' :
-                            'bg-slate-100/50 dark:bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-subtle)]'
-                          }`}>
-                            {(task.priority || 1) >= 3 ? 'High' : (task.priority || 1) >= 2 ? 'Medium' : 'Low'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 whitespace-nowrap">
-                          <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full inline-block ${
-                            task.status === 'completed' ? 'bg-green-100/50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200/50 dark:border-green-800/50' :
-                            task.status === 'scheduled' ? 'bg-blue-100/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50' :
-                            'bg-slate-100/50 dark:bg-slate-500/10 text-[var(--text-muted)] border border-[var(--border-subtle)]'
-                          }`}>
-                            {task.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {geometry.fireflies.map((f, i) => (
+            <circle
+              key={i}
+              cx={f.x}
+              cy={f.y}
+              r={1.8}
+              fill="var(--flower-core)"
+              className="animate-[drift_6s_ease-in-out_infinite] motion-reduce:animate-none"
+              style={{ animationDelay: `${f.delay}s` }}
+            />
+          ))}
+        </>
+      )}
+    </svg>
+  );
+}
+
+export default function Analytics() {
+  const { tasks, loadingTasks: loading } = useTasks();
+
+  const treeTasks = useMemo(() => {
+    return tasks.map(t => {
+      let size = "small";
+      const priority = t.priority || 1;
+      const duration = t.duration_minutes || 0;
+      
+      if (priority >= 4 || duration >= 120) size = "large";
+      else if (priority >= 2 || duration >= 30) size = "medium";
+      
+      return {
+        id: t.id,
+        name: t.name,
+        done: t.status === 'completed',
+        size
+      };
+    });
+  }, [tasks]);
+
+  const isEmpty = treeTasks.filter((t) => t.done).length === 0;
+  const tagLabel = { small: "leaf", medium: "branch", large: "blossom" };
+  const doneTasks = treeTasks.filter(t => t.done);
+
+  if (loading) return <div className="p-10 text-center text-[var(--text-muted)]">Loading growth...</div>;
+
+  return (
+    <div
+      className="min-h-screen w-full flex flex-col items-center bg-[#0B1613] text-[#F1ECE1] font-sans pb-28"
+      style={{
+        "--trunk": "#6B4A34",
+        "--trunk-dark": "#3C2A1E",
+        "--trunk-light": "#8B6448",
+        "--leaf": "#7FA37A",
+        "--leaf-dark": "#3F5C42",
+        "--leaf-bright": "#9BC199",
+        "--flower": "#E3A857",
+        "--flower-core": "#F8DDA6",
+        backgroundImage:
+          "radial-gradient(ellipse 100% 55% at 50% 8%, #13221D 0%, #0B1613 50%, #070F0D 100%)",
+      }}
+    >
+      <style>{`
+        @keyframes sway { 0%,100% { transform: rotate(-0.6deg); } 50% { transform: rotate(0.6deg); } }
+        @keyframes drift { 0%,100% { opacity: 0.15; transform: translateY(0); } 50% { opacity: 0.85; transform: translateY(-10px); } }
+      `}</style>
+
+      <div className="w-full max-w-[680px] px-5 pt-11 pb-16">
+        <h1 className="text-center font-normal text-[27px] sm:text-[34px] mb-2 leading-tight font-serif italic text-white/90">
+          Your tree remembers every task.
+        </h1>
+        <p className="text-center text-[#94A69A] text-sm mb-8 leading-relaxed max-w-[420px] mx-auto">
+          Small tasks become leaves. Medium tasks become branches. High priority tasks blossom.
+        </p>
+
+        <div
+          className="relative w-full aspect-square max-h-[460px] mx-auto mb-7 rounded-[28px] overflow-hidden"
+          style={{
+            boxShadow: "inset 0 0 60px rgba(0,0,0,0.35), 0 20px 50px -20px rgba(0,0,0,0.6)",
+            backgroundImage:
+              "radial-gradient(ellipse 70% 40% at 50% 82%, rgba(63,92,66,0.4), transparent 65%), radial-gradient(ellipse 120% 70% at 50% 0%, rgba(30,50,44,0.5), transparent 60%)",
+          }}
+        >
+          <TreeSVG tasks={treeTasks} />
+          {isEmpty && (
+            <div
+              className="absolute bottom-3.5 left-0 right-0 text-center text-[#94A69A] text-[13px] italic pointer-events-none font-serif"
+            >
+              a seed, waiting to be planted
             </div>
           )}
         </div>
 
+        <div className="rounded-[20px] p-5 bg-white/[0.04] border border-white/[0.09] backdrop-blur-md shadow-[0_30px_60px_-30px_rgba(0,0,0,0.5)]">
+          <h2 className="text-sm font-semibold text-[#94A69A] uppercase tracking-wider mb-4 border-b border-white/10 pb-3">Completed Tasks ({doneTasks.length})</h2>
+          
+          <div className="flex flex-col max-h-[270px] overflow-y-auto pr-2 no-scrollbar">
+            {doneTasks.length === 0 && (
+              <div className="text-[#94A69A] text-sm text-center py-4 italic font-serif">
+                nothing planted yet — complete tasks in the dashboard to grow the tree
+              </div>
+            )}
+            {doneTasks
+              .slice()
+              .reverse()
+              .map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center gap-2.5 py-2.5 border-b border-white/[0.055] last:border-none"
+                >
+                  <div className="w-[19px] h-[19px] rounded-full border-[1.5px] border-[#7FA37A] flex items-center justify-center shrink-0 bg-[#7FA37A]">
+                    <span className="text-[#0B1613] text-[11px] font-bold">✓</span>
+                  </div>
+                  <span className="flex-1 text-sm text-white/80">{t.name}</span>
+                  <span className="text-[10.5px] text-[#94A69A] border border-white/[0.09] rounded-full px-2.5 py-1 whitespace-nowrap">
+                    {tagLabel[t.size]}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
       </div>
     </div>
   );
