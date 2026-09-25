@@ -180,6 +180,8 @@ export function TaskProvider({ children }) {
         cancelAlarm(taskToDelete.name, new Date(taskToDelete.scheduled_start).getTime());
       }
       
+      stopMonitorService();
+      
       const updated = prev.filter(t => t.id !== id);
       localStorage.setItem('taskpulse_tasks', JSON.stringify(updated));
       return updated;

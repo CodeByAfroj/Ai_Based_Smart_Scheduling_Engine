@@ -180,30 +180,25 @@ export default function Tasks() {
                 </select>
               </div>
 
-              <div className="px-4 py-3 flex flex-col gap-1 border-b border-[var(--border-subtle)]">
-                <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase">{taskType === 'fixed' ? 'Exact Start Time' : 'Earliest Start'}</label>
-                <input
-                  type="datetime-local"
-                  value={earliestStart}
-                  onChange={e => {
-                    setEarliestStart(e.target.value);
-                    if (new Date(localInputToIST(e.target.value)) >= new Date(localInputToIST(deadline))) {
-                      const earliestStartDate = new Date(localInputToIST(e.target.value));
-                      const newTimestamp = earliestStartDate.getTime() + parseInt(duration) * 60000 + 3600000;
-                      const newDateISTISO = new Date(newTimestamp).toISOString();
-                      const newDeadlineLocal = newDateISTISO.slice(0, 16);
-                      setDeadline(newDeadlineLocal);
-                    }
-                  }}
-                  required
-                  className="w-full bg-transparent text-[15px] text-[var(--text-main)] outline-none"
-                />
-              </div>
-
-              {taskType === 'flexible' && (
+              {taskType === 'fixed' && (
                 <div className="px-4 py-3 flex flex-col gap-1 border-b border-[var(--border-subtle)]">
-                  <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Deadline</label>
-                  <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)} required className="w-full bg-transparent text-[15px] text-[var(--text-main)] outline-none" />
+                  <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Exact Start Time</label>
+                  <input
+                    type="datetime-local"
+                    value={earliestStart}
+                    onChange={e => {
+                      setEarliestStart(e.target.value);
+                      if (new Date(localInputToIST(e.target.value)) >= new Date(localInputToIST(deadline))) {
+                        const earliestStartDate = new Date(localInputToIST(e.target.value));
+                        const newTimestamp = earliestStartDate.getTime() + parseInt(duration) * 60000 + 3600000;
+                        const newDateISTISO = new Date(newTimestamp).toISOString();
+                        const newDeadlineLocal = newDateISTISO.slice(0, 16);
+                        setDeadline(newDeadlineLocal);
+                      }
+                    }}
+                    required
+                    className="w-full bg-transparent text-[15px] text-[var(--text-main)] outline-none"
+                  />
                 </div>
               )}
 

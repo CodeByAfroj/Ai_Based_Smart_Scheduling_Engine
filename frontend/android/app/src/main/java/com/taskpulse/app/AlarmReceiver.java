@@ -93,9 +93,12 @@ public class AlarmReceiver extends BroadcastReceiver {
                 CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription("Alarm notifications for task deadlines");
-            channel.setDescription("Alarm notifications for task deadlines");
             
-            // Do NOT force vibration or sound, let standard OS Notification Channel rules apply
+            // Apply alarm sound and vibration for actual hardware alarms
+            channel.setSound(alarmSound, audioAttributes);
+            channel.enableVibration(true);
+            channel.setVibrationPattern(new long[]{0, 500, 200, 500, 200, 500});
+            channel.setBypassDnd(true);
             channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
             NotificationManager manager = context.getSystemService(NotificationManager.class);

@@ -260,29 +260,32 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                     fireDistractionNudge("Screen");
                 }
             }
-            return;
         }
 
         UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-        android.app.usage.UsageEvents events = usm.queryEvents(now - 10000, now);
+        // Check events since the service started to guarantee we see the last foreground event
+        android.app.usage.UsageEvents events = usm.queryEvents(serviceStartTime, now);
         
         android.app.usage.UsageEvents.Event event = new android.app.usage.UsageEvents.Event();
-        String foregroundApp = null;
+        String currentApp = lastLoggedApp; // default to what it was
         
         while (events.hasNextEvent()) {
             events.getNextEvent(event);
             if (event.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
-                foregroundApp = event.getPackageName();
+                currentApp = event.getPackageName();
             }
         }
 
-        if (foregroundApp != null && !foregroundApp.equals(lastLoggedApp)) {
-            logToConsole("Currently using app: " + foregroundApp);
-            lastLoggedApp = foregroundApp;
+        if (currentApp != null && !currentApp.equals(lastLoggedApp)) {
+            logToConsole("Currently using app: " + currentApp);
+            lastLoggedApp = currentApp;
         }
 
-        if (foregroundApp != null && distractionApps.contains(foregroundApp)) {
-            fireDistractionNudge(foregroundApp);
+        if (!isScreenFree && currentApp != null && distractionApps.contains(currentApp)) {
+            if (now - lastNudgeTime > 10000) {
+                lastNudgeTime = now;
+                fireDistractionNudge(currentApp);
+            }
         }
     }
 
