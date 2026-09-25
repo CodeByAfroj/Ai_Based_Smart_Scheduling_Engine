@@ -69,10 +69,73 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
+const STRIPS = 22;
+const DURATION = 520;
+const MAXDELAY = 190;
+
+function runGenie(win, target, reverse) {
+  if (!win || !target) return;
+  const wRect = win.getBoundingClientRect();
+  const tRect = target.getBoundingClientRect();
+  
+  const dx = (tRect.left + tRect.width/2)  - (wRect.left + wRect.width/2);
+  const dy = (tRect.top  + tRect.height/2) - (wRect.top  + wRect.height/2);
+
+  const layer = document.createElement('div');
+  layer.id = 'genie-layer';
+  layer.style.position = 'fixed';
+  layer.style.top = '0';
+  layer.style.left = '0';
+  layer.style.width = '100vw';
+  layer.style.height = '100vh';
+  layer.style.pointerEvents = 'none';
+  layer.style.zIndex = '100000';
+  document.body.appendChild(layer);
+
+  // Force the real window to be invisible during animation
+  win.style.visibility = 'hidden';
+
+  for (let i = 0; i < STRIPS; i++) {
+    const topPct = (i / STRIPS) * 100;
+    const botPct = 100 - ((i + 1) / STRIPS) * 100;
+    const clone = win.cloneNode(true);
+    // Remove ids from clone to prevent duplicates, and ensure it's visible
+    clone.removeAttribute('id');
+    clone.style.visibility = 'visible';
+    clone.style.display = 'block';
+    clone.style.opacity = '1';
+    
+    clone.className = 'genie-strip' + (reverse ? ' reverse' : '');
+    clone.style.left = wRect.left + 'px';
+    clone.style.top  = wRect.top  + 'px';
+    clone.style.width  = wRect.width  + 'px';
+    clone.style.height = wRect.height + 'px';
+    clone.style.clipPath = `inset(${topPct}% 0 ${botPct}% 0)`;
+    
+    const bandCenterPct = (topPct + (100 - botPct)) / 2;
+    clone.style.transformOrigin = `50% ${bandCenterPct}%`;
+    const delay = MAXDELAY * (1 - i / (STRIPS - 1));
+    clone.style.setProperty('--dx', dx + 'px');
+    clone.style.setProperty('--dy', dy + 'px');
+    clone.style.animationDuration = DURATION + 'ms';
+    clone.style.animationDelay = delay + 'ms';
+    layer.appendChild(clone);
+  }
+
+  setTimeout(() => {
+    layer.remove();
+    if (reverse) {
+      win.style.visibility = 'visible';
+    }
+  }, DURATION + MAXDELAY + 50);
+}
+
 export default function ChatButton() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const collapseTimerRef = React.useRef(null);
+  const chatWindowRef = React.useRef(null);
+  const chatButtonRef = React.useRef(null);
 
   const startCollapseTimer = () => {
     if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
@@ -91,24 +154,23 @@ export default function ChatButton() {
 
   React.useEffect(() => {
     const handleClose = () => {
+      if (chatWindowRef.current && chatButtonRef.current && isChatOpen) {
+        runGenie(chatWindowRef.current, chatButtonRef.current, false);
+      }
       setIsChatOpen(false);
       startCollapseTimer();
     };
     window.addEventListener('close_chat', handleClose);
     return () => window.removeEventListener('close_chat', handleClose);
-  }, []);
+  }, [isChatOpen]);
 
   const toggleChat = () => {
     if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     
     if (isCollapsed && !isChatOpen) {
-      // Single click UX: First un-collapse the button...
+      // First click: just un-collapse the button and restart the timer
       setIsCollapsed(false);
-      // ...then burst open the chat window right as it finishes sliding out!
-      setTimeout(() => {
-        setIsChatOpen(true);
-        window.dispatchEvent(new Event('close_dropdowns'));
-      }, 350);
+      startCollapseTimer();
       return;
     }
     
@@ -116,8 +178,18 @@ export default function ChatButton() {
       if (!previous) {
         window.dispatchEvent(new Event('close_dropdowns'));
         setIsCollapsed(false);
+        // Run open genie
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (chatWindowRef.current && chatButtonRef.current) {
+              runGenie(chatWindowRef.current, chatButtonRef.current, true);
+            }
+          });
+        });
       } else {
-        // User closed the chat manually by clicking button again
+        if (chatWindowRef.current && chatButtonRef.current) {
+          runGenie(chatWindowRef.current, chatButtonRef.current, false);
+        }
         startCollapseTimer();
       }
       return !previous;
@@ -129,17 +201,48 @@ export default function ChatButton() {
     setIsChatOpen(true);
     setIsCollapsed(false);
     window.dispatchEvent(new Event('close_dropdowns'));
+    
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (chatWindowRef.current && chatButtonRef.current) {
+          runGenie(chatWindowRef.current, chatButtonRef.current, true);
+        }
+      });
+    });
   };
 
   const closeChat = () => {
+    if (chatWindowRef.current && chatButtonRef.current) {
+      runGenie(chatWindowRef.current, chatButtonRef.current, false);
+    }
     setIsChatOpen(false);
     startCollapseTimer();
   };
 
   return (
     <>
+      <style>{`
+        .genie-strip {
+          position: fixed;
+          z-index: 100000;
+          pointer-events: none;
+          animation-name: genieSuck;
+          animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          animation-fill-mode: both;
+        }
+        .genie-strip.reverse {
+          animation-direction: reverse;
+        }
+        @keyframes genieSuck {
+          0%   { transform: translate(0,0) scale(1,1); opacity: 1; }
+          55%  { transform: translate(calc(var(--dx)*0.55), calc(var(--dy)*0.5)) scale(0.55, 1.05); opacity: 1; }
+          100% { transform: translate(var(--dx), var(--dy)) scale(0.04, 0.12); opacity: 0; }
+        }
+      `}</style>
+
       {/* Floating Chat Button - sits above mobile bottom nav */}
       <button
+        ref={chatButtonRef}
         type="button"
         data-tour="ai-assistant"
         onClick={toggleChat}
@@ -162,6 +265,7 @@ export default function ChatButton() {
 
       {/* Chat Window - full-screen on mobile, floating on desktop */}
       <div
+        ref={chatWindowRef}
         className={`
           fixed
           bottom-0 right-0
@@ -178,7 +282,9 @@ export default function ChatButton() {
           border-[var(--border-subtle)]
           overflow-hidden
           z-[99998]
-          ${isChatOpen ? 'genie-open-3d pointer-events-auto' : 'genie-close-3d pointer-events-none'}
+          ${isChatOpen 
+            ? 'opacity-100 pointer-events-auto rounded-none sm:rounded-2xl' 
+            : 'opacity-0 pointer-events-none hidden'}
         `}
       >
         <ChatErrorBoundary>
