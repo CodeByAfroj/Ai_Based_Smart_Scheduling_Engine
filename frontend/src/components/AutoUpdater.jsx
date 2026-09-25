@@ -14,8 +14,9 @@ const AutoUpdater = () => {
       if (!isTWA()) return;
 
       try {
-        // Fetch the version manifest from the live web server
-        const response = await fetch('/version.json?t=' + new Date().getTime());
+        // Fetch the version manifest from the live GitHub repository
+        // We cannot use '/version.json' because Capacitor serves the local bundled file which will never be newer than itself.
+        const response = await fetch('https://raw.githubusercontent.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/main/frontend/public/version.json?t=' + new Date().getTime());
         if (!response.ok) return;
 
         const data = await response.json();
