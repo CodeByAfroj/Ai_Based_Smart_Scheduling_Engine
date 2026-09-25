@@ -71,25 +71,58 @@ class ChatErrorBoundary extends React.Component {
 
 export default function ChatButton() {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const collapseTimerRef = React.useRef(null);
+
+  const startCollapseTimer = () => {
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    collapseTimerRef.current = setTimeout(() => {
+      setIsCollapsed(true);
+    }, 2000);
+  };
 
   React.useEffect(() => {
-    const handleClose = () => setIsChatOpen(false);
+    // On mount, wait 2 seconds then collapse
+    startCollapseTimer();
+    return () => {
+      if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const handleClose = () => {
+      setIsChatOpen(false);
+      startCollapseTimer();
+    };
     window.addEventListener('close_chat', handleClose);
     return () => window.removeEventListener('close_chat', handleClose);
   }, []);
 
   const toggleChat = () => {
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    
     setIsChatOpen((previous) => {
       if (!previous) {
         window.dispatchEvent(new Event('close_dropdowns'));
+        setIsCollapsed(false);
+      } else {
+        // User closed the chat manually by clicking button again
+        startCollapseTimer();
       }
       return !previous;
     });
   };
 
   const openChat = () => {
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     setIsChatOpen(true);
+    setIsCollapsed(false);
     window.dispatchEvent(new Event('close_dropdowns'));
+  };
+
+  const closeChat = () => {
+    setIsChatOpen(false);
+    startCollapseTimer();
   };
 
   return (
@@ -99,11 +132,19 @@ export default function ChatButton() {
         type="button"
         data-tour="ai-assistant"
         onClick={toggleChat}
-        className={`fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-6 w-14 h-14 rounded-full bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl hover:scale-105 hover:opacity-90 transition-all duration-200 z-[99999] ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none hidden' : ''}`}
+        className={`
+          fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 z-[99999]
+          w-14 h-14 bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl
+          transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
+          ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none hidden' : ''}
+          ${isCollapsed && !isChatOpen 
+            ? 'right-0 rounded-l-2xl translate-x-8 opacity-60 hover:opacity-100 hover:translate-x-0' 
+            : 'right-4 lg:right-6 rounded-full hover:scale-105 hover:opacity-100'}
+        `}
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
       >
-        <Zap size={22} />
+        <Zap size={22} className={isCollapsed ? 'mr-6' : ''} />
       </button>
 
       {/* Chat Window - full-screen on mobile, floating on desktop */}
@@ -131,7 +172,7 @@ export default function ChatButton() {
         `}
       >
         <ChatErrorBoundary>
-          <ChatInterface isChatOpen={isChatOpen} openChat={openChat} closeChat={() => setIsChatOpen(false)} />
+          <ChatInterface isChatOpen={isChatOpen} openChat={openChat} closeChat={closeChat} />
         </ChatErrorBoundary>
       </div>
     </>
