@@ -102,7 +102,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
                 gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             }
-            heuristicTracker = new HeuristicActivityTracker(this);
+            heuristicTracker = new HeuristicActivityTracker();
             logToConsole("Successfully loaded TFLite Smart HAR Tracker.");
         } catch (Exception e) {
             logToConsole("Failed to init Heuristic Tracker: " + e.getMessage());
@@ -382,7 +382,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             Log.e(TAG, "Failed to clean up AI resources");
         }
         if (heuristicTracker != null) {
-            heuristicTracker.close();
+            // Nothing to close for heuristic tracker
         }
         logToConsole("Service destroyed.");
     }
