@@ -58,6 +58,7 @@ export default function Tasks() {
   const [priority, setPriority] = useState(1);
   const [reminders, setReminders] = useState([]);
   const [isScreenFree, setIsScreenFree] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleReminderToggle = (mins) => {
     setReminders(prev => prev.includes(mins) ? prev.filter(m => m !== mins) : [...prev, mins]);
@@ -80,6 +81,8 @@ export default function Tasks() {
 
   const createTask = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const isFixed = taskType === 'fixed';
     await addTask({
       name,
@@ -91,6 +94,7 @@ export default function Tasks() {
       reminders: reminders,
       is_screen_free: isScreenFree
     });
+    setIsSubmitting(false);
     sessionStorage.setItem('taskpulse_showform', 'false');
     setShowForm(false);
     setName('');
@@ -244,9 +248,9 @@ export default function Tasks() {
 
               {/* Action Buttons */}
               <div className="p-2 bg-[var(--bg-panel)] flex gap-2">
-                <button type="button" onClick={toggleForm} className="flex-1 py-3 text-[15px] font-semibold text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl hover:bg-[var(--bg-hover)] transition-colors">Cancel</button>
-                <button type="submit" disabled={!!overlappingTask} className="flex-1 py-3 text-[15px] font-semibold text-white bg-[var(--accent-base)] rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
-                  {taskType === 'fixed' ? 'Save Fixed Event' : 'Create Task'}
+                <button type="button" onClick={toggleForm} disabled={isSubmitting} className="flex-1 py-3 text-[15px] font-semibold text-[var(--text-muted)] bg-[var(--bg-app)] rounded-xl hover:bg-[var(--bg-hover)] transition-colors disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={!!overlappingTask || isSubmitting} className="flex-1 py-3 text-[15px] font-semibold text-white bg-[var(--accent-base)] rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSubmitting ? 'Saving...' : (taskType === 'fixed' ? 'Save Fixed Event' : 'Create Task')}
                 </button>
               </div>
             </Section>
