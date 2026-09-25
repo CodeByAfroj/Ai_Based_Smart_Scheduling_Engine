@@ -70,84 +70,36 @@ class ChatErrorBoundary extends React.Component {
 
 export default function ChatButton() {
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const collapseTimerRef = React.useRef(null);
-
-  const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches;
-
-  const startCollapseTimer = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-    if (isDesktop()) return; // Do not auto-collapse on desktop
-    
-    collapseTimerRef.current = setTimeout(() => {
-      setIsCollapsed(true);
-    }, 2000);
-  };
-
-  React.useEffect(() => {
-    // On mount, handle resize and initial collapse
-    startCollapseTimer();
-    
-    const handleResize = () => {
-      if (isDesktop()) {
-        setIsCollapsed(false);
-      } else {
-        startCollapseTimer();
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => {
-      if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   React.useEffect(() => {
     const handleClose = () => {
       setIsChatOpen(false);
-      startCollapseTimer();
     };
     window.addEventListener('close_chat', handleClose);
     return () => window.removeEventListener('close_chat', handleClose);
   }, []);
 
   const toggleChat = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-    
-    if (isCollapsed && !isChatOpen && !isDesktop()) {
-      // First click on mobile: just un-collapse the button and restart the timer
-      setIsCollapsed(false);
-      startCollapseTimer();
-      return;
-    }
-    
     setIsChatOpen((previous) => {
       if (!previous) {
         window.dispatchEvent(new Event('close_dropdowns'));
-        setIsCollapsed(false);
-      } else {
-        startCollapseTimer();
       }
       return !previous;
     });
   };
 
   const openChat = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     setIsChatOpen(true);
-    setIsCollapsed(false);
     window.dispatchEvent(new Event('close_dropdowns'));
   };
 
   const closeChat = () => {
     setIsChatOpen(false);
-    startCollapseTimer();
   };
 
   return (
     <>
-      {/* Floating Chat Button - half-hidden on mobile, fixed on desktop */}
+      {/* Floating Chat Button */}
       <button
         type="button"
         data-tour="ai-assistant"
@@ -156,10 +108,8 @@ export default function ChatButton() {
           flex fixed z-[99999] shadow-xl bg-[var(--accent-base)] text-white border border-white/20
           transition-all duration-300 items-center justify-center
           bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6
+          right-4 md:right-6 w-14 h-14 rounded-full md:rounded-full hover:scale-105 hover:opacity-100
           ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}
-          ${isCollapsed && !isChatOpen && !isDesktop()
-            ? 'right-0 w-14 h-14 rounded-l-full translate-x-7 opacity-70 hover:opacity-100' 
-            : 'right-4 md:right-6 w-14 h-14 rounded-full md:translate-x-0 md:rounded-full hover:scale-105 hover:opacity-100'}
         `}
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
