@@ -101,6 +101,13 @@ export default function ChatButton() {
   const toggleChat = () => {
     if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     
+    if (isCollapsed && !isChatOpen) {
+      // First click: just un-collapse the button and restart the timer
+      setIsCollapsed(false);
+      startCollapseTimer();
+      return;
+    }
+    
     setIsChatOpen((previous) => {
       if (!previous) {
         window.dispatchEvent(new Event('close_dropdowns'));
@@ -145,7 +152,7 @@ export default function ChatButton() {
       >
         <Zap 
           size={22} 
-          className={`transition-all duration-300 ${isCollapsed && !isChatOpen ? '-translate-x-3' : ''}`} 
+          className="transition-all duration-300"
         />
       </button>
 
