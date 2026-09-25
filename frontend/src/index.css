@@ -366,16 +366,16 @@ body {
   0% {
     opacity: 0;
     transform: scale(0.1) translate(20%, 20%);
-    clip-path: ellipse(10% 10% at 100% 100%);
+    border-radius: 100%;
   }
-  30% {
+  40% {
     opacity: 1;
-    transform: scale(0.4) translate(5%, 5%);
-    clip-path: ellipse(50% 40% at 80% 80%);
+    transform: scale(0.5) translate(5%, 5%);
+    border-radius: 30% 30% 100% 100%;
   }
   100% {
     transform: scale(1) translate(0, 0);
-    clip-path: ellipse(150% 150% at 50% 50%);
+    border-radius: 16px;
   }
 }
 
@@ -383,26 +383,26 @@ body {
   0% {
     opacity: 1;
     transform: scale(1) translate(0, 0);
-    clip-path: ellipse(150% 150% at 50% 50%);
+    border-radius: 16px;
   }
-  70% {
+  60% {
     opacity: 1;
-    transform: scale(0.4) translate(5%, 5%);
-    clip-path: ellipse(50% 40% at 80% 80%);
+    transform: scale(0.5) translate(5%, 5%);
+    border-radius: 30% 30% 100% 100%;
   }
   100% {
     opacity: 0;
     transform: scale(0.1) translate(20%, 20%);
-    clip-path: ellipse(10% 10% at 100% 100%);
+    border-radius: 100%;
   }
 }
 
 .genie-open {
-  animation: genie-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: genie-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   transform-origin: bottom right;
 }
 
 .genie-close {
-  animation: genie-out 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: genie-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   transform-origin: bottom right;
 }
