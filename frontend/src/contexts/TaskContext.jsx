@@ -67,8 +67,9 @@ export function TaskProvider({ children }) {
     if (!window.__scheduledAlarms) window.__scheduledAlarms = new Set();
     
     tasks.forEach(task => {
-      if (task.status !== 'completed' && task.scheduled_start) {
-        const startMillis = new Date(task.scheduled_start).getTime();
+      const targetStart = task.scheduled_start || (task.fixed ? task.earliest_start : null);
+      if (task.status !== 'completed' && targetStart) {
+        const startMillis = new Date(targetStart).getTime();
         // Schedule if it's in the future
         if (startMillis > now) {
           const alarmKey = `${task.id}_${startMillis}_${profile?.alarm_enabled}`;

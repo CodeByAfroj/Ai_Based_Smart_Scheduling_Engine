@@ -93,19 +93,6 @@ async def create_task(data: TaskCreate, background_tasks: BackgroundTasks, user_
                 val = val.replace(tzinfo=timezone.utc).astimezone(IST)
             else:
                 val = val.astimezone(IST)
-    # Schedule push notification via QStash if user has push subscription
-    user = await get_user_collection().find_one({"google_id": user_id})
-    if user:
-        settings = user.get("settings", {})
-        push_sub = settings.get("push_subscription")
-        wants_push = settings.get("push_notifications", True)
-        alarm_enabled = settings.get("alarm_enabled", True)
-        notif_pref = settings.get("notification_preference", "text_and_sound")
-        target_time = task_doc.get("scheduled_start") or task_doc.get("earliest_start")
-        reminders_list = task_doc.get("reminders") or data.reminders
-        if push_sub and wants_push and target_time:
-            schedule_push_via_qstash(user_id, task_id, data.name, target_time, push_sub, reminders=reminders_list, alarm_enabled=alarm_enabled, notification_preference=notif_pref)
-
     return {"message": "Task created", "task": task_doc}
 
 from bson import ObjectId

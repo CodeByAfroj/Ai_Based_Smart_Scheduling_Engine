@@ -376,8 +376,15 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
         solve_time_ms = (t1 - t0) * 1000
 
     if status in ["OPTIMAL", "FEASIBLE", "PARTIAL"]:
+        user_info = await get_user_collection().find_one({"google_id": user_id})
+        push_sub = user_info.get("settings", {}).get("push_subscription") if user_info else None
+
         for st in scheduled_tasks:
             query = {"$or": [{"_id": st.task_id}, {"_id": ObjectId(st.task_id)}], "user_id": user_id} if ObjectId.is_valid(st.task_id) else {"_id": st.task_id, "user_id": user_id}
+            
+            task_doc = await get_database()["tasks"].find_one(query)
+            task_name = task_doc.get("name", "Task") if task_doc else "Task"
+
             await get_database()["tasks"].update_one(
                 query,
                 {"$set": {
@@ -387,6 +394,15 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
                     "updated_at": now_ist()
                 }}
             )
+
+            # Schedule push notification
+            user_settings = user_info.get("settings", {})
+            wants_push = user_settings.get("push_notifications", True)
+            alarm_enabled = user_settings.get("alarm_enabled", True)
+            notif_pref = user_settings.get("notification_preference", "text_and_sound")
+            if push_sub and st.start and wants_push:
+                reminders_list = task_doc.get("reminders", []) if task_doc else []
+                schedule_push_via_qstash(user_id, st.task_id, task_name, st.start, push_sub, reminders=reminders_list, alarm_enabled=alarm_enabled, notification_preference=notif_pref)
 
     return ScheduleResponse(
         status=status,
