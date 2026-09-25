@@ -158,9 +158,10 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                     // Use 50,000 microseconds (20Hz) to perfectly match WISDM training data
                     sensorManager.registerListener(this, accelerometer, 50000);
                     sensorManager.registerListener(this, gyroscope, 50000);
-                } else {
-                    startDistractionPolling();
                 }
+                
+                // ALWAYS start polling for focus mode distraction, don't put it in an 'else' block!
+                startDistractionPolling();
                 
                 handler.postDelayed(() -> {
                     logToConsole("Task duration ended. Terminating service.");
@@ -263,8 +264,9 @@ public class TaskMonitorService extends Service implements SensorEventListener {
         }
 
         UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
-        // Check events since the service started to guarantee we see the last foreground event
-        android.app.usage.UsageEvents events = usm.queryEvents(serviceStartTime, now);
+        // Look back 10 minutes to guarantee we find the last app that moved to foreground
+        long lookback = now - 600000;
+        android.app.usage.UsageEvents events = usm.queryEvents(lookback, now);
         
         android.app.usage.UsageEvents.Event event = new android.app.usage.UsageEvents.Event();
         String currentApp = lastLoggedApp; // default to what it was
