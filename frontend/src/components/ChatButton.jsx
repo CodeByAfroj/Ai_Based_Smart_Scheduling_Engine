@@ -178,7 +178,7 @@ export default function ChatButton() {
           border-[var(--border-subtle)]
           overflow-hidden
           z-[99998]
-          ${isChatOpen ? 'genie-open pointer-events-auto' : 'genie-close pointer-events-none'}
+          ${isChatOpen ? 'genie-open-3d pointer-events-auto' : 'genie-close-3d pointer-events-none'}
         `}
       >
         <ChatErrorBoundary>
