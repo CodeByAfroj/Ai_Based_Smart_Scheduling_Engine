@@ -21,8 +21,8 @@ import androidx.core.app.NotificationCompat;
  */
 public class AlarmReceiver extends BroadcastReceiver {
 
-    private static final String CHANNEL_ID = "taskpulse_alarms";
-    private static final String CHANNEL_NAME = "Task Alarms";
+    private static final String CHANNEL_ID = "taskpulse_alarms_v2";
+    private static final String CHANNEL_NAME = "Task Alarms V2";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -67,6 +67,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
+            .setFullScreenIntent(pendingIntent, true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
         NotificationManager notificationManager = 
