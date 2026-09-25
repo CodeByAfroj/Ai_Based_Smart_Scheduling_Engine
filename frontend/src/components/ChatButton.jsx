@@ -69,9 +69,9 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
-const STRIPS = 15;
-const DURATION = 400;
-const MAXDELAY = 150;
+const STRIPS = 30;
+const DURATION = 450;
+const MAXDELAY = 220;
 
 function runGenie(win, target, reverse) {
   if (!win || !target) return;
@@ -223,7 +223,7 @@ export default function ChatButton() {
           z-index: 100000;
           pointer-events: none;
           animation-name: genieSuck;
-          animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+          animation-timing-function: ease-in-out;
           animation-fill-mode: both;
           will-change: transform, opacity;
           backface-visibility: hidden;
@@ -233,9 +233,26 @@ export default function ChatButton() {
           animation-direction: reverse;
         }
         @keyframes genieSuck {
-          0%   { transform: translate3d(0,0,0) scale(1,1); opacity: 1; }
-          55%  { transform: translate3d(calc(var(--dx)*0.55), calc(var(--dy)*0.5), 0) scale(0.55, 1.05); opacity: 1; }
-          100% { transform: translate3d(var(--dx), var(--dy), 0) scale(0.04, 0.12); opacity: 0; }
+          0%   { 
+            transform: translate3d(0,0,0) scale(1,1); 
+            opacity: 1; 
+          }
+          30%  { 
+            transform: translate3d(calc(var(--dx)*0.2), calc(var(--dy)*0.3), 0) scale(0.9, 0.9); 
+            opacity: 1; 
+          }
+          60%  { 
+            transform: translate3d(calc(var(--dx)*0.5), calc(var(--dy)*0.6), 0) scale(0.6, 0.6); 
+            opacity: 1; 
+          }
+          85%  { 
+            transform: translate3d(calc(var(--dx)*0.85), calc(var(--dy)*0.85), 0) scale(0.15, 0.25); 
+            opacity: 0.8; 
+          }
+          100% { 
+            transform: translate3d(var(--dx), var(--dy), 0) scale(0, 0); 
+            opacity: 0; 
+          }
         }
       `}</style>
 
