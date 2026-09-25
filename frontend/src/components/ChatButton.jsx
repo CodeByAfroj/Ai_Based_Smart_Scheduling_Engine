@@ -69,9 +69,9 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
-const STRIPS = 30;
-const DURATION = 450;
-const MAXDELAY = 220;
+const STRIPS = 50;
+const DURATION = 500;
+const MAXDELAY = 250;
 
 function runGenie(win, target, reverse) {
   if (!win || !target) return;
@@ -97,7 +97,8 @@ function runGenie(win, target, reverse) {
 
   for (let i = 0; i < STRIPS; i++) {
     const topPct = (i / STRIPS) * 100;
-    const botPct = 100 - ((i + 1) / STRIPS) * 100;
+    // Overlap strips slightly (1.2 instead of 1) to prevent subpixel gaps and make it look like solid liquid
+    const botPct = Math.max(0, 100 - ((i + 1.2) / STRIPS) * 100);
     const clone = win.cloneNode(true);
     // Remove ids from clone to prevent duplicates, and ensure it's visible
     clone.removeAttribute('id');
@@ -223,7 +224,7 @@ export default function ChatButton() {
           z-index: 100000;
           pointer-events: none;
           animation-name: genieSuck;
-          animation-timing-function: ease-in-out;
+          animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
           animation-fill-mode: both;
           will-change: transform, opacity;
           backface-visibility: hidden;
@@ -237,17 +238,13 @@ export default function ChatButton() {
             transform: translate3d(0,0,0) scale(1,1); 
             opacity: 1; 
           }
-          30%  { 
-            transform: translate3d(calc(var(--dx)*0.2), calc(var(--dy)*0.3), 0) scale(0.9, 0.9); 
+          40%  { 
+            transform: translate3d(calc(var(--dx)*0.35), calc(var(--dy)*0.4), 0) scale(0.85, 0.9); 
             opacity: 1; 
           }
-          60%  { 
-            transform: translate3d(calc(var(--dx)*0.5), calc(var(--dy)*0.6), 0) scale(0.6, 0.6); 
+          70%  { 
+            transform: translate3d(calc(var(--dx)*0.75), calc(var(--dy)*0.8), 0) scale(0.35, 0.5); 
             opacity: 1; 
-          }
-          85%  { 
-            transform: translate3d(calc(var(--dx)*0.85), calc(var(--dy)*0.85), 0) scale(0.15, 0.25); 
-            opacity: 0.8; 
           }
           100% { 
             transform: translate3d(var(--dx), var(--dy), 0) scale(0, 0); 
