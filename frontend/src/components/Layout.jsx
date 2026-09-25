@@ -147,7 +147,7 @@ export default function Layout() {
 
   // ── Overdue task detection ────────────────────────────────────────────────
   useEffect(() => {
-    if (!tasks || tasks.length === 0) return;
+    if (!tasks) return;
     const detectOverdue = () => {
       const now = Date.now();
       const overdue = tasks.filter(t =>
@@ -911,15 +911,14 @@ export default function Layout() {
         >
           <button
             onClick={() => setShowTriagePanel(true)}
-            className="flex items-center gap-2.5 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2.5 rounded-xl shadow-2xl font-semibold text-sm transition-all hover:scale-105"
+            className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-full shadow-[0_8px_30px_rgba(234,88,12,0.4)] transition-all hover:scale-105"
           >
-            <div className="relative">
-              <ListTodo size={17} />
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-400 rounded-full text-[10px] font-bold flex items-center justify-center">
+            <div className="relative flex items-center justify-center">
+              <AlertTriangle size={24} className="animate-pulse" />
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-black rounded-full text-[11px] font-bold flex items-center justify-center border-2 border-red-600 shadow-sm text-white">
                 {overdueTasks.length}
               </span>
             </div>
-            {overdueTasks.length === 1 ? '1 Overdue Task' : `${overdueTasks.length} Overdue Tasks`} — Review
           </button>
         </div>
       )}
@@ -937,18 +936,19 @@ export default function Layout() {
           />
           {/* Modal Container */}
           <div
-            className="fixed bottom-0 sm:bottom-6 left-0 right-0 sm:left-4 sm:right-4 z-[100001] bg-[var(--bg-panel)] rounded-t-2xl sm:rounded-2xl shadow-2xl border border-[var(--border-subtle)] max-h-[85vh] sm:max-h-[80vh] w-full sm:max-w-2xl sm:mx-auto flex flex-col overflow-hidden"
+            className="fixed bottom-0 sm:bottom-6 left-0 right-0 sm:left-4 sm:right-4 z-[100001] bg-[var(--bg-app)]/95 backdrop-blur-3xl rounded-t-3xl sm:rounded-3xl shadow-[0_20px_80px_rgba(0,0,0,0.5)] border border-[var(--border-subtle)]/50 max-h-[85vh] sm:max-h-[80vh] w-full sm:max-w-xl sm:mx-auto flex flex-col overflow-hidden"
             style={{ animation: 'slideUpPanel 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)]">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-red-500" />
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center shrink-0">
-                  <AlertTriangle size={18} className="text-orange-400" />
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30 flex items-center justify-center shrink-0 shadow-inner">
+                  <AlertTriangle size={20} className="text-orange-500" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-[var(--text-main)] text-base leading-tight">Overdue Tasks</h2>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''} past deadline — choose action</p>
+                  <h2 className="font-black text-[var(--text-main)] text-lg leading-tight tracking-tight">Overdue Tasks</h2>
+                  <p className="text-[13px] font-medium text-[var(--text-muted)] mt-0.5">{overdueTasks.length} task{overdueTasks.length > 1 ? 's' : ''} past deadline</p>
                 </div>
               </div>
               <button
@@ -956,14 +956,14 @@ export default function Layout() {
                   setShowTriagePanel(false);
                   setActiveRescheduleTaskId(null);
                 }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                className="w-9 h-9 rounded-full bg-[var(--bg-panel)] flex items-center justify-center hover:bg-[var(--bg-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border border-[var(--border-subtle)] shadow-sm"
               >
                 <XIcon size={16} />
               </button>
             </div>
 
             {/* Task list */}
-            <div className="overflow-y-auto flex-1 px-4 sm:px-5 py-3 flex flex-col gap-3">
+            <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 flex flex-col gap-4">
               {overdueTasks.map(task => {
                 const overdueByMs = Date.now() - new Date(task.deadline).getTime();
                 const overdueHrs = Math.floor(overdueByMs / 3600000);
@@ -976,22 +976,23 @@ export default function Layout() {
                 return (
                   <div
                     key={task.id}
-                    className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-3.5 flex flex-col gap-2.5 shadow-sm hover:border-[var(--border-main)] transition-colors"
+                    className="relative bg-[var(--bg-panel)]/50 backdrop-blur-md border border-[var(--border-subtle)]/60 rounded-2xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md hover:border-[var(--border-main)] transition-all overflow-hidden group"
                   >
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     {/* Top Row: Info & Actions */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       {/* Left side: Task Title & Badges */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-[var(--text-main)] truncate leading-tight">
+                        <h3 className="text-[15px] font-bold text-[var(--text-main)] truncate leading-tight">
                           {task.name}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-400 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded-md">
-                            <AlertTriangle size={11} className="text-red-400 shrink-0" />
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-md shadow-sm">
+                            <AlertTriangle size={12} className="text-red-500 shrink-0" />
                             {overdueLabel}
                           </span>
                           {task.priority > 2 && (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-md shadow-sm">
                               High Priority
                             </span>
                           )}
