@@ -275,6 +275,10 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             events.getNextEvent(event);
             if (event.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
                 currentApp = event.getPackageName();
+            } else if (event.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_BACKGROUND) {
+                if (event.getPackageName().equals(currentApp)) {
+                    currentApp = null;
+                }
             }
         }
 
@@ -283,7 +287,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             lastLoggedApp = currentApp;
         }
 
-        if (!isScreenFree && currentApp != null && distractionApps.contains(currentApp)) {
+        android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+        if (!isScreenFree && currentApp != null && pm.isInteractive() && distractionApps.contains(currentApp)) {
             if (now - lastNudgeTime > 10000) {
                 lastNudgeTime = now;
                 fireDistractionNudge(currentApp);
