@@ -69,9 +69,9 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
-const STRIPS = 22;
-const DURATION = 520;
-const MAXDELAY = 190;
+const STRIPS = 15;
+const DURATION = 400;
+const MAXDELAY = 150;
 
 function runGenie(win, target, reverse) {
   if (!win || !target) return;
@@ -180,11 +180,9 @@ export default function ChatButton() {
         setIsCollapsed(false);
         // Run open genie
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (chatWindowRef.current && chatButtonRef.current) {
-              runGenie(chatWindowRef.current, chatButtonRef.current, true);
-            }
-          });
+          if (chatWindowRef.current && chatButtonRef.current) {
+            runGenie(chatWindowRef.current, chatButtonRef.current, true);
+          }
         });
       } else {
         if (chatWindowRef.current && chatButtonRef.current) {
@@ -203,11 +201,9 @@ export default function ChatButton() {
     window.dispatchEvent(new Event('close_dropdowns'));
     
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (chatWindowRef.current && chatButtonRef.current) {
-          runGenie(chatWindowRef.current, chatButtonRef.current, true);
-        }
-      });
+      if (chatWindowRef.current && chatButtonRef.current) {
+        runGenie(chatWindowRef.current, chatButtonRef.current, true);
+      }
     });
   };
 
@@ -229,14 +225,17 @@ export default function ChatButton() {
           animation-name: genieSuck;
           animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
           animation-fill-mode: both;
+          will-change: transform, opacity;
+          backface-visibility: hidden;
+          transform: translateZ(0);
         }
         .genie-strip.reverse {
           animation-direction: reverse;
         }
         @keyframes genieSuck {
-          0%   { transform: translate(0,0) scale(1,1); opacity: 1; }
-          55%  { transform: translate(calc(var(--dx)*0.55), calc(var(--dy)*0.5)) scale(0.55, 1.05); opacity: 1; }
-          100% { transform: translate(var(--dx), var(--dy)) scale(0.04, 0.12); opacity: 0; }
+          0%   { transform: translate3d(0,0,0) scale(1,1); opacity: 1; }
+          55%  { transform: translate3d(calc(var(--dx)*0.55), calc(var(--dy)*0.5), 0) scale(0.55, 1.05); opacity: 1; }
+          100% { transform: translate3d(var(--dx), var(--dy), 0) scale(0.04, 0.12); opacity: 0; }
         }
       `}</style>
 
