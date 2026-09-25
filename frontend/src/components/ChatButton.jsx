@@ -133,18 +133,20 @@ export default function ChatButton() {
         data-tour="ai-assistant"
         onClick={toggleChat}
         className={`
-          fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 z-[99999]
-          w-14 h-14 bg-[var(--accent-base)] text-white flex items-center justify-center shadow-xl
+          fixed z-[99999] shadow-xl border border-white/20 dark:border-white/10
           transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]
           ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none hidden' : ''}
           ${isCollapsed && !isChatOpen 
-            ? 'right-0 rounded-l-2xl translate-x-8 opacity-60 hover:opacity-100 hover:translate-x-0' 
-            : 'right-4 lg:right-6 rounded-full hover:scale-105 hover:opacity-100'}
+            ? 'bottom-[calc(7rem+env(safe-area-inset-bottom))] lg:bottom-16 right-0 w-2.5 h-20 bg-black/30 dark:bg-white/30 backdrop-blur-md rounded-l-xl opacity-70 hover:opacity-100 flex items-center justify-center' 
+            : 'bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 right-4 lg:right-6 w-14 h-14 bg-[var(--accent-base)] text-white rounded-full flex items-center justify-center hover:scale-105 hover:opacity-100'}
         `}
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
       >
-        <Zap size={22} className={isCollapsed ? 'mr-6' : ''} />
+        <Zap 
+          size={22} 
+          className={`transition-all duration-300 ${isCollapsed && !isChatOpen ? 'opacity-0 scale-50 w-0 hidden' : 'opacity-100 scale-100'}`} 
+        />
       </button>
 
       {/* Chat Window - full-screen on mobile, floating on desktop */}
