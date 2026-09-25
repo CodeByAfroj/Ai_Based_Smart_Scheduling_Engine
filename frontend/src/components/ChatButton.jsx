@@ -70,64 +70,31 @@ class ChatErrorBoundary extends React.Component {
 
 export default function ChatButton() {
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const collapseTimerRef = React.useRef(null);
-
-  const startCollapseTimer = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-    collapseTimerRef.current = setTimeout(() => {
-      setIsCollapsed(true);
-    }, 2000);
-  };
-
-  React.useEffect(() => {
-    // On mount, wait 2 seconds then collapse
-    startCollapseTimer();
-    return () => {
-      if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-    };
-  }, []);
 
   React.useEffect(() => {
     const handleClose = () => {
       setIsChatOpen(false);
-      startCollapseTimer();
     };
     window.addEventListener('close_chat', handleClose);
     return () => window.removeEventListener('close_chat', handleClose);
   }, []);
 
   const toggleChat = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-    
-    if (isCollapsed && !isChatOpen) {
-      // First click: just un-collapse the button and restart the timer
-      setIsCollapsed(false);
-      startCollapseTimer();
-      return;
-    }
-    
     setIsChatOpen((previous) => {
       if (!previous) {
         window.dispatchEvent(new Event('close_dropdowns'));
-        setIsCollapsed(false);
-      } else {
-        startCollapseTimer();
       }
       return !previous;
     });
   };
 
   const openChat = () => {
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     setIsChatOpen(true);
-    setIsCollapsed(false);
     window.dispatchEvent(new Event('close_dropdowns'));
   };
 
   const closeChat = () => {
     setIsChatOpen(false);
-    startCollapseTimer();
   };
 
   return (
@@ -140,11 +107,9 @@ export default function ChatButton() {
         className={`
           hidden md:flex
           fixed z-[99999] shadow-xl bg-[var(--accent-base)] text-white border border-white/20
-          transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] items-center justify-center
-          ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none' : ''}
-          ${isCollapsed && !isChatOpen 
-            ? 'bottom-6 right-0 w-14 h-14 rounded-l-full translate-x-7 opacity-70 hover:opacity-100' 
-            : 'bottom-6 right-6 w-14 h-14 rounded-full hover:scale-105 hover:opacity-100'}
+          transition-all duration-300 items-center justify-center
+          bottom-6 right-6 w-14 h-14 rounded-full hover:scale-105 hover:opacity-100
+          ${isChatOpen ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100'}
         `}
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
