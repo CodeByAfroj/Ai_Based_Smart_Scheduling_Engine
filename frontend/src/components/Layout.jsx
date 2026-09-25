@@ -29,7 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTasks } from '../contexts/TaskContext';
 import ChatButton from './ChatButton';
 import UserGuideTour from './UserGuideTour';
-import { syncTaskState } from '../utils/nativeBridge';
+import { syncTaskState, isTWA } from '../utils/nativeBridge';
 
 export default function Layout() {
   const location = useLocation();
@@ -397,6 +397,12 @@ export default function Layout() {
           const pref = event.data.notification_preference || 'text_and_sound';
           
           if (pref === 'silent' || pref === 'vibrate') {
+            return;
+          }
+
+          // If we are on mobile native (TWA), do NOT show the web alarm.
+          // Mobile hardware alarm is already playing.
+          if (isTWA()) {
             return;
           }
 
