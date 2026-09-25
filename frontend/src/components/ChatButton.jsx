@@ -102,9 +102,13 @@ export default function ChatButton() {
     if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     
     if (isCollapsed && !isChatOpen) {
-      // First click: just un-collapse the button and restart the timer
+      // Single click UX: First un-collapse the button...
       setIsCollapsed(false);
-      startCollapseTimer();
+      // ...then burst open the chat window right as it finishes sliding out!
+      setTimeout(() => {
+        setIsChatOpen(true);
+        window.dispatchEvent(new Event('close_dropdowns'));
+      }, 350);
       return;
     }
     
