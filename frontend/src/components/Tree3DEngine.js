@@ -70,7 +70,7 @@ export function initTree3D(container) {
   renderer.setSize(container.clientWidth||window.innerWidth, container.clientHeight||window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   container.appendChild(renderer.domElement);
@@ -89,7 +89,7 @@ export function initTree3D(container) {
 
 
   /* ---------- procedural canvas textures (no downloads!) ---------- */
-  function canvasTex(w, h, fn, rx, ry) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; if (rx) t.repeat.set(rx, ry || rx); t.anisotropy = 4; return t }
+  function canvasTex(w, h, fn, rx, ry) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; if (rx) t.repeat.set(rx, ry || rx); t.anisotropy = 4; return t }
   const leafTex = canvasTex(128, 128, (g, w, h) => {
     g.clearRect(0, 0, w, h);
     const grad = g.createLinearGradient(10, 64, 118, 64); grad.addColorStop(0, '#2f8f46'); grad.addColorStop(.5, '#63c276'); grad.addColorStop(1, '#2f8f46');
