@@ -1719,6 +1719,30 @@ export default function Layout() {
                     Replay User Guide
                   </button>
 
+                  <button
+                    type="button"
+                    style={{ minHeight: 'unset' }}
+                    onClick={() => {
+                      if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                          for(let registration of registrations) {
+                            registration.unregister();
+                          }
+                        });
+                      }
+                      if ('caches' in window) {
+                        caches.keys().then((keyList) => {
+                          return Promise.all(keyList.map((key) => caches.delete(key)));
+                        });
+                      }
+                      setTimeout(() => window.location.reload(true), 500);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors font-medium text-amber-600 dark:text-amber-500 cursor-pointer"
+                  >
+                    <RotateCcw size={15} className="text-amber-500" />
+                    Force Update App
+                  </button>
+
                   <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
                     <button
                       type="button"
