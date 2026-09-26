@@ -71,16 +71,28 @@ export default function TaskTreeApp() {
   const nextLvl = LEVELS[lvlIdx + 1];
   const progress = nextLvl ? ((xp - level.xp) / (nextLvl.xp - level.xp)) * 100 : 100;
 
+  const latestTasksRef = useRef(treeTasks);
+  useEffect(() => { latestTasksRef.current = treeTasks; }, [treeTasks]);
+
   useEffect(() => {
     if (!containerRef.current) return;
     
-    // Initialize 3D Engine
-    engineRef.current = initTree3D(containerRef.current);
-    engineRef.current.updateTasks(treeTasks);
+    let timer;
+    // Defer the heavy 3D engine initialization by 100ms.
+    // This allows the browser to smoothly animate the route transition FIRST
+    // before the main thread gets blocked by generating 3D geometries.
+    timer = setTimeout(() => {
+      if (containerRef.current && !engineRef.current) {
+        engineRef.current = initTree3D(containerRef.current);
+        engineRef.current.updateTasks(latestTasksRef.current);
+      }
+    }, 100);
     
     return () => {
+      clearTimeout(timer);
       if (engineRef.current) {
         engineRef.current.cleanup();
+        engineRef.current = null;
       }
     };
   }, []); // Run once on mount
