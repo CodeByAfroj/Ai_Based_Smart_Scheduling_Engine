@@ -32,7 +32,20 @@ export function initTree3D(container) {
   function save() { try { localStorage.setItem('tasktree_v1', JSON.stringify(state)) } catch (e) { } }
   function uid() { return Math.random().toString(36).slice(2, 9) }
   function dayKey(d) { return d.toISOString().slice(0, 10) }
-  function stats() { return { done: tasks.filter(t => t.done).length, lvl: Math.floor(tasks.filter(t => t.done).length / 3) }; }
+  function stats() {
+    const done = tasks.filter(t => t.done);
+    const xp = done.reduce((s, t) => s + ((SIZES[t.size] || SIZES.leaf).xp || 0), 0);
+    const flowers = done.filter(t => t.size === 'flower').length;
+    // XP-based level (matches LEVELS array thresholds)
+    let lvl = 0;
+    for (let i = 0; i < LEVELS.length; i++) { if (xp >= LEVELS[i].xp) lvl = i; }
+    // streak: count consecutive completed days up to today
+    const daySet = new Set(done.map(t => t.completedAt ? dayKey(new Date(t.completedAt)) : null).filter(Boolean));
+    let streak = 0;
+    const d = new Date(); d.setHours(0,0,0,0);
+    while (daySet.has(dayKey(d))) { streak++; d.setDate(d.getDate() - 1); }
+    return { done: done.length, lvl, xp, flowers, streak };
+  }
   const births = {}; let justGrewId = null, lastGrowthPos = new THREE.Vector3(0, 3, 0), builtEnvLvl = -1;
   let clockT = 0;
 
@@ -64,6 +77,16 @@ export function initTree3D(container) {
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0xcfe9f7, 46, 190);
   const camera = new THREE.PerspectiveCamera(50, (container.clientWidth||window.innerWidth) / (container.clientHeight||window.innerHeight), .1, 600);
+  
+  function handleResize() {
+    if (!container) return;
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    if (camera) { camera.aspect = w / h; camera.updateProjectionMatrix(); }
+    if (renderer) renderer.setSize(w, h);
+  }
+  window.addEventListener('resize', handleResize);
+
 
   /* ---------- procedural canvas textures (no downloads!) ---------- */
   function canvasTex(w, h, fn, rx, ry) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; if (rx) t.repeat.set(rx, ry || rx); t.anisotropy = 4; return t }
@@ -259,9 +282,17 @@ export function initTree3D(container) {
     return { defs: defs, lean: { x: (mulberry(7)() - .5) * .7, z: (mulberry(9)() - .5) * .7 } };
   })();
   function tubeBetween(a, b, r0, r1, mat, radial) {
-    const d = new THREE.Vector3().subVectors(b, a); const len = Math.max(d.length(), .001);
+    // Guard: skip if either endpoint has NaN/Infinity components
+    if (!a || !b ||
+        !isFinite(a.x) || !isFinite(a.y) || !isFinite(a.z) ||
+        !isFinite(b.x) || !isFinite(b.y) || !isFinite(b.z)) return null;
+    const d = new THREE.Vector3().subVectors(b, a);
+    const len = d.length();
+    if (!isFinite(len) || len < 0.0001) return null; // degenerate segment
     const g = new THREE.CylinderGeometry(r1, r0, len, radial || 7, 1); g.translate(0, len / 2, 0);
-    const m = new THREE.Mesh(g, mat); m.position.copy(a); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize());
+    const dn = d.clone().normalize();
+    if (!isFinite(dn.x) || !isFinite(dn.y) || !isFinite(dn.z)) { g.dispose(); return null; }
+    const m = new THREE.Mesh(g, mat); m.position.copy(a); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dn);
     m.castShadow = true; return m;
   }
 
@@ -291,7 +322,7 @@ export function initTree3D(container) {
     if (st.lvl <= 1) {
       const sh = 1.0 + st.done * .18;
       const top = V3(SKEL.lean.x * .3, BASE_Y + sh, SKEL.lean.z * .3);
-      treeGroup.add(tubeBetween(V3(0, BASE_Y, 0), top, .07, .045, stemMat, 7));
+      { const _m = tubeBetween(V3(0, BASE_Y, 0), top, .07, .045, stemMat, 7); if (_m) treeGroup.add(_m); }
       const leafTasks = done.filter(t => t.size !== 'flower');
       leafTasks.forEach((t, i) => {
         const R = mulberry(hashStr(t.id)); const n = t.size === 'branch' ? 6 : 4;
@@ -303,8 +334,13 @@ export function initTree3D(container) {
             e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], s: .75 + R() * .5, birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length)
           });
         }
-        addProxy(V3(cx, cy, cz), .7, { task: t });
-        if (t.id === justGrewId) lastGrowthPos.set(cx, cy, cz);
+        // Spread proxies in a circle so each task is individually hoverable
+        const proxyAngle = (i / Math.max(leafTasks.length, 1)) * Math.PI * 2;
+        const proxyR = 0.55 + i * 0.1;
+        const px = top.x + Math.cos(proxyAngle) * proxyR;
+        const pz = top.z + Math.sin(proxyAngle) * proxyR;
+        addProxy(V3(px, cy, pz), .6, { task: t });
+        if (t.id === justGrewId) lastGrowthPos.set(px, cy, pz);
       });
       finalizeLeaves(); return;
     }
@@ -316,10 +352,10 @@ export function initTree3D(container) {
     const SEGS = 6;
     for (let i = 0; i < SEGS; i++) {
       const a = trunkPt(i / SEGS), b = trunkPt((i + 1) / SEGS);
-      treeGroup.add(tubeBetween(a, b, trunkR * (1 - i / SEGS * .72), trunkR * (1 - (i + 1) / SEGS * .72), barkMat, 9));
+      { const _m = tubeBetween(a, b, trunkR * (1 - i / SEGS * .72), trunkR * (1 - (i + 1) / SEGS * .72), barkMat, 9); if (_m) treeGroup.add(_m); }
     }
     // roots
-    for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28 + .4; treeGroup.add(tubeBetween(V3(Math.cos(a) * trunkR * .7, .55, Math.sin(a) * trunkR * .7), V3(Math.cos(a) * (trunkR + 1.1), .12, Math.sin(a) * (trunkR + 1.1)), .12, .03, barkMat, 6)) }
+    for (let i = 0; i < 5; i++) { const a = i / 5 * 6.28 + .4; const _r = tubeBetween(V3(Math.cos(a) * trunkR * .7, .55, Math.sin(a) * trunkR * .7), V3(Math.cos(a) * (trunkR + 1.1), .12, Math.sin(a) * (trunkR + 1.1)), .12, .03, barkMat, 6); if (_r) treeGroup.add(_r); }
     const nBr = Math.min(SKEL.defs.length, 2 + Math.floor(st.done / 2));
     const anchors = [], tips = [];
     for (let i = 0; i < nBr; i++) {
@@ -327,20 +363,20 @@ export function initTree3D(container) {
       const start = trunkPt(d.t), dir = dirFromAzEl(d.az, d.elev);
       const end = start.clone().addScaledVector(dir, d.len);
       const sIn = start.clone().addScaledVector(dir, -.25);
-      treeGroup.add(tubeBetween(sIn, end, d.r * (0.7 + 0.5 * g + .3), d.r * .35, twigMat, 7));
+      { const _m = tubeBetween(sIn, end, d.r * (0.7 + 0.5 * g + .3), d.r * .35, twigMat, 7); if (_m) treeGroup.add(_m); }
       tips.push(end.clone());
       d.twigs.forEach(tw => {
         const ts = sIn.clone().lerp(end, tw.tt);
         const td = dirFromAzEl(d.az + tw.azOff, tw.elev);
         const te = ts.clone().addScaledVector(td, tw.len);
-        treeGroup.add(tubeBetween(ts, te, .055, .02, twigMat, 6));
+        { const _m = tubeBetween(ts, te, .055, .02, twigMat, 6); if (_m) treeGroup.add(_m); }
         anchors.push(te.clone());
       });
       anchors.push(end.clone());
     }
     // crown anchors
     const apex = trunkPt(1);
-    treeGroup.add(tubeBetween(trunkPt(.93), apex.clone().add(V3(0, .5, 0)), trunkR * .28, .03, twigMat, 6));
+    { const _m = tubeBetween(trunkPt(.93), apex.clone().add(V3(0, .5, 0)), trunkR * .28, .03, twigMat, 6); if (_m) treeGroup.add(_m); }
     for (let k = 0; k < 3; k++) { const a = k / 3 * 6.28 + .7; anchors.push(apex.clone().add(V3(Math.cos(a) * .7, .55 + ((k * 37) % 10) / 22, Math.sin(a) * .7))) }
     // ---- foliage from tasks ----
     const leafTasks = done.filter(t => t.size !== 'flower'), flowerTasks = done.filter(t => t.size === 'flower');
@@ -618,7 +654,7 @@ export function initTree3D(container) {
     const d = hit.object.userData.tip; hoverTip = d;
     tip.innerHTML = d.html ? d.html : (function () { const t = d.task; return '<b>' + (SIZES[t.size] || SIZES.leaf).icon + ' ' + esc(t.title) + '</b><br>🍃 ' + (SIZES[t.size] || SIZES.leaf).label + ' · ⏳ ' + t.hours + 'h · ' + esc(t.cat) + '<br><span style="opacity:.75">Grown ' + new Date(t.completedAt).toLocaleDateString() + '</span>' })();
     tip.style.display = 'block';
-    const tipRect = el.getBoundingClientRect(); tip.style.left = Math.min(mouseCX + 16, tipRect.right - 245) + 'px';
+    const tipRect = container.getBoundingClientRect(); tip.style.left = Math.min(mouseCX + 16, tipRect.right - 245) + 'px';
     tip.style.top = Math.max(8, mouseCY - 10) + 'px';
     renderer.domElement.style.cursor = 'pointer';
   }
@@ -703,6 +739,7 @@ export function initTree3D(container) {
       if (typeof buildTree === 'function') buildTree();
     },
     cleanup: () => {
+      window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(window._treeReqId);
       if (renderer) {
         renderer.dispose();

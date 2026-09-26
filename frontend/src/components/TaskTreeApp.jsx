@@ -12,25 +12,29 @@ export default function TaskTreeApp() {
 
   const treeTasks = useMemo(() => {
     return tasks.map(t => {
-      let size = "small";
-      const priority = t.priority || 1;
       const duration = t.duration_minutes || 0;
-      if (priority >= 4 || duration >= 120) size = "flower";
-      else if (priority >= 3 || duration >= 60) size = "branch";
-      else if (priority >= 2 || duration >= 30) size = "leaf";
-      else size = "sprout";
-      
+      // Thresholds: <15min→sprout, 15-29min→sprout, 30-59min→leaf, 60-119min→branch, ≥120min→flower
+      let size;
+      if (duration >= 120) size = 'flower';
+      else if (duration >= 60) size = 'branch';
+      else if (duration >= 30) size = 'leaf';
+      else size = 'sprout';
+
+      // Category from task data
+      const cat = t.tag_type || t.category || t.cat || 'Work';
+
       return {
         id: t.id,
         title: t.name,
         done: t.status === 'completed',
         size,
-        hours: (duration || 30) / 60,
-        cat: 'Work',
-        completedAt: t.updated_at || Date.now()
+        hours: Math.max(duration, 15) / 60,
+        cat,
+        completedAt: t.updated_at || t.completed_at || Date.now()
       };
     });
   }, [tasks]);
+
 
   const doneTasks = treeTasks.filter(t => t.done);
   
@@ -80,13 +84,13 @@ export default function TaskTreeApp() {
         .task-tree-app { font-family: ui-rounded, system-ui, -apple-system, sans-serif; }
         .hud { position: absolute; z-index: 10; pointer-events: none; }
         .hud > * { pointer-events: auto; }
-        header.hud { top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 10px; }
+        header.hud { top: 12px; left: 12px; right: 12px; display: flex; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
         .brand { display: flex; align-items: center; gap: 10px; background: #fffdf4e8; backdrop-filter: blur(14px); border-radius: 16px; padding: 8px 14px 8px 8px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); }
         .logo { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #57b66b, #2c7a3b); display: grid; place-items: center; font-size: 23px; }
         .brand h1 { margin: 0; font-size: 16px; font-weight: bold; }
         .brand p { margin: 0; font-size: 11px; color: #8a8478; }
-        .pill { background: #2b2620ee; color: #fff; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); white-space: nowrap; }
-        .pill .xpbar { width: 110px; height: 8px; background: #ffffff2e; border-radius: 99px; overflow: hidden; }
+        .pill { background: #2b2620ee; color: #fff; border-radius: 999px; padding: 8px 14px; font-size: 12.5px; display: flex; align-items: center; gap: 8px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); white-space: nowrap; flex-shrink: 1; }
+        .pill .xpbar { width: clamp(50px, 15vw, 110px); height: 8px; background: #ffffff2e; border-radius: 99px; overflow: hidden; }
         .pill .xpbar i { display: block; height: 100%; background: linear-gradient(90deg, #ffd97a, #7be08d); border-radius: 99px; transition: width 0.8s; }
         .streak { background: #fffdf4e8; backdrop-filter: blur(14px); border: 1px solid #fff; border-radius: 999px; padding: 8px 13px; font-size: 12.5px; font-weight: 800; box-shadow: 0 12px 32px rgba(20,30,15,0.25); }
         .iconbtn { border: 1px solid #fff; background: #fffdf4e8; backdrop-filter: blur(14px); border-radius: 12px; padding: 9px 12px; cursor: pointer; font-size: 15px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); transition: transform 0.2s; }
@@ -118,23 +122,6 @@ export default function TaskTreeApp() {
 
       {/* HUD Header */}
       <header className="hud">
-        <div className="brand">
-          <div className="logo">🌳</div>
-          <div>
-            <h1>TaskTree 3D</h1>
-            <p>Grow tasks into a living world</p>
-          </div>
-        </div>
-
-        <div className="pill">
-          <span>{level.emoji}</span>
-          <span>{level.name}</span>
-          <span className="xpbar">
-            <i style={{ width: `\${progress}%` }}></i>
-          </span>
-          <span>{xp} XP</span>
-        </div>
-
         <div className="flex-1"></div>
 
         <div className="sky-toggle hidden md:flex">

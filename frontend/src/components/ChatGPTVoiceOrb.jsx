@@ -134,6 +134,10 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
       colors[i * 3 + 2] = baseColors[i * 3 + 2];
     }
 
+    // Sanitize: replace any NaN with 0 to prevent computeBoundingSphere spam
+    for (let i = 0; i < currentPositions.length; i++) { if (!isFinite(currentPositions[i])) currentPositions[i] = 0; }
+    for (let i = 0; i < colors.length; i++) { if (!isFinite(colors[i])) colors[i] = 0; }
+
     geometry.setAttribute('position', new THREE.BufferAttribute(currentPositions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
@@ -189,6 +193,8 @@ function Organic3DVoiceEntity({ isListening, isLoading, isSpeaking, micLevel }) 
         colArray[p * 3 + 2] = Math.min(1.0, strandColor.b * fade * 1.3);
       }
 
+      // Sanitize strand positions before setAttribute
+      for (let i = 0; i < posArray.length; i++) { if (!isFinite(posArray[i])) posArray[i] = 0; }
       strandGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
       strandGeometry.setAttribute('color', new THREE.BufferAttribute(colArray, 3));
 
