@@ -117,17 +117,28 @@ export function initTree3D(container) {
     for (let i = 0; i < 9; i++) { const x = 6 + i * 6 + R() * 3; const gr = g.createLinearGradient(0, h, 0, 0); gr.addColorStop(0, '#2f7a3c'); gr.addColorStop(1, '#7cc47f'); g.fillStyle = gr; g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + (R() - .5) * 10, h * .4, x + (R() - .5) * 16, 4 + R() * 14); g.quadraticCurveTo(x + 3, h * .5, x + 4, h); g.fill() }
   });
   const moonTex = canvasTex(256, 256, (g, w, h) => {
-    // Full moon - bright white disc with subtle craters
+    // Base glowing disc
     const gr = g.createRadialGradient(128, 128, 0, 128, 128, 120);
     gr.addColorStop(0, 'rgba(255,255,240,1)');
     gr.addColorStop(0.5, 'rgba(240,240,210,1)');
     gr.addColorStop(0.82, 'rgba(200,200,180,0.9)');
     gr.addColorStop(1, 'rgba(150,150,130,0)');
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
-    // crater details
+    
+    // Cut out a crescent shape softly
+    g.globalCompositeOperation = 'destination-out';
+    const cutGr = g.createRadialGradient(160, 96, 0, 160, 96, 120);
+    cutGr.addColorStop(0, 'rgba(0,0,0,1)');
+    cutGr.addColorStop(0.6, 'rgba(0,0,0,1)');
+    cutGr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = cutGr;
+    g.fillRect(0, 0, w, h);
+    g.globalCompositeOperation = 'source-over';
+
+    // crater details on remaining part
     g.globalAlpha = 0.12;
     g.fillStyle = 'rgba(100,100,80,1)';
-    [[95, 105, 18], [155, 80, 12], [80, 155, 8], [150, 145, 14], [120, 60, 7]].forEach(([cx, cy, r]) => {
+    [[95, 105, 18], [80, 155, 8], [120, 160, 7]].forEach(([cx, cy, r]) => {
       g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
     });
     g.globalAlpha = 1;
@@ -390,8 +401,8 @@ export function initTree3D(container) {
     leafTasks.forEach((t, i) => {
       const an = anchors.length ? anchors[i % anchors.length] : apex;
       const R = mulberry(hashStr(t.id)); const n = (SIZES[t.size] || SIZES.leaf).leaves;
-      const cx = an.x + (R() - .5) * .6, cy = an.y + (R() - .5) * .6, cz = an.z + (R() - .5) * .6;
-      for (let k = 0; k < n; k++)leafData.push({ p: V3(cx + (R() - .5) * 1.9, cy + (R() - .5) * 1.5, cz + (R() - .5) * 1.9), e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], s: (t.size === 'branch' ? 1.05 : .8) + R() * .5, birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length) });
+      const cx = an.x + (R() - .5) * .3, cy = an.y + (R() - .5) * .3, cz = an.z + (R() - .5) * .3;
+      for (let k = 0; k < n; k++)leafData.push({ p: V3(cx + (R() - .5) * 0.9, cy + (R() - .5) * 0.7, cz + (R() - .5) * 0.9), e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], s: (t.size === 'branch' ? 1.05 : .8) + R() * .5, birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length) });
       addProxy(V3(cx, cy, cz), .85, { task: t });
       if (t.id === justGrewId) lastGrowthPos.set(cx, cy, cz);
     });
@@ -555,9 +566,9 @@ export function initTree3D(container) {
 
   /* ---------- sky presets + transitions ---------- */
   const SKY = {
-    day: { top: 0x3d8fd6, hor: 0xcfe9f7, fogN: 46, fogF: 190, sun: 0xfff1cf, sunI: 1.35, hemiI: .85, ambI: .22, sunPos: [26, 42, 18], cloud: 0xffffff, cloudO: .95, star: 0, fire: 0, expo: 1.05, water: 0x5fb3d9 },
-    sunset: { top: 0x2e2070, hor: 0xff6030, fogN: 40, fogF: 175, sun: 0xff8040, sunI: 1.4, hemiI: .70, ambI: .25, sunPos: [46, 12, -6], cloud: 0xffb090, cloudO: .88, star: .08, fire: .25, expo: 1.15, water: 0xe0602a },
-    night: { top: 0x0a1a4a, hor: 0x1a3a6e, fogN: 42, fogF: 180, sun: 0xaac8ff, sunI: .75, hemiI: .62, ambI: .30, sunPos: [-24, 34, -18], cloud: 0x2a3a5e, cloudO: .45, star: 1, fire: 1, expo: 1.0, water: 0x1a3060 }
+    day: { top: 0x5eb6ef, hor: 0xcfe9f7, fogN: 46, fogF: 190, sun: 0xfff1cf, sunI: 2.2, hemiI: 1.2, ambI: 0.6, sunPos: [26, 42, 18], cloud: 0xffffff, cloudO: .95, star: 0, fire: 0, expo: 1.05, water: 0x5fb3d9 },
+    sunset: { top: 0x2e2070, hor: 0xff6030, fogN: 40, fogF: 175, sun: 0xff8040, sunI: 2.0, hemiI: 1.0, ambI: 0.5, sunPos: [46, 12, -6], cloud: 0xffb090, cloudO: .88, star: .08, fire: .25, expo: 1.15, water: 0xe0602a },
+    night: { top: 0x102040, hor: 0x2a4a8e, fogN: 42, fogF: 180, sun: 0xaac8ff, sunI: 1.2, hemiI: 0.8, ambI: 0.6, sunPos: [-24, 34, -18], cloud: 0x2a3a5e, cloudO: .45, star: 1, fire: 1, expo: 1.0, water: 0x1a3060 }
   };
   const cur = { top: new THREE.Color(0x3d8fd6), hor: new THREE.Color(0xcfe9f7), fogN: 46, fogF: 190, sun: new THREE.Color(0xfff1cf), sunI: 1.35, hemiI: .85, ambI: .22, sunPos: V3(26, 42, 18), cloud: new THREE.Color(0xffffff), cloudO: .95, star: 0, fire: 0, expo: 1.05, water: new THREE.Color(0x5fb3d9) };
   const _c1 = new THREE.Color(), _c2 = new THREE.Color();

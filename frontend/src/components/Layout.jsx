@@ -23,6 +23,7 @@ import {
   Trash2,
   Sun,
   BellRing,
+  TreeDeciduous,
 } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -1525,6 +1526,14 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Tree Link */}
+            <button
+              onClick={() => navigate('/analytics')}
+              className="w-9 h-9 flex items-center justify-center rounded-full text-[var(--text-main)] hover:text-[var(--accent-base)] hover:bg-[var(--bg-hover)] transition-colors"
+            >
+              <TreeDeciduous size={20} />
+            </button>
+
             {/* Mobile Notifications */}
             <div className="relative" data-notif-menu>
               <button

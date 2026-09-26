@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTasks } from '../contexts/TaskContext';
 import { initTree3D } from './Tree3DEngine';
 
 export default function TaskTreeApp() {
   const containerRef = useRef(null);
+  const navigate = useNavigate();
   const { tasks } = useTasks();
   const engineRef = useRef(null);
 
@@ -132,6 +134,7 @@ export default function TaskTreeApp() {
         </div>
 
         <div className="streak">🔥 0</div>
+        <button className="iconbtn" title="View Analytics" onClick={() => navigate('/analytics')}>📊</button>
         <button className="iconbtn" title="Auto-rotate">🔁</button>
       </header>
 
