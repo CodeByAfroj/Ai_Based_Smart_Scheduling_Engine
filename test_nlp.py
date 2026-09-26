@@ -1,7 +1,7 @@
 """
 Test script for NLP module
 """
-from app.nlp import parse_task_from_text, answer_user_question
+from app.nlp import parse_task_from_text, answer_user_question_contextual
 from zoneinfo import ZoneInfo
 import datetime
 
@@ -63,9 +63,9 @@ def test_question_answering():
         "work_start": "09:30 AM",
         "work_end": "06:30 PM",
         "buffer_enabled": True,
-        "push_notifications": true,
-        "desktop_notifications": true,
-        "email_summary": false,
+        "push_notifications": True,
+        "desktop_notifications": True,
+        "email_summary": False,
         "notification_preference": "text_and_sound",
         "quiet_hours_start": "10:00 PM",
         "quiet_hours_end": "07:30 AM",
@@ -85,7 +85,7 @@ def test_question_answering():
     
     for question in test_questions:
         print(f"\nQuestion: {question}")
-        result = answer_user_question(question, sample_tasks, sample_profile)
+        result = answer_user_question_contextual(question, sample_tasks, sample_profile)
         print(f"Answer: {result['answer']}")
 
 if __name__ == "__main__":

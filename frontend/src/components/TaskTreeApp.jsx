@@ -11,6 +11,7 @@ export default function TaskTreeApp() {
 
   const [panelOpen, setPanelOpen] = useState(null);
   const [skyMode, setSkyMode] = useState('auto');
+  const [skyMenuOpen, setSkyMenuOpen] = useState(false);
   const [showHud, setShowHud] = useState(true);
 
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function TaskTreeApp() {
         .task-tree-app { font-family: ui-rounded, system-ui, -apple-system, sans-serif; }
         .hud { position: absolute; z-index: 10; pointer-events: none; }
         .hud > * { pointer-events: auto; }
-        header.hud { top: 12px; left: 12px; right: 12px; display: flex; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+        header.hud { top: calc(16px + env(safe-area-inset-top)); left: 16px; right: 16px; display: flex; flex-direction: row; justify-content: space-between; align-items: flex-start; gap: 12px; }
         .brand { display: flex; align-items: center; gap: 10px; background: #fffdf4e8; backdrop-filter: blur(14px); border-radius: 16px; padding: 8px 14px 8px 8px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); }
         .logo { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #57b66b, #2c7a3b); display: grid; place-items: center; font-size: 23px; }
         .brand h1 { margin: 0; font-size: 16px; font-weight: bold; }
@@ -132,7 +133,6 @@ export default function TaskTreeApp() {
         .fab:active { transform: scale(0.95); }
         #fabTasks { left: 24px; background: linear-gradient(135deg, #4caf5d, #2c7a3b); color: #fff; }
         #fabTree { right: 24px; background: #2b2620; color: #fff; }
-        #gardenTag { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2b2620ee; color: white; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: bold; pointer-events: auto; }
         .toast { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); background: #fffdf4e8; padding: 12px 20px; border-radius: 12px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); font-weight: bold; font-size: 14px; animation: slideDown 0.5s cubic-bezier(0.2,1.2,0.4,1); z-index: 50; }
         @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
         #toasts { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; pointer-events: none; align-items: center; }
@@ -145,25 +145,56 @@ export default function TaskTreeApp() {
       {/* 3D Canvas Container */}
       <div id="scene" ref={containerRef} className="absolute inset-0 z-0"></div>
 
-      {/* HUD Header */}
-      <header className={`hud transition-opacity duration-500 ${showHud ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={(e) => e.stopPropagation()}>
-        <div className="bg-black/45 backdrop-blur-xl border border-white/10 rounded-xl p-2.5 shadow-lg pointer-events-auto shrink-0">
-          <div className="text-[10px] font-bold text-gray-300 uppercase tracking-wider mb-1">How it grows</div>
-          <div className="flex gap-2 text-[11px] font-bold text-white text-shadow-sm">
-            <span title="<30 min">🌱 &lt;30m</span>
-            <span title="30-59 min">🍃 30m</span>
-            <span title="1-2 hrs">🌿 1h</span>
-            <span title="2+ hrs">🌸 2h</span>
+      {/* Premium HUD Header */}
+      <header className={`hud transition-all duration-700 ease-out ${showHud ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`} onClick={(e) => e.stopPropagation()}>
+        
+        {/* Unified Stats & Legend Glass Card */}
+        <div className="bg-black/40 backdrop-blur-xl border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.5)] rounded-3xl p-3 flex flex-col items-center gap-2.5 max-w-full overflow-hidden">
+          
+          <div className="flex items-center gap-3 px-2">
+            <div className="text-[13px] font-black text-white tracking-wide flex items-center gap-1.5 drop-shadow-md">
+              <span className="text-base">🌳</span> My Focus Tree
+            </div>
+            <div className="h-4 w-[1px] bg-white/20"></div>
+            <div className="text-[11px] font-semibold text-white/80 tracking-wide drop-shadow-sm whitespace-nowrap">
+              {doneTasks.length} tasks · {Math.round(hours * 10) / 10} hrs
+            </div>
           </div>
+
+          <div className="w-[90%] h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+
+          <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-1 text-[11px] font-bold text-white/90 drop-shadow-md px-2">
+            <span className="text-[9px] font-black text-white/50 uppercase tracking-widest">Growth</span>
+            <span className="flex items-center gap-1">🌱 &lt;30m</span>
+            <span className="flex items-center gap-1">🍃 30m</span>
+            <span className="flex items-center gap-1">🌿 1h</span>
+            <span className="flex items-center gap-1">🌸 2h</span>
+          </div>
+
         </div>
 
-        <div className="flex-1"></div>
+        {/* Expandable Sky Toggles (Top Right) */}
+        <div className="relative flex flex-col items-end pointer-events-auto">
+          <div 
+            className={`flex flex-col bg-black/40 backdrop-blur-xl border border-white/20 shadow-[0_16px_40px_rgba(0,0,0,0.5)] rounded-full p-1.5 gap-2 transition-all duration-300 ease-out overflow-hidden`}
+          >
+            {/* Active/Main Toggle Button */}
+            <button 
+              className="w-10 h-10 flex justify-center items-center rounded-full bg-white text-black text-lg shadow-md hover:scale-105 transition-transform"
+              onClick={() => setSkyMenuOpen(!skyMenuOpen)}
+              title="Change Sky Mode"
+            >
+              {skyMode === 'day' ? '☀️' : skyMode === 'sunset' ? '🌇' : skyMode === 'night' ? '🌙' : '✨'}
+            </button>
 
-        <div className="sky-toggle hidden md:flex">
-          <button className={skyMode === 'day' ? 'active' : ''} onClick={() => { setSkyMode('day'); if(engineRef.current) engineRef.current.setSky('day'); }} title="Day">☀️</button>
-          <button className={skyMode === 'sunset' ? 'active' : ''} onClick={() => { setSkyMode('sunset'); if(engineRef.current) engineRef.current.setSky('sunset'); }} title="Sunset">🌇</button>
-          <button className={skyMode === 'night' ? 'active' : ''} onClick={() => { setSkyMode('night'); if(engineRef.current) engineRef.current.setSky('night'); }} title="Night">🌙</button>
-          <button className={skyMode === 'auto' ? 'active' : ''} onClick={() => { setSkyMode('auto'); if(engineRef.current) engineRef.current.setSky('auto'); }} title="Auto">✨</button>
+            {/* Expandable Options */}
+            <div className={`flex flex-col gap-2 transition-all duration-300 ease-out origin-top ${skyMenuOpen ? 'max-h-64 opacity-100 scale-100' : 'max-h-0 opacity-0 scale-95 pointer-events-none hidden'}`}>
+              <button className={`w-10 h-10 flex justify-center items-center rounded-full text-lg transition-all hover:bg-white/20 ${skyMode === 'day' ? 'hidden' : 'text-white grayscale-[0.4] hover:grayscale-0'}`} onClick={() => { setSkyMode('day'); setSkyMenuOpen(false); if(engineRef.current) engineRef.current.setSky('day'); }} title="Day">☀️</button>
+              <button className={`w-10 h-10 flex justify-center items-center rounded-full text-lg transition-all hover:bg-white/20 ${skyMode === 'sunset' ? 'hidden' : 'text-white grayscale-[0.4] hover:grayscale-0'}`} onClick={() => { setSkyMode('sunset'); setSkyMenuOpen(false); if(engineRef.current) engineRef.current.setSky('sunset'); }} title="Sunset">🌇</button>
+              <button className={`w-10 h-10 flex justify-center items-center rounded-full text-lg transition-all hover:bg-white/20 ${skyMode === 'night' ? 'hidden' : 'text-white grayscale-[0.4] hover:grayscale-0'}`} onClick={() => { setSkyMode('night'); setSkyMenuOpen(false); if(engineRef.current) engineRef.current.setSky('night'); }} title="Night">🌙</button>
+              <button className={`w-10 h-10 flex justify-center items-center rounded-full text-lg transition-all hover:bg-white/20 ${skyMode === 'auto' ? 'hidden' : 'text-white grayscale-[0.4] hover:grayscale-0'}`} onClick={() => { setSkyMode('auto'); setSkyMenuOpen(false); if(engineRef.current) engineRef.current.setSky('auto'); }} title="Auto">✨</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -218,27 +249,6 @@ export default function TaskTreeApp() {
           </div>
         </div>
       </aside>
-
-      {/* Floating Action Buttons */}
-      <button 
-        className="fab" 
-        id="fabTasks"
-        onClick={() => setPanelOpen(panelOpen === 'left' ? null : 'left')}
-      >
-        🌱 Tasks
-      </button>
-
-      <div id="gardenTag">
-        🌳 My Focus Tree &nbsp;<small className="opacity-75 font-normal">{doneTasks.length} tasks · {Math.round(hours * 10) / 10} hrs · 0🔥</small>
-      </div>
-
-      <button 
-        className="fab" 
-        id="fabTree"
-        onClick={() => setPanelOpen(panelOpen === 'right' ? null : 'right')}
-      >
-        🌳 Growth
-      </button>
 
       {/* Tooltips and Toasts */}
       <div id="tooltip"></div>
