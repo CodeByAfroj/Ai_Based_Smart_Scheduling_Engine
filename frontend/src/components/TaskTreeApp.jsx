@@ -15,7 +15,12 @@ export default function TaskTreeApp() {
 
   useEffect(() => {
     const timer = setTimeout(() => setShowHud(false), 3500);
-    return () => clearTimeout(timer);
+    const toggleHud = () => setShowHud(prev => !prev);
+    window.addEventListener('toggle-tree-hud', toggleHud);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('toggle-tree-hud', toggleHud);
+    };
   }, []);
 
   const treeTasks = useMemo(() => {
@@ -87,7 +92,7 @@ export default function TaskTreeApp() {
   }, [treeTasks]);
 
   return (
-    <div className="task-tree-app relative w-full h-screen overflow-hidden text-[#2b2620] bg-black" onClick={() => setShowHud(prev => !prev)}>
+    <div className="task-tree-app relative w-full h-screen overflow-hidden text-[#2b2620] bg-black">
       <style>{`
         .task-tree-app { font-family: ui-rounded, system-ui, -apple-system, sans-serif; }
         .hud { position: absolute; z-index: 10; pointer-events: none; }

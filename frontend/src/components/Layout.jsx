@@ -1490,6 +1490,28 @@ export default function Layout() {
                     />
                     Replay User Guide
                   </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if ('serviceWorker' in navigator) {
+                          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                            for(let registration of registrations) {
+                              registration.unregister();
+                            }
+                          });
+                        }
+                        if ('caches' in window) {
+                          caches.keys().then((keyList) => {
+                            return Promise.all(keyList.map((key) => caches.delete(key)));
+                          });
+                        }
+                        setTimeout(() => window.location.reload(true), 500);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors font-medium text-amber-600 dark:text-amber-500 cursor-pointer"
+                    >
+                      <RotateCcw size={15} className="text-amber-500" />
+                      Force Update App
+                    </button>
 
                   <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
                     <button
@@ -1508,18 +1530,18 @@ export default function Layout() {
         </header>
 
         {/* Mobile Header */}
-        <header className="lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 bg-[var(--bg-panel)]/80 backdrop-blur-md z-40 border-b border-[var(--border-subtle)]">
+        <header className={`lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-40 border-b transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321]/95 border-white/5 shadow-md' : 'bg-[var(--bg-panel)]/80 border-[var(--border-subtle)]'}`}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.1)] overflow-hidden border border-[var(--border-subtle)] shrink-0">
               <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
             </div>
 
             <div className="flex flex-col">
-              <span className="font-bold text-sm leading-tight text-[var(--text-main)]">
+              <span className={`font-bold text-sm leading-tight transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-white' : 'text-[var(--text-main)]'}`}>
                 TaskPulse
               </span>
 
-              <span className="text-[10px] text-[var(--text-muted)] leading-tight capitalize">
+              <span className={`text-[10px] leading-tight capitalize transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-gray-300' : 'text-[var(--text-muted)]'}`}>
                 {location.pathname.slice(1) || 'Dashboard'}
               </span>
             </div>
@@ -1550,7 +1572,7 @@ export default function Layout() {
                   setShowUserMenu(false);
                 }}
                 style={{ minHeight: 'unset' }}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-[var(--text-main)] hover:text-[var(--accent-base)] hover:bg-[var(--bg-hover)] transition-colors relative"
+                className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors relative ${location.pathname === '/analytics' ? 'text-gray-200 hover:text-white hover:bg-white/10' : 'text-[var(--text-main)] hover:text-[var(--accent-base)] hover:bg-[var(--bg-hover)]'}`}
               >
                 <Bell size={20} />
 

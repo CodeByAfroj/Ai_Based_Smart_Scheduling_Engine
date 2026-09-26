@@ -684,7 +684,10 @@ export function initTree3D(container) {
         setTimeout(() => { mouseIn = false; tickHover(); }, 3500); // Hide after 3.5s
       } else {
         mouseIn = false; tickHover();
+        window.dispatchEvent(new Event('toggle-tree-hud'));
       }
+    } else {
+      if (!hoverTip) window.dispatchEvent(new Event('toggle-tree-hud'));
     }
 
     if (!hoverTip) return;
