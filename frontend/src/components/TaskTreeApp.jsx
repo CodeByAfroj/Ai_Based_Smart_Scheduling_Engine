@@ -104,7 +104,7 @@ export default function TaskTreeApp() {
   }, [treeTasks]);
 
   return (
-    <div className="task-tree-app relative w-full h-screen overflow-hidden text-[#2b2620] bg-black">
+    <div className="task-tree-app relative w-full h-full overflow-hidden text-[#2b2620] bg-black">
       <style>{`
         .task-tree-app { font-family: ui-rounded, system-ui, -apple-system, sans-serif; }
         .hud { position: absolute; z-index: 10; pointer-events: none; }
