@@ -66,9 +66,9 @@ export function initTree3D(container) {
   try { renderer = new THREE.WebGLRenderer({ antialias: true }); }
   catch (err) { document.getElementById('loader').innerHTML = '<div class="tree">🌳</div><div style="max-width:82%;text-align:center">3D unavailable in this browser.<br><small>Try Chrome/Edge, or open the 2D view.</small></div>'; return; }
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(container.clientWidth||window.innerWidth, container.clientHeight||window.innerHeight);
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !isMobile;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -210,7 +210,7 @@ export function initTree3D(container) {
     // grass (instanced)
     const gg = new THREE.PlaneGeometry(.75, .62); gg.translate(0, .28, 0);
     const gm = new THREE.MeshStandardMaterial({ map: grassTex, alphaTest: .4, side: THREE.DoubleSide, roughness: 1 });
-    const N = 900, grass = new THREE.InstancedMesh(gg, gm, N);
+    const N = isMobile ? 180 : 900, grass = new THREE.InstancedMesh(gg, gm, N);
     const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), S = new THREE.Vector3(), P = new THREE.Vector3();
     let placed = 0, guard = 0;
     while (placed < N && guard++ < 8000) {
@@ -223,7 +223,7 @@ export function initTree3D(container) {
       placed++;
     }
     grass.count = placed; grass.instanceMatrix.needsUpdate = true; if (grass.instanceColor) grass.instanceColor.needsUpdate = true;
-    grass.receiveShadow = true; world.add(grass);
+    grass.receiveShadow = !isMobile; world.add(grass);
   })();
 
   /* ---------- level-based environment ---------- */
@@ -339,9 +339,9 @@ export function initTree3D(container) {
         const R = mulberry(hashStr(t.id)); const n = t.size === 'branch' ? 6 : 4;
         const cx = top.x, cy = top.y - .15, cz = top.z;
         for (let k = 0; k < n; k++) {
-          const a = R() * 6.28, rr = .3 + R() * .45;
+          const a = R() * 6.28, rr = 0.18 + R() * 0.25;
           leafData.push({
-            p: V3(cx + Math.cos(a) * rr, cy + (R() - .5) * .5, cz + Math.sin(a) * rr),
+            p: V3(cx + Math.cos(a) * rr, cy + (R() - .5) * 0.45, cz + Math.sin(a) * rr),
             e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], s: .75 + R() * .5, birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length)
           });
         }
@@ -394,15 +394,16 @@ export function initTree3D(container) {
     // ambient filler canopy so young trees still look alive
     const lush = clamp(.3 + st.xp / 900, 0, 1);
     const RF = mulberry(777);
+    const sc = 0.65 + 0.35 * g; // scale scatter radius naturally
     anchors.forEach((an, ai) => {
       const n = Math.round(6 * lush);
-      for (let k = 0; k < n; k++)leafData.push({ p: an.clone().add(V3((RF() - .5) * 2.4, (RF() - .5) * 1.8, (RF() - .5) * 2.4)), e: [(RF() - .5) * 2, RF() * 6.28, (RF() - .5) * 2], s: .8 + RF() * .5, birth: 0, ci: Math.floor(RF() * GREENS.length) });
+      for (let k = 0; k < n; k++)leafData.push({ p: an.clone().add(V3((RF() - .5) * 1.0 * sc, (RF() - .5) * 0.8 * sc, (RF() - .5) * 1.0 * sc)), e: [(RF() - .5) * 2, RF() * 6.28, (RF() - .5) * 2], s: .8 + RF() * .5, birth: 0, ci: Math.floor(RF() * GREENS.length) });
     });
     leafTasks.forEach((t, i) => {
       const an = anchors.length ? anchors[i % anchors.length] : apex;
       const R = mulberry(hashStr(t.id)); const n = (SIZES[t.size] || SIZES.leaf).leaves;
-      const cx = an.x + (R() - .5) * .3, cy = an.y + (R() - .5) * .3, cz = an.z + (R() - .5) * .3;
-      for (let k = 0; k < n; k++)leafData.push({ p: V3(cx + (R() - .5) * 0.9, cy + (R() - .5) * 0.7, cz + (R() - .5) * 0.9), e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], s: (t.size === 'branch' ? 1.05 : .8) + R() * .5, birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length) });
+      const cx = an.x + (R() - .5) * .2 * sc, cy = an.y + (R() - .5) * .2 * sc, cz = an.z + (R() - .5) * .2 * sc;
+      for (let k = 0; k < n; k++)leafData.push({ p: V3(cx + (R() - .5) * 0.6 * sc, cy + (R() - .5) * 0.5 * sc, cz + (R() - .5) * 0.6 * sc), e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], s: (t.size === 'branch' ? 1.05 : .8) + R() * .5, birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length) });
       addProxy(V3(cx, cy, cz), .85, { task: t });
       if (t.id === justGrewId) lastGrowthPos.set(cx, cy, cz);
     });
@@ -410,7 +411,7 @@ export function initTree3D(container) {
     flowerTasks.forEach((t, i) => {
       const tip = tips.length ? tips[(i * 2 + 1) % tips.length] : apex;
       const R = mulberry(hashStr(t.id + 'f'));
-      const pos = tip.clone().add(V3((R() - .5) * .8, .15, (R() - .5) * .8));
+      const pos = tip.clone().add(V3((R() - .5) * .8 * sc, .15, (R() - .5) * .8 * sc));
       const col = CATCOLORS[t.cat] || CATCOLORS.Work;
       const f = makeFlower(col[0], col[1], 1 + R() * .3);
       f.group.position.copy(pos); f.group.rotation.y = R() * 6.28; treeGroup.add(f.group);
@@ -647,7 +648,7 @@ export function initTree3D(container) {
     el.addEventListener('wheel', e => { e.preventDefault(); tR = clamp(tR * (1 + e.deltaY * .0011), 7, 34); lastInteract = clockT }, { passive: false });
   })();
   function tickCam(dt) {
-    if (state.rot && clockT - lastInteract > 5) tTheta += dt * .07;
+    if (state.rot && clockT - lastInteract > 5 && !isMobile) tTheta += dt * .07;
     const k = 1 - Math.exp(-dt * 7);
     theta = lerp(theta, tTheta, k); phi = lerp(phi, tPhi, k); R = lerp(R, tR, k);
     applyCam();
@@ -669,7 +670,23 @@ export function initTree3D(container) {
     tip.style.top = Math.max(8, mouseCY - 10) + 'px';
     renderer.domElement.style.cursor = 'pointer';
   }
-  function handleTap() {
+  function handleTap(e) {
+    if (isMobile && e && e.clientX !== undefined) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const ny = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      ray.setFromCamera({ x: nx, y: ny }, camera);
+      const hit = ray.intersectObjects(proxies, false)[0];
+      if (hit) {
+        hoverTip = hit.object.userData.tip;
+        mouseIn = true; mouseNX = nx; mouseNY = ny; mouseCX = e.clientX; mouseCY = e.clientY;
+        tickHover(); // Force render tooltip
+        setTimeout(() => { mouseIn = false; tickHover(); }, 3500); // Hide after 3.5s
+      } else {
+        mouseIn = false; tickHover();
+      }
+    }
+
     if (!hoverTip) return;
     if (hoverTip.html) { toast('✨ A living reward on your tree!'); return }
     const t = hoverTip.task; toast((SIZES[t.size] || SIZES.leaf).icon + ' "' + t.title + '" — part of your tree 💚');

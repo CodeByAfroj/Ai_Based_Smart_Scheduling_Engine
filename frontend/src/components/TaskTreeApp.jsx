@@ -11,6 +11,12 @@ export default function TaskTreeApp() {
 
   const [panelOpen, setPanelOpen] = useState(null);
   const [skyMode, setSkyMode] = useState('auto');
+  const [showHud, setShowHud] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowHud(false), 3500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const treeTasks = useMemo(() => {
     return tasks.map(t => {
@@ -81,7 +87,7 @@ export default function TaskTreeApp() {
   }, [treeTasks]);
 
   return (
-    <div className="task-tree-app relative w-full h-screen overflow-hidden text-[#2b2620] bg-black">
+    <div className="task-tree-app relative w-full h-screen overflow-hidden text-[#2b2620] bg-black" onClick={() => setShowHud(prev => !prev)}>
       <style>{`
         .task-tree-app { font-family: ui-rounded, system-ui, -apple-system, sans-serif; }
         .hud { position: absolute; z-index: 10; pointer-events: none; }
@@ -112,10 +118,10 @@ export default function TaskTreeApp() {
         #gardenTag { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2b2620ee; color: white; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: bold; pointer-events: auto; }
         .toast { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); background: #fffdf4e8; padding: 12px 20px; border-radius: 12px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); font-weight: bold; font-size: 14px; animation: slideDown 0.5s cubic-bezier(0.2,1.2,0.4,1); z-index: 50; }
         @keyframes slideDown { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-        #toasts { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; pointer-events: none; }
-        .toast { background: #fffdf4e8; padding: 12px 20px; border-radius: 12px; box-shadow: 0 12px 32px rgba(20,30,15,0.25); font-weight: bold; font-size: 14px; animation: slideDown 0.5s cubic-bezier(0.2,1.2,0.4,1); pointer-events: auto; }
-        .toast.gold { background: linear-gradient(to right, #ffd97a, #f9a8d4); color: #2b2620; }
-        #tooltip { position: fixed; display: none; background: #fffdf4f0; backdrop-filter: blur(8px); border: 1px solid #ffffffaa; padding: 12px; border-radius: 14px; box-shadow: 0 12px 32px rgba(20,30,15,.25); font-size: 13.5px; line-height: 1.4; z-index: 100; pointer-events: none; color: #2b2620; }
+        #toasts { position: fixed; top: 80px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 50; pointer-events: none; align-items: center; }
+        .toast { background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); color: #ffffff; padding: 10px 20px; border-radius: 999px; font-weight: 700; font-size: 14px; animation: slideDown 0.5s cubic-bezier(0.2,1.2,0.4,1); white-space: nowrap; text-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: auto; }
+        .toast.gold { background: linear-gradient(135deg, rgba(255,217,122,0.85), rgba(249,168,212,0.85)); color: #2b2620; text-shadow: none; border: 1px solid rgba(255,255,255,0.4); }
+        #tooltip { position: fixed; display: none; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px 16px; border-radius: 14px; box-shadow: 0 12px 32px rgba(20,30,15,.5); font-size: 13.5px; line-height: 1.4; z-index: 100; pointer-events: none; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.5); white-space: nowrap; }
 
       `}</style>
 
@@ -123,7 +129,17 @@ export default function TaskTreeApp() {
       <div id="scene" ref={containerRef} className="absolute inset-0 z-0"></div>
 
       {/* HUD Header */}
-      <header className="hud">
+      <header className={`hud transition-opacity duration-500 ${showHud ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={(e) => e.stopPropagation()}>
+        <div className="bg-black/45 backdrop-blur-xl border border-white/10 rounded-xl p-2.5 shadow-lg pointer-events-auto shrink-0">
+          <div className="text-[10px] font-bold text-gray-300 uppercase tracking-wider mb-1">How it grows</div>
+          <div className="flex gap-2 text-[11px] font-bold text-white text-shadow-sm">
+            <span title="<30 min">🌱 &lt;30m</span>
+            <span title="30-59 min">🍃 30m</span>
+            <span title="1-2 hrs">🌿 1h</span>
+            <span title="2+ hrs">🌸 2h</span>
+          </div>
+        </div>
+
         <div className="flex-1"></div>
 
         <div className="sky-toggle hidden md:flex">
@@ -132,10 +148,6 @@ export default function TaskTreeApp() {
           <button className={skyMode === 'night' ? 'active' : ''} onClick={() => { setSkyMode('night'); if(engineRef.current) engineRef.current.setSky('night'); }} title="Night">🌙</button>
           <button className={skyMode === 'auto' ? 'active' : ''} onClick={() => { setSkyMode('auto'); if(engineRef.current) engineRef.current.setSky('auto'); }} title="Auto">✨</button>
         </div>
-
-        <div className="streak">🔥 0</div>
-        <button className="iconbtn" title="View Analytics" onClick={() => navigate('/analytics')}>📊</button>
-        <button className="iconbtn" title="Auto-rotate">🔁</button>
       </header>
 
       {/* Toasts */}

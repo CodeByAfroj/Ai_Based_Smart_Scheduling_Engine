@@ -1529,9 +1529,13 @@ export default function Layout() {
             {/* Tree Link */}
             <button
               onClick={() => navigate('/analytics')}
-              className="w-9 h-9 flex items-center justify-center rounded-full text-[var(--text-main)] hover:text-[var(--accent-base)] hover:bg-[var(--bg-hover)] transition-colors"
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
+                location.pathname === '/analytics'
+                  ? 'text-[#7be08d] bg-[#7be08d]/10'
+                  : 'text-[var(--text-main)] hover:text-[#7be08d] hover:bg-[#7be08d]/10'
+              }`}
             >
-              <TreeDeciduous size={20} />
+              <TreeDeciduous size={20} className={location.pathname === '/analytics' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
             </button>
 
             {/* Mobile Notifications */}
@@ -1720,14 +1724,14 @@ export default function Layout() {
           
           {/* Custom SVG Background for Smooth Flared Notch Effect */}
           <div className="absolute inset-0 -z-10 flex flex-col drop-shadow-[0_-4px_10px_rgba(0,0,0,0.03)] dark:drop-shadow-[0_-4px_10px_rgba(0,0,0,0.2)]">
-            <div className="flex w-full h-[60px] text-[var(--bg-panel)] shrink-0">
+            <div className={`flex w-full h-[60px] shrink-0 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#183321]/95 backdrop-blur-xl' : 'text-[var(--bg-panel)]'}`}>
                <div className="flex-1 bg-current rounded-tl-[32px]" />
                <svg width="120" height="60" viewBox="0 0 120 60" className="shrink-0 bg-transparent">
                   <path d="M0,0 C30,0 28,42 60,42 C92,42 90,0 120,0 L120,60 L0,60 Z" fill="currentColor" />
                </svg>
                <div className="flex-1 bg-current rounded-tr-[32px]" />
             </div>
-            <div className="flex-1 bg-[var(--bg-panel)] w-full" />
+            <div className={`flex-1 w-full transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321]/95' : 'bg-[var(--bg-panel)]'}`} />
           </div>
 
           {mobileNavItems.map((item) => {
@@ -1738,7 +1742,7 @@ export default function Layout() {
                     <div key="create-btn" className="relative -top-7 flex justify-center w-[72px] shrink-0">
                         <button
                             onClick={() => navigate('/tasks', { state: { openCreate: true } })}
-                            className="relative w-14 h-14 bg-[var(--accent-base)] rounded-full flex items-center justify-center text-white shadow-[0_8px_20px_rgba(79,70,229,0.45)] transform transition-all duration-300 hover:scale-105 active:scale-95 z-10"
+                            className={`relative w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-all duration-300 hover:scale-105 active:scale-95 z-10 ${location.pathname === '/analytics' ? 'bg-[#3e8a4a] shadow-[0_8px_20px_rgba(62,138,74,0.45)]' : 'bg-[var(--accent-base)] shadow-[0_8px_20px_rgba(79,70,229,0.45)]'}`}
                         >
                             <span className="text-2xl font-light leading-none">+</span>
                         </button>
@@ -1753,9 +1757,9 @@ export default function Layout() {
                 type="button"
                 data-tour={`mob-nav-${item.path.slice(1) || 'dashboard'}`}
                 onClick={() => navigate(item.path)}
-                className={`flex-1 flex flex-col items-center gap-1.5 ${isActive
-                  ? 'text-[var(--accent-base)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
+                className={`flex-1 flex flex-col items-center gap-1.5 transition-colors duration-500 ${isActive
+                  ? (location.pathname === '/analytics' ? 'text-[#7be08d]' : 'text-[var(--accent-base)]')
+                  : (location.pathname === '/analytics' ? 'text-[#63c276]/60 hover:text-[#7be08d]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]')
                   }`}
               >
                 <Icon
