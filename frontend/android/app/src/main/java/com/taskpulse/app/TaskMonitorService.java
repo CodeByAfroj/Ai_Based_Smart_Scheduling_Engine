@@ -63,7 +63,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     private int bufferIndex = 0;
     private float[] latestAccel = new float[3];
     private float[] latestGyro = new float[3];
-    private HeuristicActivityTracker heuristicTracker;
+    private SmartHarTracker smartHarTracker;
 
     private final List<String> meetingApps = Arrays.asList(
             "us.zoom.videomeetings",
@@ -102,10 +102,10 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                 accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
                 gyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
             }
-            heuristicTracker = new HeuristicActivityTracker();
+            smartHarTracker = new SmartHarTracker(this);
             logToConsole("Successfully loaded TFLite Smart HAR Tracker.");
         } catch (Exception e) {
-            logToConsole("Failed to init Heuristic Tracker: " + e.getMessage());
+            logToConsole("Failed to init Smart Tracker: " + e.getMessage());
             useLocalAI = false;
         }
     }
@@ -208,15 +208,15 @@ public class TaskMonitorService extends Service implements SensorEventListener {
 
     private void runInference(float[] bufferData) {
         try {
-            if (heuristicTracker == null) return;
+            if (smartHarTracker == null) return;
             
-            HeuristicActivityTracker.ActivityResult result = heuristicTracker.analyze(bufferData);
+            SmartHarTracker.ActivityResult result = smartHarTracker.analyze(bufferData);
             
             String activityLabel = result.activity;
             float confidence = result.confidence;
             boolean isBusy = result.isBusy;
             
-            logToConsole(String.format(Locale.US, "Heuristic Inference: %s (conf: %.2f)", activityLabel, confidence));
+            logToConsole(String.format(Locale.US, "Smart HAR Inference: %s (conf: %.2f)", activityLabel, confidence));
             
             String statusJson = String.format(Locale.US, "{\"activity\": \"%s\", \"confidence\": %.2f, \"busy\": %b}", 
                 activityLabel, confidence, isBusy);
@@ -226,7 +226,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             // (Removed distraction nudge logic per user request. This activity tracker 
             // is not intended to be bound to focus mode distraction alerts.)            
         } catch (Exception e) {
-            Log.e(TAG, "Heuristic Inference failed", e);
+            Log.e(TAG, "Smart HAR Inference failed", e);
         }
     }
 
@@ -388,8 +388,8 @@ public class TaskMonitorService extends Service implements SensorEventListener {
         } catch (Exception e) {
             Log.e(TAG, "Failed to clean up AI resources");
         }
-        if (heuristicTracker != null) {
-            // Nothing to close for heuristic tracker
+        if (smartHarTracker != null) {
+            // Nothing to close for smart tracker
         }
         logToConsole("Service destroyed.");
     }
