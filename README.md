@@ -34,8 +34,8 @@ We are building TaskPulse with a **Premium, Mobile-First Native Strategy**:
 
 Here is a look at TaskPulse in action:
 
-![TaskPulse Overview 1](./frontend/public/overview/1.png)
-![TaskPulse Overview 2](./frontend/public/overview/2.png)
-![TaskPulse Overview 3](./frontend/public/overview/3.png)
-![TaskPulse Overview 4](./frontend/public/overview/4.png)
-![TaskPulse Overview 5](./frontend/public/overview/5.png)
+![TaskPulse Overview 1](./overview/1.png)
+![TaskPulse Overview 2](./overview/2.png)
+![TaskPulse Overview 3](./overview/3.png)
+![TaskPulse Overview 4](./overview/4.png)
+![TaskPulse Overview 5](./overview/5.png)
