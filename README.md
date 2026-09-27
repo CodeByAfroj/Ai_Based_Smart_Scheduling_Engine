@@ -29,3 +29,13 @@ We are building TaskPulse with a **Premium, Mobile-First Native Strategy**:
 *   **Mobile / Native Bridge:** Capacitor JS (Native Android build, Google Auth Plugin, Background Services, AlarmManager).
 *   **Backend:** Python, FastAPI, Google OR-Tools (CP-SAT Solver), Natural Language Processing (NLP) chains.
 *   **Authentication:** Google OAuth 2.0 (Web + Native Capacitor flow).
+
+## 🖼️ Application Overview
+
+Here is a look at TaskPulse in action:
+
+![TaskPulse Overview 1](./frontend/public/overview/1.png)
+![TaskPulse Overview 2](./frontend/public/overview/2.png)
+![TaskPulse Overview 3](./frontend/public/overview/3.png)
+![TaskPulse Overview 4](./frontend/public/overview/4.png)
+![TaskPulse Overview 5](./frontend/public/overview/5.png)
