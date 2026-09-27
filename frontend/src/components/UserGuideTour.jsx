@@ -15,8 +15,8 @@ const TOUR_STEPS = [
     sidebarTarget: null,
     mobSidebarTarget: null,
     icon: LayoutGrid,
-    title: '1. Workspace Tools',
-    description: 'Access your command center, schedule timeline, task backlog, and focus tree here.',
+    title: '1. Dashboard & Tasks Section',
+    description: 'Access your main command center and your task backlog section from here.',
     placement: 'right-center',
   },
   {
@@ -26,8 +26,8 @@ const TOUR_STEPS = [
     sidebarTarget: null,
     mobSidebarTarget: null,
     icon: SettingsIcon,
-    title: '2. System Configuration',
-    description: 'Manage integrations, customize settings, and configure your personalized biometrics profile.',
+    title: '2. Settings & Profile',
+    description: 'Configure your application settings and manage your personalized profile from here.',
     placement: 'right-center',
   }
 ];
