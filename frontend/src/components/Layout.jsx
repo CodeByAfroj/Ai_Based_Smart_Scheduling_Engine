@@ -78,7 +78,7 @@ export default function Layout() {
         }
       });
     };
-    
+
     // Check initially and whenever window gains focus
     handleSync();
     window.addEventListener('focus', handleSync);
@@ -363,13 +363,13 @@ export default function Layout() {
   useEffect(() => {
     const unlockAudio = () => {
       if (window.__audioCtx && window.__audioCtx.state === 'suspended') {
-        window.__audioCtx.resume().catch(() => {});
+        window.__audioCtx.resume().catch(() => { });
       }
       if (!window.__activeAlarmAudio) {
         try {
           window.__activeAlarmAudio = new Audio('/alarm.mp3');
           window.__activeAlarmAudio.volume = 1.0;
-        } catch (_) {}
+        } catch (_) { }
       }
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
@@ -396,7 +396,7 @@ export default function Layout() {
 
         if (event.data.type === 'PLAY_ALARM') {
           const pref = event.data.notification_preference || 'text_and_sound';
-          
+
           if (pref === 'silent' || pref === 'vibrate') {
             return;
           }
@@ -441,7 +441,7 @@ export default function Layout() {
                 window.__activeAlarmAudio.currentTime = 0;
               }
             }, 6000);
-          } catch (e) {}
+          } catch (e) { }
         }
       };
 
@@ -743,7 +743,7 @@ export default function Layout() {
     { path: '/', label: 'Dashboard', icon: LayoutGrid },
     { path: '/schedule', label: 'Schedule & Timeline', icon: Calendar },
     { path: '/tasks', label: 'Tasks & Projects', icon: CheckSquare },
-    { path: '/analytics', label: 'Analytics', icon: BarChart2 },
+    { path: '/analytics', label: 'My Focus Tree', icon: TreeDeciduous },
   ];
 
   const systemNav = [
@@ -787,7 +787,7 @@ export default function Layout() {
 
       {/* ── Toast Stack & Active Alarm (Dynamic Island Style) ─────────────────────────── */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-2 w-[92vw] max-w-[420px] pointer-events-none">
-        
+
         {/* Dynamic Island Active Ringtone Alarm Pill */}
         {activeAlarm && (
           <div
@@ -1171,20 +1171,20 @@ export default function Layout() {
         </>
       )}
       {/* Desktop Sidebar */}
-      <aside data-tour="sidebar-nav" className="hidden lg:flex w-64 flex-col bg-[var(--bg-app)] border-r border-[var(--border-subtle)] h-full shrink-0">
+      <aside data-tour="sidebar-nav" className={`hidden lg:flex w-64 flex-col h-full shrink-0 transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#122317] border-r border-[#24422e]' : 'bg-[var(--bg-app)] border-r border-[var(--border-subtle)]'}`}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.1)] overflow-hidden border border-[var(--border-subtle)]">
             <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
           </div>
 
-          <span className="font-bold text-lg leading-tight text-[var(--text-main)]">
+          <span className={`font-bold text-lg leading-tight transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-white' : 'text-[var(--text-main)]'}`}>
             TaskPulse
           </span>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-8">
           <div>
-            <h3 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2">
+            <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
               Workspace
             </h3>
 
@@ -1200,8 +1200,8 @@ export default function Layout() {
                     data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
                     onClick={() => navigate(item.path)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                      ? 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold'
-                      : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'
+                      ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
+                      : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
                       }`}
                   >
                     <Icon
@@ -1218,7 +1218,7 @@ export default function Layout() {
           </div>
 
           <div>
-            <h3 className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3 px-2">
+            <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
               System
             </h3>
 
@@ -1234,8 +1234,8 @@ export default function Layout() {
                     data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
                     onClick={() => navigate(item.path)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                      ? 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold'
-                      : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]'
+                      ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
+                      : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
                       }`}
                   >
                     <Icon
@@ -1252,19 +1252,19 @@ export default function Layout() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-[var(--border-subtle)]">
-          <div className="bg-[var(--accent-base)]/5 dark:bg-[var(--accent-base)]/10 p-4 rounded-xl flex items-start gap-3 border border-[var(--accent-base)]/10 dark:border-[var(--accent-base)]/20">
+        <div className={`p-4 border-t transition-colors duration-500 ${location.pathname === '/analytics' ? 'border-[#24422e]' : 'border-[var(--border-subtle)]'}`}>
+          <div className={`p-4 rounded-xl flex items-start gap-3 border transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321] border-[#24422e]' : 'bg-[var(--accent-base)]/5 dark:bg-[var(--accent-base)]/10 border-[var(--accent-base)]/10 dark:border-[var(--accent-base)]/20'}`}>
             <Zap
               className="text-[var(--success-text)] shrink-0 mt-0.5"
               size={16}
             />
 
             <div>
-              <h4 className="text-xs font-semibold text-[var(--text-main)] mb-1">
+              <h4 className={`text-xs font-semibold mb-1 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#7be08d]' : 'text-[var(--text-main)]'}`}>
                 Automation Engine
               </h4>
 
-              <p className="text-[10px] text-[var(--text-muted)] leading-snug">
+              <p className={`text-[10px] leading-snug transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
                 All background schedules active with 99.8% precision.
               </p>
             </div>
@@ -1275,7 +1275,7 @@ export default function Layout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Desktop Header */}
-        <header className="hidden lg:flex h-16 border-b border-[var(--border-subtle)] bg-[var(--bg-panel)] px-8 items-center justify-between shrink-0 z-40">
+        <header className={`hidden lg:flex h-16 border-b px-8 items-center justify-between shrink-0 z-40 transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#122317] border-[#24422e]' : 'bg-[var(--bg-panel)] border-[var(--border-subtle)]'}`}>
           <div className="flex-1 max-w-xl">
             <div className="relative">
               <Search
@@ -1286,7 +1286,7 @@ export default function Layout() {
               <input
                 type="text"
                 placeholder="Search tasks, schedules, automations..."
-                className="w-full bg-[var(--bg-hover)] border-none rounded-lg py-2 pl-9 pr-4 text-sm focus:ring-2 focus:ring-[var(--accent-base)] focus:outline-none"
+                className={`w-full border-none rounded-lg py-2 pl-9 pr-4 text-sm focus:ring-2 focus:outline-none transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321] text-white focus:ring-[#7be08d] placeholder-[#8ca393]' : 'bg-[var(--bg-hover)] focus:ring-[var(--accent-base)]'}`}
               />
             </div>
           </div>
@@ -1490,28 +1490,28 @@ export default function Layout() {
                     />
                     Replay User Guide
                   </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if ('serviceWorker' in navigator) {
-                          navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                            for(let registration of registrations) {
-                              registration.unregister();
-                            }
-                          });
-                        }
-                        if ('caches' in window) {
-                          caches.keys().then((keyList) => {
-                            return Promise.all(keyList.map((key) => caches.delete(key)));
-                          });
-                        }
-                        setTimeout(() => window.location.reload(true), 500);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors font-medium text-amber-600 dark:text-amber-500 cursor-pointer"
-                    >
-                      <RotateCcw size={15} className="text-amber-500" />
-                      Force Update App
-                    </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                          for (let registration of registrations) {
+                            registration.unregister();
+                          }
+                        });
+                      }
+                      if ('caches' in window) {
+                        caches.keys().then((keyList) => {
+                          return Promise.all(keyList.map((key) => caches.delete(key)));
+                        });
+                      }
+                      setTimeout(() => window.location.reload(true), 500);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--text-main)] hover:bg-[var(--bg-hover)] transition-colors font-medium text-amber-600 dark:text-amber-500 cursor-pointer"
+                  >
+                    <RotateCcw size={15} className="text-amber-500" />
+                    Force Update App
+                  </button>
 
                   <div className="border-t border-[var(--border-subtle)] mt-1 pt-1">
                     <button
@@ -1551,11 +1551,10 @@ export default function Layout() {
             {/* Tree Link */}
             <button
               onClick={() => navigate('/analytics')}
-              className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${
-                location.pathname === '/analytics'
-                  ? 'text-[#7be08d] bg-[#7be08d]/10'
-                  : 'text-[var(--text-main)] hover:text-[#7be08d] hover:bg-[#7be08d]/10'
-              }`}
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${location.pathname === '/analytics'
+                ? 'text-[#7be08d] bg-[#7be08d]/10'
+                : 'text-[var(--text-main)] hover:text-[#7be08d] hover:bg-[#7be08d]/10'
+                }`}
             >
               <TreeDeciduous size={20} className={location.pathname === '/analytics' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
             </button>
@@ -1724,8 +1723,8 @@ export default function Layout() {
                     style={{ minHeight: 'unset' }}
                     onClick={() => {
                       if ('serviceWorker' in navigator) {
-                        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                          for(let registration of registrations) {
+                        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                          for (let registration of registrations) {
                             registration.unregister();
                           }
                         });
@@ -1767,35 +1766,35 @@ export default function Layout() {
 
         {/* Premium Mobile Bottom Navigation */}
         <nav className="lg:hidden fixed bottom-0 w-full px-2 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-between items-center z-50">
-          
+
           {/* Custom SVG Background for Smooth Flared Notch Effect */}
           <div className="absolute inset-0 -z-10 flex flex-col drop-shadow-[0_-4px_10px_rgba(0,0,0,0.03)] dark:drop-shadow-[0_-4px_10px_rgba(0,0,0,0.2)]">
             <div className={`flex w-full h-[60px] shrink-0 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#183321]/95 backdrop-blur-xl' : 'text-[var(--bg-panel)]'}`}>
-               <div className="flex-1 bg-current rounded-tl-[32px]" />
-               <svg width="120" height="60" viewBox="0 0 120 60" className="shrink-0 bg-transparent">
-                  <path d="M0,0 C30,0 28,42 60,42 C92,42 90,0 120,0 L120,60 L0,60 Z" fill="currentColor" />
-               </svg>
-               <div className="flex-1 bg-current rounded-tr-[32px]" />
+              <div className="flex-1 bg-current rounded-tl-[32px]" />
+              <svg width="120" height="60" viewBox="0 0 120 60" className="shrink-0 bg-transparent">
+                <path d="M0,0 C30,0 28,42 60,42 C92,42 90,0 120,0 L120,60 L0,60 Z" fill="currentColor" />
+              </svg>
+              <div className="flex-1 bg-current rounded-tr-[32px]" />
             </div>
             <div className={`flex-1 w-full transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321]/95' : 'bg-[var(--bg-panel)]'}`} />
           </div>
 
           {mobileNavItems.map((item) => {
             const isActive = isActivePath(item.path);
-            
+
             if (item.icon === 'PLUS_BUTTON') {
-                return (
-                    <div key="create-btn" className="relative -top-7 flex justify-center w-[72px] shrink-0">
-                        <button
-                            onClick={() => navigate('/tasks', { state: { openCreate: true } })}
-                            className={`relative w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-all duration-300 hover:scale-105 active:scale-95 z-10 ${location.pathname === '/analytics' ? 'bg-[#3e8a4a] shadow-[0_8px_20px_rgba(62,138,74,0.45)]' : 'bg-[var(--accent-base)] shadow-[0_8px_20px_rgba(79,70,229,0.45)]'}`}
-                        >
-                            <span className="text-2xl font-light leading-none">+</span>
-                        </button>
-                    </div>
-                )
+              return (
+                <div key="create-btn" className="relative -top-7 flex justify-center w-[72px] shrink-0">
+                  <button
+                    onClick={() => navigate('/tasks', { state: { openCreate: true } })}
+                    className={`relative w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-all duration-300 hover:scale-105 active:scale-95 z-10 ${location.pathname === '/analytics' ? 'bg-[#3e8a4a] shadow-[0_8px_20px_rgba(62,138,74,0.45)]' : 'bg-[var(--accent-base)] shadow-[0_8px_20px_rgba(79,70,229,0.45)]'}`}
+                  >
+                    <span className="text-2xl font-light leading-none">+</span>
+                  </button>
+                </div>
+              )
             }
-            
+
             const Icon = item.icon;
             return (
               <button
