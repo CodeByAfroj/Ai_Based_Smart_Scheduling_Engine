@@ -58,3 +58,16 @@ class ScheduleResponse(BaseModel):
     solve_time_ms: float
     tasks: List[ScheduledTask]
     message: Optional[str] = None
+
+class FocusSessionCreate(BaseModel):
+    task_id: Optional[str] = None
+    duration_seconds: int
+    status: str = "completed"
+    
+class FocusSessionOut(BaseModel):
+    id: str
+    user_id: str
+    task_id: Optional[str] = None
+    duration_seconds: int
+    status: str
+    created_at: datetime

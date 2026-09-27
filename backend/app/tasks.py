@@ -7,6 +7,7 @@ import uuid
 IST = ZoneInfo("Asia/Kolkata")
 def now_ist(): return datetime.now(IST)
 from pydantic import BaseModel
+from .models import FocusSessionCreate, FocusSessionOut
 from .database import get_database, get_user_collection
 from .auth import JWT_SECRET
 from .profile import get_current_user_id
@@ -152,3 +153,20 @@ async def delete_task(task_id: str, user_id: str = Depends(get_current_user_id))
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted"}
+
+def get_focus_collection():
+    return get_database()["focus_sessions"]
+
+@router.post("/focus-session", response_model=FocusSessionOut)
+async def record_focus_session(session_data: FocusSessionCreate, user_id: str = Depends(get_current_user_id)):
+    collection = get_focus_collection()
+    new_session = {
+        "user_id": user_id,
+        "task_id": session_data.task_id,
+        "duration_seconds": session_data.duration_seconds,
+        "status": session_data.status,
+        "created_at": datetime.now(timezone.utc)
+    }
+    result = await collection.insert_one(new_session)
+    new_session["id"] = str(result.inserted_id)
+    return new_session
