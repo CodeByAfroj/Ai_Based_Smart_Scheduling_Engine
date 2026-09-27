@@ -85,7 +85,7 @@ function getVisibleElement(selector) {
       return el;
     }
   }
-  return elements[0] || null;
+  return null;
 }
 
 export default function UserGuideTour() {
