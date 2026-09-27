@@ -24,7 +24,7 @@ const TOUR_STEPS = [
     id: 'sidebar-focus-tree',
     page: '/',
     target: '[data-tour="sidebar-focus-tree"]',
-    fallbackTarget: '[data-tour="mob-nav-dashboard"]',
+    fallbackTarget: '[data-tour="mob-nav-focus-tree"]',
     sidebarTarget: null,
     mobSidebarTarget: null,
     icon: Target,

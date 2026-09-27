@@ -1189,31 +1189,51 @@ export default function Layout() {
             </h3>
 
             <div className="flex flex-col gap-1">
-              {workspaceNav.map((item) => {
-                const isActive = isActivePath(item.path);
-                const Icon = item.icon;
+              <div data-tour="sidebar-tasks" className="flex flex-col gap-1">
+                {workspaceNav.filter(item => item.path !== '/analytics').map((item) => {
+                  const isActive = isActivePath(item.path);
+                  const Icon = item.icon;
 
-                return (
-                  <button
-                    key={item.path}
-                    type="button"
-                    data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
-                    onClick={() => navigate(item.path)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                      ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
-                      : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
-                      }`}
-                  >
-                    <Icon
-                      size={18}
-                      className={
-                        isActive ? 'stroke-[2.5px]' : 'stroke-2'
-                      }
-                    />
-                    <span className="text-sm">{item.label}</span>
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      key={item.path}
+                      type="button"
+                      data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
+                      onClick={() => navigate(item.path)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                        ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
+                        : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
+                        }`}
+                    >
+                      <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
+                      <span className="text-sm">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div data-tour="sidebar-focus-tree" className="flex flex-col gap-1">
+                {workspaceNav.filter(item => item.path === '/analytics').map((item) => {
+                  const isActive = isActivePath(item.path);
+                  const Icon = item.icon;
+
+                  return (
+                    <button
+                      key={item.path}
+                      type="button"
+                      data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
+                      onClick={() => navigate(item.path)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                        ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
+                        : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
+                        }`}
+                    >
+                      <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
+                      <span className="text-sm">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -1550,6 +1570,7 @@ export default function Layout() {
           <div className="flex items-center gap-3">
             {/* Tree Link */}
             <button
+              data-tour="mob-nav-focus-tree"
               onClick={() => navigate('/analytics')}
               className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${location.pathname === '/analytics'
                 ? 'text-[#7be08d] bg-[#7be08d]/10'
