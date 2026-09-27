@@ -39,7 +39,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null }) {
     setIsActive(false);
     console.log(`[Focus Mode] Closing overlay. Total focused seconds: ${seconds}`);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       if (!token) {
         console.warn("[Focus Mode] No auth token found. Cannot save session.");
       } else if (seconds > 0) { 
