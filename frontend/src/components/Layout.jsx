@@ -1183,7 +1183,7 @@ export default function Layout() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-8">
-          <div>
+          <div data-tour="sidebar-workspace">
             <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
               Workspace
             </h3>
@@ -1217,7 +1217,7 @@ export default function Layout() {
             </div>
           </div>
 
-          <div>
+          <div data-tour="sidebar-system">
             <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
               System
             </h3>
