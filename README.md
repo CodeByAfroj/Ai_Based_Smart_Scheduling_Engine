@@ -1,109 +1,31 @@
-# 🚀 TaskPulse - AI-Based Smart Scheduling & Recommendation Engine
+# TaskPulse 🌳
 
-TaskPulse is an autonomous, context-aware smart scheduling system that transforms task management into intelligent, time-blocked productivity schedules. It combines Google OR-Tools CP-SAT constraint programming, circadian rhythm biometrics, real-time activity sensors, zero-dataset multi-criteria task recommendations, a 2-way ChatGPT-style Voice Mode Orb, ultra-realistic Neural TTS human speech synthesis, and multi-provider LLM routing.
+TaskPulse is an intelligent, autonomous scheduling assistant designed to eliminate decision fatigue and enforce deep work through gamification and AI-driven automation. 
 
----
+## 🚨 The Problem
+Modern professionals suffer from **decision fatigue**, constant **context switching**, and the chaos of manually managing overflowing calendars. When a single deadline is missed or a meeting runs late, the entire day's schedule breaks, forcing users to manually drag and drop tasks, leading to anxiety and lost productivity.
 
-## 🌟 Visual Showcase & Architecture
+## 💡 The Solution
+TaskPulse acts as your personal, ruthless time manager. It doesn't just list tasks; it **orchestrates your day**. By combining advanced constraint programming (CP-SAT) with Bio-Rhythm AI, TaskPulse auto-sequences your work. When life happens, it automatically recalculates your schedule. To ensure you actually do the work, it immerses you in a gamified, nature-themed "Smart Focus Mode" where your productivity grows a digital 3D tree.
 
-### 1. System Architecture & Context Loop
-![System Architecture](frontend/public/1.jpeg)
+## ✨ Core Features
 
-### 2. Task Management & IST Timeline Scheduling
-![Timeline & Task Management](frontend/public/2.jpeg)
+*   **Gamified iFocus 3D Environment (Smart Focus Mode):** Enter a dedicated deep-work state where a digital "Tree of Productivity" grows organically. Break focus, and the tree suffers. Maintain unbroken, screen-free focus, and watch your forest thrive.
+*   **AutoShift Engine:** Missed a deadline? No problem. Our powerful CP-SAT solver instantly re-routes and recalculates your entire schedule without requiring any manual drag-and-drop.
+*   **Bio-Rhythm AI:** Personalized NLP-driven recommendations map heavy, analytical tasks perfectly to your personal cognitive peak energy windows.
+*   **Aggressive Native Alarms (Smart Focus Alerts):** Bypasses standard web notification limitations. Deep Android integration fires real-time, unmissable wakeup alarms directly on your device when a critical task begins.
+*   **Zero-Drift Calendar Sync:** Real-time, bi-directional sync with your Google Calendar ensures you are never double-booked and buffer times are automatically protected.
 
-### 3. CP-SAT Constraint Engine & Focus Windows
-![CP-SAT Solver Model](frontend/public/3.jpeg)
+## 🏗️ The Way We Are Building
 
-### 4. Activity Classification & Motion Sensor Loop
-![Activity Classifier Model](frontend/public/4.jpeg)
+We are building TaskPulse with a **Premium, Mobile-First Native Strategy**:
+1.  **Nature-Inspired Premium UI:** A cohesive, earthy, emerald-green design language utilizing glassmorphism and fluid micro-animations to create a calming yet focused user experience.
+2.  **Hybrid Native Architecture:** Built as an ultra-fast web application that is compiled directly into a native Android APK using Capacitor. This gives us the rapid iteration speed of the web with the raw power of native device APIs (like background alarm receivers).
+3.  **Heavy Backend Lifting:** Complex schedule calculations and NLP processing are offloaded to a robust Python backend, keeping the client lightweight and snappy.
 
-### 5. On-Device Sensor Inference Demo
-![Sensor Demo](frontend/public/5.jpeg)
+## 💻 Technology Stack
 
-### 6. Benchmark Performance & Optimization Metrics
-![Benchmark Results](frontend/public/6.jpeg)
-
----
-
-## 💡 Key Features
-
-### 1. 🎙️ 2-Way Voice Mode Orb Interface
-- **3D Canvas Energy Visualizer**: Features a luminous 3D sphere rendered with over 2,400 glowing orbital energy particles in WebGL/Three.js, styled with electric cyan, violet, and indigo color fields.
-- **Hands-Free 2-Way Voice Loop**: Talk naturally with hands-free speech recognition and instant neural AI voice playback.
-- **Speech Interruption (Barge-In)**: Speaking at any point immediately interrupts ongoing AI speech playback and processes your new query without delay.
-- **Master Kill Switch**: Closing the Voice Orb modal instantly terminates microphone speech recognition, active HTML5 audio streams, and Web Speech threads to guarantee zero background audio or listening.
-
----
-
-### 2. 🗣️ Ultra-Realistic Neural Human Text-to-Speech (Edge-TTS)
-- **Neural Human Speech Endpoint (`/nlp/tts`)**: Powered by Microsoft Edge Neural TTS voices (`en-US-AvaNeural`, `en-US-EmmaNeural`, `en-US-AndrewNeural`, etc.) delivering warm, studio-quality human voice responses.
-- **Natural Voice Selection**: Supports multiple customizable AI voice models tailored for warm, professional, or deep vocal tones.
-- **Smart Web Speech Fallback**: Automatically selects natural browser voices (`Ava`, `Samantha`, `Jenny`, `Google US English`) with pitch (`1.05`) and rate (`0.96`) tuning for smooth human cadence when offline.
-
----
-
-### 3. 🤖 Context-Aware Multi-LLM Routing & Instant Failover Engine
-- **Multi-Provider LLM Architecture**: Automatically routes queries between Google Gemini (`gemini-3.5-flash-lite`), Groq LLaMA (`openai/gpt-oss-120b`), and local Ollama (`gemma4:31b`).
-- **Domain Boundary Scoping**: System prompt is strictly constrained to TaskPulse smart scheduling, task management, chronotype productivity, and workspace features, gracefully declining off-topic queries.
-- **Sub-5ms Dynamic Rule Engine**: Local NLP rule fallback engine handles greetings, task creation, rescheduling requests, date/time queries, and system capabilities seamlessly with zero latency.
-- **Smart Rate-Limit Cooldown**: Automatically detects HTTP 429 rate limits for 30s lockouts without triggering false long-term locks on parameter errors.
-
----
-
-### 4. 🔔 Multi-Channel Alert & Haptic Notification System
-TaskPulse provides 5 customizable notification modes under **Profile Settings**:
-
-| Alert Preference | Web Push Popup | Sound Chime | AI Neural Voice | Device Haptic Vibration |
-| :--- | :---: | :---: | :---: | :---: |
-| **Web Push + Sound Chime (Default)** | ✅ | ✅ | ❌ No Voice | ✅ |
-| **Notification Sound Chime Only** | ❌ | ✅ | ❌ No Voice | ❌ |
-| **Vibration / Phone Haptic Only** | ✅ | ❌ | ❌ No Voice | ✅ Haptic Pulse |
-| **Web Push + Neural AI Voice** | ✅ | ✅ | ✅ Reads Aloud | ✅ |
-| **Silent / Visual Only** | ✅ | ❌ | ❌ No Voice | ❌ |
-
-- **Ambient Glass-Chime Audio**: Replaces harsh single sine beeps with a soft C-major 7th chord triad exponential decay chime.
-- **Device Vibration Support**: Triggers mobile/device haptic feedback (`navigator.vibrate`) for discrete silent alerts.
-
----
-
-### 5. ⚡ Zero-Dataset Personalized AI Task Recommendation Engine
-Computes real-time **"Next Best Task"** suggestions using a **Deterministic Multi-Criteria Utility Model**:
-
-$$\text{Task Score} = \text{Base Priority Score} + \text{Circadian Energy Alignment} + \text{Role Affinity} - \text{Fatigue Penalty}$$
-
-- Evaluates Morning Lark / Night Owl chronotypes, wake/sleep biometrics, and focus duration limits.
-- Matches high-cognition tasks (*Coding, Architecture*) to **Peak Focus Slots** and routine tasks (*Emails, Admin*) to **Post-Lunch Energy Dips**.
-
----
-
-### 6. 🔒 Dual Task Creation Modes & CP-SAT Solver Integration
-- **🤖 AI Flexible Task**: Autonomous Google OR-Tools CP-SAT solver dynamically assigns non-overlapping time blocks before deadlines.
-- **🔒 Fixed Event / Meeting**: Hard-locked to exact start times, protected from rescheduling.
-- **🌙 Dynamic Quiet / Sleep Hours**: Enforces hard quiet/rest constraints outside core active working hours (`workEnd` to `workStart`).
-- **⏰ Strict IST Wall-Clock Standardization**: All timestamps across FastAPI, MongoDB Atlas BSON, and React UI are strictly normalized to **Asia/Kolkata (UTC+05:30)**.
-
----
-
-### 7. 📱 Sensor-Based Real-Time Activity Detection
-- Mobile motion sensor data (accelerometer + gyroscope) is continuously streamed to the backend where a **1D CNN + LSTM Deep Learning Model** classifies the user's physical state (e.g., walking, sitting, standing) in real-time.
-- If the model confidently detects that the user is busy or in transit, it automatically triggers an autonomous schedule update (`/auto-shift`) to defer deep-focus work.
-
----
-
-## 🛠 Tech Stack
-
-- **Backend**: Python 3.13 / 3.14, FastAPI, Edge-TTS (Neural Human Voice), Google Gemini / Groq / Ollama LLMs, OR-Tools (CP-SAT Solver), Motor / PyMongo, PyJWT, Pydantic.
-- **Frontend**: React, Vite, Three.js / WebGL (Voice Orb 3D Engine), Lucide Icons, Vanilla CSS Design System.
-- **Machine Learning & Sensors**: PyTorch (1D CNN-LSTM Architecture), ONNX Runtime (Backend Inference), UCI-HAR Dataset.
-
----
-
-## 🚦 Getting Started & Environment Setup
-
-TaskPulse consists of a Python/FastAPI backend and a React/Vite frontend. Each component has its own dedicated `.env` configuration and setup process.
-
-For complete, step-by-step installation instructions and environment variable templates, please refer to the dedicated setup guides:
-
-- 🔗 [Backend Setup & Environment Variables](./backend/README.md)
-- 🔗 [Frontend Setup & Environment Variables](./frontend/README.md)
+*   **Frontend:** React 18, Vite, Tailwind CSS (Custom Flora/Nature Theme), React Router, Lucide Icons, Three.js (for 3D tree gamification).
+*   **Mobile / Native Bridge:** Capacitor JS (Native Android build, Google Auth Plugin, Background Services, AlarmManager).
+*   **Backend:** Python, FastAPI, Google OR-Tools (CP-SAT Solver), Natural Language Processing (NLP) chains.
+*   **Authentication:** Google OAuth 2.0 (Web + Native Capacitor flow).
