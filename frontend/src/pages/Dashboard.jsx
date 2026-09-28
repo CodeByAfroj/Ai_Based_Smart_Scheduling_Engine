@@ -8,12 +8,14 @@ import {
 } from 'lucide-react';
 import { formatIST, formatDateIST, nowIST } from '../utils/time'
 import { Section, Row } from '../components/ui/LayoutBlocks';
+import FocusModeOverlay from '../components/FocusModeOverlay';
 
 export default function Dashboard() {
   const { profile, readinessScore, token } = useAuth();
   const { tasks, loadingTasks: loading, updateTask } = useTasks();
   const navigate = useNavigate();
   const [notifDismissed, setNotifDismissed] = useState(false);
+  const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
 
   const firstName = profile?.name?.split(' ')[0] || 'there';
   const profileIncomplete = readinessScore < 100;
@@ -213,7 +215,7 @@ export default function Dashboard() {
                       <CheckCircle2 size={16} className="text-emerald-400" /> Done
                     </button>
                     <button
-                      onClick={() => navigate('/schedule', { state: { focusTaskId: recTask.task_id } })}
+                      onClick={() => setIsFocusModeOpen(true)}
                       className="flex-[1.5] bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[13px] sm:text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(79,70,229,0.4)] transition-all duration-200"
                     >
                       <span>Start Focus</span> <Play fill="currentColor" size={13} />
@@ -478,6 +480,12 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      <FocusModeOverlay 
+        isOpen={isFocusModeOpen} 
+        onClose={() => setIsFocusModeOpen(false)} 
+        task={recommendation?.recommended_task || null} 
+      />
     </div>
   );
 }
