@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   LayoutGrid,
   CheckSquare,
@@ -31,6 +31,139 @@ import { useTasks } from '../contexts/TaskContext';
 import ChatButton from './ChatButton';
 import UserGuideTour from './UserGuideTour';
 import { syncTaskState, isTWA } from '../utils/nativeBridge';
+
+/* ── Tree level constants (same as TaskTreeApp) ── */
+const TREE_LEVELS = [
+  { xp: 0,    name: 'Seed',           emoji: '🌱' },
+  { xp: 30,   name: 'Sprout',         emoji: '🌱' },
+  { xp: 100,  name: 'Sapling',        emoji: '🌿' },
+  { xp: 250,  name: 'Young Tree',     emoji: '🌳' },
+  { xp: 500,  name: 'Thriving Tree',  emoji: '🌳' },
+  { xp: 1000, name: 'Mighty Tree',    emoji: '🌲' },
+  { xp: 2000, name: 'Ancient Tree',   emoji: '🌲' },
+  { xp: 3500, name: 'Enchanted Tree', emoji: '✨' },
+];
+
+/* ── Header bar shown only on /analytics ── */
+function AnalyticsHeaderBar({ tasks }) {
+  const doneTasks = useMemo(() => {
+    return tasks.filter(t => t.status === 'completed').map(t => {
+      const dur = t.duration_minutes || 0;
+      let size;
+      if (dur >= 120) size = 'flower';
+      else if (dur >= 60) size = 'branch';
+      else if (dur >= 30) size = 'leaf';
+      else size = 'sprout';
+      return { ...t, size, hours: Math.max(dur, 15) / 60, completedAt: t.updated_at || t.completed_at };
+    });
+  }, [tasks]);
+
+  const xp = doneTasks.reduce((a, t) => {
+    const xpMap = { sprout: 10, leaf: 20, branch: 50, flower: 100 };
+    return a + (xpMap[t.size] || 20);
+  }, 0);
+  const hours = doneTasks.reduce((a, t) => a + t.hours, 0);
+
+  const streakDays = useMemo(() => {
+    const daySet = new Set(
+      doneTasks.map(t => t.completedAt ? new Date(t.completedAt).toISOString().slice(0, 10) : null).filter(Boolean)
+    );
+    let streak = 0;
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    while (daySet.has(d.toISOString().slice(0, 10))) { streak++; d.setDate(d.getDate() - 1); }
+    return streak;
+  }, [doneTasks]);
+
+  let lvlIdx = 0;
+  TREE_LEVELS.forEach((L, i) => { if (xp >= L.xp) lvlIdx = i; });
+  const level = TREE_LEVELS[lvlIdx];
+  const nextLvl = TREE_LEVELS[lvlIdx + 1];
+  const progress = nextLvl ? ((xp - level.xp) / (nextLvl.xp - level.xp)) * 100 : 100;
+  const xpToNext = nextLvl ? nextLvl.xp - xp : 0;
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 16, width: '100%',
+      fontFamily: 'inherit',
+    }}>
+      {/* Level + Progress */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 0,
+      }}>
+        {/* Current level - small */}
+        <span style={{
+          fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap',
+          textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+        }}>{level.emoji} {level.name}</span>
+
+        {/* Progress bar */}
+        <div style={{
+          flex: '1 1 0', height: 8, background: 'rgba(255,255,255,0.1)',
+          borderRadius: 99, overflow: 'hidden', position: 'relative', minWidth: 60, maxWidth: 200,
+        }}>
+          <div style={{
+            height: '100%', borderRadius: 99,
+            background: 'linear-gradient(90deg, #ffd97a, #7be08d)',
+            width: `${Math.min(progress, 100)}%`,
+            boxShadow: '0 0 8px rgba(123,224,141,0.4)',
+            transition: 'width 1s ease',
+          }} />
+        </div>
+
+        {/* Next level - BIG and prominent */}
+        {nextLvl ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.4)',
+              textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+            }}>{xpToNext} XP →</span>
+            <span style={{ fontSize: 24, lineHeight: 1, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>{nextLvl.emoji}</span>
+            <span style={{
+              fontSize: 13, fontWeight: 900, color: '#7be08d', whiteSpace: 'nowrap',
+              textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+            }}>{nextLvl.name}</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 24, lineHeight: 1 }}>✨</span>
+            <span style={{
+              fontSize: 13, fontWeight: 900, color: '#ffd97a',
+              textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+            }}>MAX LEVEL</span>
+          </div>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.12)', flexShrink: 0 }} />
+
+      {/* Quick stats */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 14 }}>🔥</span>
+          <span style={{
+            fontSize: 12, fontWeight: 800, color: '#ffd97a',
+            textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+          }}>{streakDays}d</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 14 }}>🌿</span>
+          <span style={{
+            fontSize: 12, fontWeight: 800, color: '#7be08d',
+            textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+          }}>{doneTasks.length}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 14 }}>⏱</span>
+          <span style={{
+            fontSize: 12, fontWeight: 800, color: '#93c5fd',
+            textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+          }}>{Math.round(hours * 10) / 10}h</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Layout() {
   const location = useLocation();
@@ -1171,20 +1304,20 @@ export default function Layout() {
         </>
       )}
       {/* Desktop Sidebar */}
-      <aside data-tour="sidebar-nav" className={`hidden lg:flex w-64 flex-col h-full shrink-0 transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#122317] border-r border-[#24422e]' : 'bg-[var(--bg-app)] border-r border-[var(--border-subtle)]'}`}>
+      <aside data-tour="sidebar-nav" className={`hidden lg:flex w-64 flex-col h-full shrink-0 z-30 transition-all duration-500 ${location.pathname === '/analytics' ? 'bg-transparent border-r border-white/10 text-white shadow-2xl' : 'bg-[var(--bg-app)] border-r border-[var(--border-subtle)]'}`}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.1)] overflow-hidden border border-[var(--border-subtle)]">
             <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
           </div>
 
-          <span className={`font-bold text-lg leading-tight transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-white' : 'text-[var(--text-main)]'}`}>
+          <span className={`font-bold text-lg leading-tight transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : 'text-[var(--text-main)]'}`}>
             TaskPulse
           </span>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-8">
           <div data-tour="sidebar-workspace">
-            <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
+            <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)]'}`}>
               Workspace
             </h3>
 
@@ -1201,8 +1334,8 @@ export default function Layout() {
                       data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
                       onClick={() => navigate(item.path)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                        ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
-                        : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
+                        ? (location.pathname === '/analytics' ? 'bg-white/15 text-[#7be08d] font-semibold border border-white/10 shadow-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
+                        : (location.pathname === '/analytics' ? 'text-white/90 hover:bg-white/10 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
                         }`}
                     >
                       <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
@@ -1224,8 +1357,8 @@ export default function Layout() {
                       data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
                       onClick={() => navigate(item.path)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                        ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
-                        : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
+                        ? (location.pathname === '/analytics' ? 'bg-white/15 text-[#7be08d] font-semibold border border-white/10 shadow-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
+                        : (location.pathname === '/analytics' ? 'text-white/90 hover:bg-white/10 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
                         }`}
                     >
                       <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
@@ -1238,7 +1371,7 @@ export default function Layout() {
           </div>
 
           <div data-tour="sidebar-system">
-            <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
+            <h3 className={`text-[10px] font-bold uppercase tracking-wider mb-3 px-2 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)]'}`}>
               System
             </h3>
 
@@ -1254,8 +1387,8 @@ export default function Layout() {
                     data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
                     onClick={() => navigate(item.path)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
-                      ? (location.pathname === '/analytics' ? 'bg-[#24422e] text-[#7be08d] font-semibold' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
-                      : (location.pathname === '/analytics' ? 'text-[#8ca393] hover:bg-[#203a29] hover:text-white' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
+                      ? (location.pathname === '/analytics' ? 'bg-white/15 text-[#7be08d] font-semibold border border-white/10 shadow-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
+                      : (location.pathname === '/analytics' ? 'text-white/90 hover:bg-white/10 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
                       }`}
                   >
                     <Icon
@@ -1272,19 +1405,19 @@ export default function Layout() {
           </div>
         </div>
 
-        <div className={`p-4 border-t transition-colors duration-500 ${location.pathname === '/analytics' ? 'border-[#24422e]' : 'border-[var(--border-subtle)]'}`}>
-          <div className={`p-4 rounded-xl flex items-start gap-3 border transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321] border-[#24422e]' : 'bg-[var(--accent-base)]/5 dark:bg-[var(--accent-base)]/10 border-[var(--accent-base)]/10 dark:border-[var(--accent-base)]/20'}`}>
+        <div className={`p-4 border-t transition-colors duration-500 ${location.pathname === '/analytics' ? 'border-white/10' : 'border-[var(--border-subtle)]'}`}>
+          <div className={`p-4 rounded-xl flex items-start gap-3 border transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-white/5 backdrop-blur-md border-white/10' : 'bg-[var(--accent-base)]/5 dark:bg-[var(--accent-base)]/10 border-[var(--accent-base)]/10 dark:border-[var(--accent-base)]/20'}`}>
             <Zap
-              className="text-[var(--success-text)] shrink-0 mt-0.5"
+              className="text-[#7be08d] shrink-0 mt-0.5"
               size={16}
             />
 
             <div>
-              <h4 className={`text-xs font-semibold mb-1 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#7be08d]' : 'text-[var(--text-main)]'}`}>
+              <h4 className={`text-xs font-semibold mb-1 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#7be08d] drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-main)]'}`}>
                 Automation Engine
               </h4>
 
-              <p className={`text-[10px] leading-snug transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#8ca393]' : 'text-[var(--text-muted)]'}`}>
+              <p className={`text-[10px] leading-snug transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)]'}`}>
                 All background schedules active with 99.8% precision.
               </p>
             </div>
@@ -1293,28 +1426,32 @@ export default function Layout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
         {/* Desktop Header */}
-        <header className={`hidden lg:flex h-16 border-b px-8 items-center justify-between shrink-0 z-40 transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#122317] border-[#24422e]' : 'bg-[var(--bg-panel)] border-[var(--border-subtle)]'}`}>
-          <div className="flex-1 max-w-xl">
-            <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
-                size={16}
-              />
+        <header className={`hidden lg:flex h-16 border-b px-8 items-center justify-between shrink-0 z-30 transition-all duration-500 ${location.pathname === '/analytics' ? 'bg-transparent border-b border-white/10 text-white' : 'bg-[var(--bg-panel)] border-[var(--border-subtle)]'}`}>
+          <div className="flex-1 max-w-2xl">
+            {location.pathname !== '/analytics' ? (
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                  size={16}
+                />
 
-              <input
-                type="text"
-                placeholder="Search tasks, schedules, automations..."
-                className={`w-full border-none rounded-lg py-2 pl-9 pr-4 text-sm focus:ring-2 focus:outline-none transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321] text-white focus:ring-[#7be08d] placeholder-[#8ca393]' : 'bg-[var(--bg-hover)] focus:ring-[var(--accent-base)]'}`}
-              />
-            </div>
+                <input
+                  type="text"
+                  placeholder="Search tasks, schedules, automations..."
+                  className="w-full border-none rounded-lg py-2 pl-9 pr-4 text-sm focus:ring-2 focus:outline-none transition-colors duration-500 bg-[var(--bg-hover)] focus:ring-[var(--accent-base)]"
+                />
+              </div>
+            ) : (
+              <AnalyticsHeaderBar tasks={tasks} />
+            )}
           </div>
 
           <div className="flex items-center gap-5 pl-4">
             <button
               type="button"
-              className="btn-primary py-2 px-4 shadow-sm text-sm"
+              className={`py-2 px-4 shadow-sm text-sm font-semibold rounded-lg transition-colors ${location.pathname === '/analytics' ? 'bg-[#57b66b] hover:bg-[#2c7a3b] text-white shadow-[0_4px_12px_rgba(87,182,107,0.3)] border border-[#57b66b]/20' : 'btn-primary'}`}
               onClick={() => navigate('/tasks', { state: { openCreate: true } })}
             >
               + New Task
@@ -1326,7 +1463,7 @@ export default function Layout() {
                 type="button"
                 aria-label="Notifications"
                 aria-expanded={showNotifMenu}
-                className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors relative"
+                className={`transition-colors relative ${location.pathname === '/analytics' ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] hover:text-white/80' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
                 onClick={() => {
                   window.dispatchEvent(new Event('close_chat'));
                   setShowNotifMenu((prev) => !prev);
@@ -1416,7 +1553,7 @@ export default function Layout() {
                   setShowUserMenu((prev) => !prev);
                   setShowNotifMenu(false);
                 }}
-                className="flex items-center gap-2 cursor-pointer hover:bg-[var(--bg-hover)] rounded-lg px-2 py-1 transition-colors"
+                className={`flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1 transition-colors ${location.pathname === '/analytics' ? 'hover:bg-white/10' : 'hover:bg-[var(--bg-hover)]'}`}
               >
                 <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-[var(--border-subtle)]">
                   {profile?.picture ? (
@@ -1434,7 +1571,7 @@ export default function Layout() {
 
                 <ChevronDown
                   size={14}
-                  className="text-[var(--text-muted)]"
+                  className={location.pathname === '/analytics' ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)]'}
                 />
               </button>
 
@@ -1550,7 +1687,7 @@ export default function Layout() {
         </header>
 
         {/* Mobile Header */}
-        <header className={`lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 backdrop-blur-xl z-40 border-b transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321]/95 border-white/5 shadow-md' : 'bg-[var(--bg-panel)]/80 border-[var(--border-subtle)]'}`}>
+        <header className={`lg:hidden px-5 py-4 flex items-center justify-between sticky top-0 z-30 border-b transition-all duration-500 ${location.pathname === '/analytics' ? 'bg-transparent border-white/10 text-white shadow-md' : 'backdrop-blur-xl bg-[var(--bg-panel)]/80 border-[var(--border-subtle)]'}`}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.1)] overflow-hidden border border-[var(--border-subtle)] shrink-0">
               <img src="/logo.png" alt="TaskPulse Logo" className="w-full h-full object-cover" />
@@ -1781,7 +1918,7 @@ export default function Layout() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto relative block">
+        <main className={`flex-1 overflow-y-auto block ${location.pathname === '/analytics' ? 'fixed inset-0 z-0' : 'relative'}`}>
           <Outlet />
         </main>
 
@@ -1790,14 +1927,14 @@ export default function Layout() {
 
           {/* Custom SVG Background for Smooth Flared Notch Effect */}
           <div className="absolute inset-0 -z-10 flex flex-col drop-shadow-[0_-4px_10px_rgba(0,0,0,0.03)] dark:drop-shadow-[0_-4px_10px_rgba(0,0,0,0.2)]">
-            <div className={`flex w-full h-[60px] shrink-0 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#183321]/95 backdrop-blur-xl' : 'text-[var(--bg-panel)]'}`}>
+            <div className={`flex w-full h-[60px] shrink-0 transition-colors duration-500 ${location.pathname === '/analytics' ? 'text-[#183321]' : 'text-[var(--bg-panel)]'}`}>
               <div className="flex-1 bg-current rounded-tl-[32px]" />
               <svg width="120" height="60" viewBox="0 0 120 60" className="shrink-0 bg-transparent">
                 <path d="M0,0 C30,0 28,42 60,42 C92,42 90,0 120,0 L120,60 L0,60 Z" fill="currentColor" />
               </svg>
               <div className="flex-1 bg-current rounded-tr-[32px]" />
             </div>
-            <div className={`flex-1 w-full transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321]/95' : 'bg-[var(--bg-panel)]'}`} />
+            <div className={`flex-1 w-full transition-colors duration-500 ${location.pathname === '/analytics' ? 'bg-[#183321]' : 'bg-[var(--bg-panel)]'}`} />
           </div>
 
           {mobileNavItems.map((item) => {

@@ -402,21 +402,44 @@ export function initTree3D(container) {
     leafTasks.forEach((t, i) => {
       const an = anchors.length ? anchors[i % anchors.length] : apex;
       const R = mulberry(hashStr(t.id)); const n = (SIZES[t.size] || SIZES.leaf).leaves;
-      const cx = an.x + (R() - .5) * .2 * sc, cy = an.y + (R() - .5) * .2 * sc, cz = an.z + (R() - .5) * .2 * sc;
-      for (let k = 0; k < n; k++)leafData.push({ p: V3(cx + (R() - .5) * 0.6 * sc, cy + (R() - .5) * 0.5 * sc, cz + (R() - .5) * 0.6 * sc), e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], s: (t.size === 'branch' ? 1.05 : .8) + R() * .5, birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length) });
-      addProxy(V3(cx, cy, cz), .85, { task: t });
+      
+      // Push tasks outward to avoid overlap and naturally grow canopy wider
+      const stackIndex = Math.floor(i / Math.max(anchors.length, 1));
+      const rOffset = (stackIndex * 0.55) * sc; 
+      const angle = i * 2.39996;
+      
+      const cx = an.x + Math.cos(angle) * rOffset + (R() - .5) * .2 * sc;
+      const cz = an.z + Math.sin(angle) * rOffset + (R() - .5) * .2 * sc;
+      const cy = an.y + (R() - .5) * .4 * sc;
+      
+      for (let k = 0; k < n; k++) leafData.push({ 
+        p: V3(cx + (R() - .5) * 0.6 * sc, cy + (R() - .5) * 0.5 * sc, cz + (R() - .5) * 0.6 * sc), 
+        e: [(R() - .5) * 2, R() * 6.28, (R() - .5) * 2], 
+        s: (t.size === 'branch' ? 1.05 : .8) + R() * .5, 
+        birth: births[t.id] || 0, ci: Math.floor(R() * GREENS.length) 
+      });
+      addProxy(V3(cx, cy, cz), 1.1, { task: t }); // Increased proxy radius slightly
       if (t.id === justGrewId) lastGrowthPos.set(cx, cy, cz);
     });
     // ---- flowers ----
     flowerTasks.forEach((t, i) => {
       const tip = tips.length ? tips[(i * 2 + 1) % tips.length] : apex;
       const R = mulberry(hashStr(t.id + 'f'));
-      const pos = tip.clone().add(V3((R() - .5) * .8 * sc, .15, (R() - .5) * .8 * sc));
+      
+      const stackIndex = Math.floor(i / Math.max(tips.length, 1));
+      const rOffset = (stackIndex * 0.65) * sc;
+      const angle = i * 2.39996;
+      
+      const pos = tip.clone().add(V3(
+        Math.cos(angle) * rOffset + (R() - .5) * .8 * sc, 
+        .15, 
+        Math.sin(angle) * rOffset + (R() - .5) * .8 * sc
+      ));
       const col = CATCOLORS[t.cat] || CATCOLORS.Work;
       const f = makeFlower(col[0], col[1], 1 + R() * .3);
       f.group.position.copy(pos); f.group.rotation.y = R() * 6.28; treeGroup.add(f.group);
       if (births[t.id]) flowerPops.push({ g: f.group, birth: births[t.id], s: f.group.scale.x });
-      addProxy(pos.clone().add(V3(0, .8, 0)), .7, { task: t });
+      addProxy(pos.clone().add(V3(0, .8, 0)), .9, { task: t });
       if (t.id === justGrewId) lastGrowthPos.copy(pos).add(V3(0, .8, 0));
     });
     // ---- streak fruits ----
