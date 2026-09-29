@@ -1173,7 +1173,7 @@ export default function Layout() {
                     key={task.id}
                     className="relative bg-[var(--bg-panel)]/50 backdrop-blur-md border border-[var(--border-subtle)]/60 rounded-2xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md hover:border-[var(--border-main)] transition-all overflow-hidden group"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                     {/* Top Row: Info & Actions */}
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       {/* Left side: Task Title & Badges */}

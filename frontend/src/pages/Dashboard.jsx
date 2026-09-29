@@ -197,8 +197,8 @@ export default function Dashboard() {
                   </div>
 
                   {/* Main Content */}
-                  <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-3">{recTask.name}</h2>
-                  <p className="text-indigo-50/90 text-[14px] sm:text-[16px] leading-relaxed font-medium mb-5 sm:mb-6 max-w-2xl">
+                  <h2 className="text-white text-2xl sm:text-3xl font-extrabold mb-3">{recTask.name}</h2>
+                  <p className="text-indigo-50/90 text-[14px] sm:text-[15px] leading-relaxed font-medium mb-5 sm:mb-6 max-w-2xl">
                     {recTask.reason_detail || "TaskPulse has identified the perfect task for your current context and energy levels. Dive in now to maximize your productivity."}
                   </p>
                 </div>
