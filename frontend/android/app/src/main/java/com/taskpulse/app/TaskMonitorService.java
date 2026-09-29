@@ -49,6 +49,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     private String taskTitle;
     private boolean isMeetingMode;
     private boolean isScreenFree;
+    private boolean isRecommended;
     private long taskDurationMs;
     private long serviceStartTime;
     private String lastLoggedApp = "";
@@ -142,6 +143,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             if (taskTitle == null) taskTitle = "your current task";
             isMeetingMode = intent.getBooleanExtra("IS_MEETING", false);
             isScreenFree = intent.getBooleanExtra("IS_SCREEN_FREE", false);
+            isRecommended = intent.getBooleanExtra("IS_RECOMMENDED", false);
             int durationMinutes = intent.getIntExtra("DURATION_MINS", 20);
             taskDurationMs = durationMinutes * 60 * 1000L;
             serviceStartTime = System.currentTimeMillis();
@@ -251,17 +253,14 @@ public class TaskMonitorService extends Service implements SensorEventListener {
     }
 
     private void checkDistraction() {
-        long now = System.currentTimeMillis();
-        
-        if (isScreenFree) {
-            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (pm.isInteractive()) {
-                if (now - lastNudgeTime > 180000) {
-                    lastNudgeTime = now;
-                    fireDistractionNudge("Screen");
-                }
-            }
+        // If this is a recommended task or a screen-free task, skip all app-based
+        // distraction nudges entirely. Screen-free tasks use the HAR sensor system.
+        // Recommended tasks should not trigger any surveillance-style nudges.
+        if (isRecommended || isScreenFree) {
+            return;
         }
+
+        long now = System.currentTimeMillis();
 
         UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
         // Look back 10 minutes to guarantee we find the last app that moved to foreground
@@ -283,12 +282,12 @@ public class TaskMonitorService extends Service implements SensorEventListener {
         }
 
         if (currentApp != null && !currentApp.equals(lastLoggedApp)) {
-            logToConsole("Currently using app: " + currentApp);
+            logToConsole("App in foreground: " + currentApp);
             lastLoggedApp = currentApp;
         }
 
         android.os.PowerManager pm = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (!isScreenFree && currentApp != null && pm.isInteractive() && distractionApps.contains(currentApp)) {
+        if (currentApp != null && pm.isInteractive() && distractionApps.contains(currentApp)) {
             if (now - lastNudgeTime > 10000) {
                 lastNudgeTime = now;
                 fireDistractionNudge(currentApp);
@@ -321,14 +320,20 @@ public class TaskMonitorService extends Service implements SensorEventListener {
         
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        // Privacy-first, task-centric nudge wording.
+        // We never tell the user what we saw them doing. We only remind them what is waiting.
+        String nudgeTitle = "\u23f3 " + taskTitle + " is waiting";
+        String nudgeBody = "Your focus window is still open. Jump back in to keep your day on track.";
         
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("Distraction Alert!")
-                .setContentText(isScreenFree ? "Put the phone down! You're supposed to be doing: " + taskTitle : "You're supposed to be doing: " + taskTitle)
-                .setPriority(NotificationCompat.PRIORITY_MAX)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
+                .setContentTitle(nudgeTitle)
+                .setContentText(nudgeBody)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(nudgeBody))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setDefaults(NotificationCompat.DEFAULT_SOUND | NotificationCompat.DEFAULT_VIBRATE)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
                 

@@ -1,14 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, X, TreeDeciduous } from 'lucide-react';
 
-export default function FocusModeOverlay({ isOpen, onClose, task = null }) {
+const taskSessions = {};
+
+export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecommended = false }) {
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(true);
   const startTimeRef = useRef(null);
   
   useEffect(() => {
     if (isOpen) {
-      setSeconds(0);
+      const savedSeconds = (task && task.id && taskSessions[task.id]) ? taskSessions[task.id] : 0;
+      setSeconds(savedSeconds);
       setIsActive(true);
       startTimeRef.current = Date.now();
       // Add class to body to prevent scrolling
@@ -20,7 +23,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null }) {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, task]);
 
   useEffect(() => {
     let interval = null;
@@ -37,6 +40,9 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null }) {
   const handleClose = async () => {
     // Record session before closing
     setIsActive(false);
+    if (task && task.id) {
+      taskSessions[task.id] = seconds;
+    }
     console.log(`[Focus Mode] Closing overlay. Total focused seconds: ${seconds}`);
     try {
       const token = localStorage.getItem('access_token');
@@ -53,7 +59,8 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null }) {
           body: JSON.stringify({
             task_id: task?.id || null,
             duration_seconds: seconds,
-            status: 'completed'
+            status: 'completed',
+            is_recommended: isRecommended
           })
         });
         

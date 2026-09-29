@@ -864,7 +864,7 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
     // BARGE-IN: Instantly cancel/stop any ongoing AI speech when user interacts!
     cancelSpeech();
 
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    if (!isTWA() && !('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Voice input is not supported in your browser. Please use Chrome or Edge for voice features.');
       return;
     }
