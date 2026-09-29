@@ -1751,7 +1751,7 @@ export default function Layout() {
             {/* Tree Link */}
             <div className="relative">
               {showTreeRipple && (
-                <span className="absolute top-10 right-0 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none z-20">
+                <span className="absolute top-11 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none z-20">
                   See your tree 🌳
                 </span>
               )}
