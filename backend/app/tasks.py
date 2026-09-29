@@ -37,6 +37,8 @@ class TaskUpdate(BaseModel):
     deadline: Optional[datetime] = None
     priority: Optional[int] = None
     status: Optional[str] = None # "pending", "scheduled", "completed"
+    scheduled_start: Optional[datetime] = None
+    scheduled_end: Optional[datetime] = None
     reminders: Optional[List[int]] = None
     priority_reason: Optional[str] = None
     is_screen_free: Optional[bool] = None

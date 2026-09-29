@@ -350,17 +350,33 @@ export default function Layout() {
   const handleAiAutoFit = async (task) => {
     try {
       pushToast({ title: 'Running AI Solver', message: `Calculating optimal focus slot for "${task.name}"...`, urgent: false });
-      const newStart = new Date().toISOString();
-      await updateTask(task.id, { status: 'pending', earliest_start: newStart });
 
-      const res = await fetch(`${API_BASE}/reschedule`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: newStart })
-      });
-      if (res.ok) {
+      if (task.fixed) {
+        // Fixed task: place it 15 minutes from now at exact time
+        const newStart = new Date(Date.now() + 15 * 60 * 1000);
+        const newEnd = new Date(newStart.getTime() + (task.duration_minutes || 60) * 60000);
+        await updateTask(task.id, {
+          earliest_start: newStart.toISOString(),
+          deadline: newStart.toISOString(),
+          scheduled_start: newStart.toISOString(),
+          scheduled_end: newEnd.toISOString(),
+          status: 'scheduled'
+        });
         if (fetchTasks) await fetchTasks(true);
-        pushToast({ title: 'AI Auto-Scheduled', message: `"${task.name}" auto-fitted into your optimal focus window.`, urgent: false });
+        pushToast({ title: 'Fixed Task Rescheduled', message: `"${task.name}" placed at ${newStart.toLocaleTimeString()}.`, urgent: false });
+      } else {
+        // Flexible task: let the solver find the optimal slot
+        const newStart = new Date().toISOString();
+        await updateTask(task.id, { status: 'pending', earliest_start: newStart, scheduled_start: null, scheduled_end: null });
+        const res = await fetch(`${API_BASE}/reschedule`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: newStart })
+        });
+        if (res.ok) {
+          if (fetchTasks) await fetchTasks(true);
+          pushToast({ title: 'AI Auto-Scheduled', message: `"${task.name}" auto-fitted into your optimal focus window.`, urgent: false });
+        }
       }
     } catch (err) {
       console.warn('AI reschedule error', err);
@@ -373,17 +389,28 @@ export default function Layout() {
   // Option 2: Push +2 Hours Today
   const handlePushHours = async (task, hours = 2) => {
     const now = Date.now();
-    const newStart = new Date(now + 15 * 60 * 1000).toISOString();
-    const newDeadline = new Date(now + hours * 60 * 60 * 1000).toISOString();
-    await updateTask(task.id, { earliest_start: newStart, deadline: newDeadline, status: 'pending', scheduled_start: null, scheduled_end: null });
-    
-    // Trigger solver to apply new constraints
-    await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
-    if (fetchTasks) await fetchTasks(true);
+    const newStart = new Date(now + 15 * 60 * 1000);
 
+    if (task.fixed) {
+      // Fixed task: set exact start time, no solver window
+      const newEnd = new Date(newStart.getTime() + (task.duration_minutes || 60) * 60000);
+      await updateTask(task.id, {
+        earliest_start: newStart.toISOString(),
+        deadline: newStart.toISOString(),
+        scheduled_start: newStart.toISOString(),
+        scheduled_end: newEnd.toISOString(),
+        status: 'scheduled'
+      });
+    } else {
+      // Flexible task: set a window for the solver
+      const newDeadline = new Date(now + hours * 60 * 60 * 1000);
+      await updateTask(task.id, { earliest_start: newStart.toISOString(), deadline: newDeadline.toISOString(), status: 'pending', scheduled_start: null, scheduled_end: null });
+      await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    }
+    if (fetchTasks) await fetchTasks(true);
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
-    pushToast({ title: 'Pushed +2 Hours', message: `"${task.name}" start window extended today.`, urgent: false });
+    pushToast({ title: 'Pushed +2 Hours', message: `"${task.name}" rescheduled.`, urgent: false });
   };
 
   // Option 3: Tomorrow Morning (9:00 AM)
@@ -391,20 +418,30 @@ export default function Layout() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(9, 0, 0, 0);
-    const tomorrowEnd = new Date(tomorrow.getTime() + 4 * 60 * 60 * 1000);
 
-    await updateTask(task.id, {
-      earliest_start: tomorrow.toISOString(),
-      deadline: tomorrowEnd.toISOString(),
-      status: 'pending',
-      scheduled_start: null,
-      scheduled_end: null
-    });
-    
-    // Trigger solver to apply new constraints
-    await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    if (task.fixed) {
+      // Fixed task: set exact 9:00 AM start
+      const tomorrowEnd = new Date(tomorrow.getTime() + (task.duration_minutes || 60) * 60000);
+      await updateTask(task.id, {
+        earliest_start: tomorrow.toISOString(),
+        deadline: tomorrow.toISOString(),
+        scheduled_start: tomorrow.toISOString(),
+        scheduled_end: tomorrowEnd.toISOString(),
+        status: 'scheduled'
+      });
+    } else {
+      // Flexible task: set a 4-hour window for the solver
+      const tomorrowEnd = new Date(tomorrow.getTime() + 4 * 60 * 60 * 1000);
+      await updateTask(task.id, {
+        earliest_start: tomorrow.toISOString(),
+        deadline: tomorrowEnd.toISOString(),
+        status: 'pending',
+        scheduled_start: null,
+        scheduled_end: null
+      });
+      await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    }
     if (fetchTasks) await fetchTasks(true);
-
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
     pushToast({ title: 'Tomorrow Morning', message: `"${task.name}" scheduled for 9:00 AM tomorrow.`, urgent: false });
@@ -414,23 +451,32 @@ export default function Layout() {
   const handleCustomReschedule = async (task, localDateTimeVal) => {
     if (!localDateTimeVal) return;
     const targetDate = new Date(localDateTimeVal);
-    const earliestStart = new Date().toISOString();
 
-    await updateTask(task.id, {
-      earliest_start: earliestStart,
-      deadline: targetDate.toISOString(),
-      status: 'pending',
-      scheduled_start: null,
-      scheduled_end: null
-    });
-    
-    // Trigger solver to apply new constraints
-    await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    if (task.fixed) {
+      // Fixed task: set EXACT chosen time — no solver involvement
+      const targetEnd = new Date(targetDate.getTime() + (task.duration_minutes || 60) * 60000);
+      await updateTask(task.id, {
+        earliest_start: targetDate.toISOString(),
+        deadline: targetDate.toISOString(),
+        scheduled_start: targetDate.toISOString(),
+        scheduled_end: targetEnd.toISOString(),
+        status: 'scheduled'
+      });
+    } else {
+      // Flexible task: set window from now to chosen time
+      await updateTask(task.id, {
+        earliest_start: new Date().toISOString(),
+        deadline: targetDate.toISOString(),
+        status: 'pending',
+        scheduled_start: null,
+        scheduled_end: null
+      });
+      await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    }
     if (fetchTasks) await fetchTasks(true);
-
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
-    pushToast({ title: 'Custom Rescheduled', message: `"${task.name}" deadline updated.`, urgent: false });
+    pushToast({ title: 'Custom Rescheduled', message: `"${task.name}" rescheduled to ${targetDate.toLocaleTimeString()}.`, urgent: false });
   };
 
   const handleRescheduleAllAi = async () => {
