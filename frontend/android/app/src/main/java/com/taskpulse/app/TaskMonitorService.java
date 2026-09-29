@@ -129,7 +129,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             String action = intent.getAction();
             if ("START_BACKGROUND_AI".equals(action)) {
                 logToConsole("Started Continuous Local AI from Settings.");
-                startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification("Activity Tracking Active"));
+                startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification("Background Service Active"));
                 if (sensorManager != null && accelerometer != null && gyroscope != null) {
                     // Use 50,000 microseconds (20Hz) to perfectly match WISDM training data
                     sensorManager.registerListener(this, accelerometer, 50000);
@@ -148,7 +148,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             taskDurationMs = durationMinutes * 60 * 1000L;
             serviceStartTime = System.currentTimeMillis();
 
-            startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification(isMeetingMode ? "Monitoring meeting..." : (isScreenFree ? "Screen-Free Focus active" : "Focus mode active")));
+            startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification(isMeetingMode ? "Meeting active..." : (isScreenFree ? "Screen-Free Focus active" : "Focus mode active")));
 
             if (isMeetingMode) {
                 logToConsole("Started MEETING mode. Waiting for end window.");
@@ -366,7 +366,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
                     "TaskPulse Monitor",
                     NotificationManager.IMPORTANCE_HIGH
             );
-            channel.setDescription("Background monitoring for distractions");
+            channel.setDescription("Background service for task sessions");
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
