@@ -195,6 +195,13 @@ export default function Layout() {
   const [activeRescheduleTaskId, setActiveRescheduleTaskId] = useState(null);
   const [customDateTimeMap, setCustomDateTimeMap] = useState({});
 
+  // ── Newcomer onboarding ripple hints ──────────────────────────────────────
+  // Ripple on Schedule nav after first-ever task is created.
+  // Ripple on + / Focus Tree after first-ever task is completed.
+  // Flags stored in localStorage so they only ever fire once per user.
+  const [showScheduleRipple, setShowScheduleRipple] = useState(false);
+  const [showTreeRipple, setShowTreeRipple] = useState(false);
+
   const { tasks, fetchTasks, updateTask, deleteTask } = useTasks();
 
   // Sync state from Native Distraction/Auto-Complete service
@@ -217,6 +224,28 @@ export default function Layout() {
     window.addEventListener('focus', handleSync);
     return () => window.removeEventListener('focus', handleSync);
   }, [updateTask]);
+
+  // ── Newcomer onboarding ripple effect ────────────────────────────────────
+  useEffect(() => {
+    if (!tasks) return;
+    const seenSchedule = localStorage.getItem('tp_onboard_schedule_seen');
+    const seenTree = localStorage.getItem('tp_onboard_tree_seen');
+    const totalTasks = tasks.length;
+    const completedCount = tasks.filter(t => t.status === 'completed').length;
+    // Hint 1: created exactly 1 task — nudge toward Schedule
+    setShowScheduleRipple(totalTasks === 1 && !seenSchedule);
+    // Hint 2: completed first task and hasn't seen tree hint yet
+    setShowTreeRipple(completedCount >= 1 && totalTasks <= 2 && !seenTree);
+  }, [tasks]);
+
+  const dismissScheduleRipple = () => {
+    localStorage.setItem('tp_onboard_schedule_seen', '1');
+    setShowScheduleRipple(false);
+  };
+  const dismissTreeRipple = () => {
+    localStorage.setItem('tp_onboard_tree_seen', '1');
+    setShowTreeRipple(false);
+  };
 
   const notifiedIdsRef = useRef(
     (() => { try { return new Set(JSON.parse(localStorage.getItem('tp_notified_ids') || '[]')); } catch { return new Set(); } })()
@@ -1942,10 +1971,15 @@ export default function Layout() {
 
             if (item.icon === 'PLUS_BUTTON') {
               return (
-                <div key="create-btn" className="relative -top-7 flex justify-center w-[72px] shrink-0">
+                <div key="create-btn" className="relative -top-7 flex flex-col items-center w-[72px] shrink-0">
+                  {showTreeRipple && (
+                    <span className="mb-1 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none">
+                      See your tree 🌳
+                    </span>
+                  )}
                   <button
-                    onClick={() => navigate('/tasks', { state: { openCreate: true } })}
-                    className={`relative w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-all duration-300 hover:scale-105 active:scale-95 z-10 ${location.pathname === '/analytics' ? 'bg-[#3e8a4a] shadow-[0_8px_20px_rgba(62,138,74,0.45)]' : 'bg-[var(--accent-base)] shadow-[0_8px_20px_rgba(79,70,229,0.45)]'}`}
+                    onClick={() => { dismissTreeRipple(); navigate('/tasks', { state: { openCreate: true } }); }}
+                    className={`relative w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-all duration-300 hover:scale-105 active:scale-95 z-10 ${showTreeRipple ? 'newcomer-ripple-green' : ''} ${location.pathname === '/analytics' ? 'bg-[#3e8a4a] shadow-[0_8px_20px_rgba(62,138,74,0.45)]' : 'bg-[var(--accent-base)] shadow-[0_8px_20px_rgba(79,70,229,0.45)]'}`}
                   >
                     <span className="text-2xl font-light leading-none">+</span>
                   </button>
@@ -1954,21 +1988,26 @@ export default function Layout() {
             }
 
             const Icon = item.icon;
+            const isScheduleItem = item.path === '/schedule';
             return (
               <button
                 key={item.path}
                 type="button"
                 data-tour={`mob-nav-${item.path.slice(1) || 'dashboard'}`}
-                onClick={() => navigate(item.path)}
-                className={`flex-1 flex flex-col items-center gap-1.5 transition-colors duration-500 ${isActive
+                onClick={() => { if (isScheduleItem) dismissScheduleRipple(); navigate(item.path); }}
+                className={`relative flex-1 flex flex-col items-center gap-1.5 transition-colors duration-500 ${isActive
                   ? (location.pathname === '/analytics' ? 'text-[#7be08d]' : 'text-[var(--accent-base)]')
                   : (location.pathname === '/analytics' ? 'text-[#63c276]/60 hover:text-[#7be08d]' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]')
                   }`}
               >
-                <Icon
-                  size={22}
-                  className={isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'}
-                />
+                {isScheduleItem && showScheduleRipple && (
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-indigo-300 bg-indigo-900/80 px-2 py-0.5 rounded-full pointer-events-none animate-pulse">
+                    View schedule →
+                  </span>
+                )}
+                <span className={`relative inline-flex ${isScheduleItem && showScheduleRipple ? 'newcomer-ripple' : ''}`}>
+                  <Icon size={22} className={isActive ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
+                </span>
                 <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>
                   {item.label}
                 </span>
