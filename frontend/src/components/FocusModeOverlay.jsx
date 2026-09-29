@@ -10,7 +10,8 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
   
   useEffect(() => {
     if (isOpen) {
-      const savedSeconds = (task && task.id && taskSessions[task.id]) ? taskSessions[task.id] : 0;
+      const taskKey = task && (task.task_id ?? task.id);
+      const savedSeconds = taskKey && taskSessions[taskKey] ? taskSessions[taskKey] : 0;
       setSeconds(savedSeconds);
       setIsActive(true);
       startTimeRef.current = Date.now();
@@ -40,8 +41,9 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
   const handleClose = async () => {
     // Record session before closing
     setIsActive(false);
-    if (task && task.id) {
-      taskSessions[task.id] = seconds;
+    const taskKey = task && (task.task_id ?? task.id);
+    if (taskKey) {
+      taskSessions[taskKey] = seconds;
     }
     console.log(`[Focus Mode] Closing overlay. Total focused seconds: ${seconds}`);
     try {
@@ -57,7 +59,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            task_id: task?.id || null,
+            task_id: task?.task_id ?? task?.id ?? null,
             duration_seconds: seconds,
             status: 'completed',
             is_recommended: isRecommended
