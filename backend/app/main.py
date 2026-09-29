@@ -336,24 +336,25 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
                     deadline_dt = deadline_dt.replace(tzinfo=IST)
             except Exception:
                 deadline_dt = None
-
         is_fixed = getattr(task, 'fixed', False)
-        if is_fixed and deadline_dt and deadline_dt < now:
-            reset_task_names.append(task.name)
-            try:
-                if ObjectId.is_valid(task.id):
-                    query = {"$or": [{"_id": ObjectId(task.id)}, {"_id": task.id}], "user_id": user_id}
-                else:
-                    query = {"_id": task.id, "user_id": user_id}
-                await get_database()["tasks"].update_one(query, {"$set": {
-                    "status": "pending",
-                    "scheduled_start": None,
-                    "scheduled_end": None,
-                    "updated_at": now
-                }})
-            except Exception as e:
-                print(f"[reschedule] Failed to reset task {task.id} to pending: {e}")
-            continue
+        if is_fixed and deadline_dt:
+            end_dt = deadline_dt + timedelta(minutes=task.duration_minutes)
+            if end_dt < now:
+                reset_task_names.append(task.name)
+                try:
+                    if ObjectId.is_valid(task.id):
+                        query = {"$or": [{"_id": ObjectId(task.id)}, {"_id": task.id}], "user_id": user_id}
+                    else:
+                        query = {"_id": task.id, "user_id": user_id}
+                    await get_database()["tasks"].update_one(query, {"$set": {
+                        "status": "pending",
+                        "scheduled_start": None,
+                        "scheduled_end": None,
+                        "updated_at": now
+                    }})
+                except Exception as e:
+                    print(f"[reschedule] Failed to reset task {task.id} to pending: {e}")
+                continue
 
         if not is_fixed and deadline_dt and deadline_dt < now:
             task.deadline = now + timedelta(hours=24)
