@@ -415,11 +415,12 @@ async def reschedule(request: ScheduleRequest, user_id: str = Depends(get_curren
 @app.post("/auto-shift", response_model=ScheduleResponse)
 async def auto_shift(
     bg_tasks: BackgroundTasks, 
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user_id),
+    reason: str = "busy"
 ):
     """
-    Triggered when the Activity Tracker detects the user is busy.
-    Adds a 30-minute busy block from the current time and reschedules tasks.
+    Triggered when the Activity Tracker detects the user is busy or in motion.
+    Adds a 30-minute block from the current time and reschedules tasks.
     """
     from .models import WorkingHours
     from .database import get_user_collection
@@ -435,10 +436,15 @@ async def auto_shift(
     # Apply a 30-minute busy signal block to force shifting
     apply_busy_signal(request, True, now_ist() + timedelta(minutes=30))
     
+    if reason == "motion":
+        msg = "You are in motion. Flexible tasks have been shifted to give you time."
+    else:
+        msg = "You appear busy. Your schedule has been safely pushed back by 30 minutes to give you time."
+
     await notify_user(
         user_id=user_id,
         title="Auto-Shift Triggered",
-        message="You appear busy. Your schedule has been safely pushed back by 30 minutes to give you time."
+        message=msg
     )
     
     return await schedule(request, user_id)

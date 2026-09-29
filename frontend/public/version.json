@@ -1,5 +1,5 @@
 {
-  "nativeVersion": "1.0.51",
+  "nativeVersion": "1.0.52",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Removed privacy-concerning 'Monitoring' language from Android foreground service notifications."
+  "releaseNotes": "Live Activity Tracker now intelligently shifts flexible tasks if you are in continuous motion (walking/jogging) for over a minute, and only notifies you once."
 }

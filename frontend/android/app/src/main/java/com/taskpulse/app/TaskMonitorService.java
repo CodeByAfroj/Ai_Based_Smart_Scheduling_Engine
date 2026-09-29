@@ -129,7 +129,7 @@ public class TaskMonitorService extends Service implements SensorEventListener {
             String action = intent.getAction();
             if ("START_BACKGROUND_AI".equals(action)) {
                 logToConsole("Started Continuous Local AI from Settings.");
-                startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification("Background Service Active"));
+                startForeground(FOREGROUND_NOTIFICATION_ID, buildForegroundNotification("Live Activity Tracker Active"));
                 if (sensorManager != null && accelerometer != null && gyroscope != null) {
                     // Use 50,000 microseconds (20Hz) to perfectly match WISDM training data
                     sensorManager.registerListener(this, accelerometer, 50000);
