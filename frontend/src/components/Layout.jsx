@@ -1355,20 +1355,24 @@ export default function Layout() {
                 {workspaceNav.filter(item => item.path !== '/analytics').map((item) => {
                   const isActive = isActivePath(item.path);
                   const Icon = item.icon;
+                  const isScheduleLink = item.path === '/schedule';
 
                   return (
                     <button
                       key={item.path}
                       type="button"
                       data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
-                      onClick={() => navigate(item.path)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                      onClick={() => { if (isScheduleLink) dismissScheduleRipple(); navigate(item.path); }}
+                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${isActive
                         ? (location.pathname === '/analytics' ? 'bg-white/15 text-[#7be08d] font-semibold border border-white/10 shadow-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
                         : (location.pathname === '/analytics' ? 'text-white/90 hover:bg-white/10 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
-                        }`}
+                        } ${isScheduleLink && showScheduleRipple ? 'ring-2 ring-indigo-400/70 ring-offset-1 ring-offset-transparent newcomer-ripple' : ''}`}
                     >
                       <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
-                      <span className="text-sm">{item.label}</span>
+                      <span className="text-sm flex-1">{item.label}</span>
+                      {isScheduleLink && showScheduleRipple && (
+                        <span className="text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded-full animate-pulse">new</span>
+                      )}
                     </button>
                   );
                 })}
@@ -1384,14 +1388,17 @@ export default function Layout() {
                       key={item.path}
                       type="button"
                       data-tour={`nav-${item.path.slice(1) || 'dashboard'}`}
-                      onClick={() => navigate(item.path)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isActive
+                      onClick={() => { dismissTreeRipple(); navigate(item.path); }}
+                      className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${isActive
                         ? (location.pathname === '/analytics' ? 'bg-white/15 text-[#7be08d] font-semibold border border-white/10 shadow-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'bg-[var(--accent-light)] text-[var(--accent-base)] font-semibold')
                         : (location.pathname === '/analytics' ? 'text-white/90 hover:bg-white/10 hover:text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]' : 'text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-main)]')
-                        }`}
+                        } ${showTreeRipple ? 'ring-2 ring-emerald-400/70 ring-offset-1 ring-offset-transparent newcomer-ripple-green' : ''}`}
                     >
                       <Icon size={18} className={isActive ? 'stroke-[2.5px]' : 'stroke-2'} />
-                      <span className="text-sm">{item.label}</span>
+                      <span className="text-sm flex-1">{item.label}</span>
+                      {showTreeRipple && (
+                        <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded-full animate-pulse">🌳</span>
+                      )}
                     </button>
                   );
                 })}
@@ -1971,9 +1978,9 @@ export default function Layout() {
 
             if (item.icon === 'PLUS_BUTTON') {
               return (
-                <div key="create-btn" className="relative -top-7 flex flex-col items-center w-[72px] shrink-0">
+                <div key="create-btn" className="relative -top-7 flex justify-center w-[72px] shrink-0">
                   {showTreeRipple && (
-                    <span className="mb-1 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none">
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none z-20">
                       See your tree 🌳
                     </span>
                   )}
