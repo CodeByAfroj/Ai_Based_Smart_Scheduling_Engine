@@ -1987,7 +1987,7 @@ export default function Layout() {
               return (
                 <div key="create-btn" className="relative -top-7 flex justify-center w-[72px] shrink-0">
                   {showTreeRipple && (
-                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none z-20">
+                    <span className="absolute bottom-[60px] left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none z-20">
                       See your tree 🌳
                     </span>
                   )}
