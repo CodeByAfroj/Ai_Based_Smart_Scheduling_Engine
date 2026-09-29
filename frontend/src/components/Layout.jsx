@@ -1749,16 +1749,23 @@ export default function Layout() {
 
           <div className="flex items-center gap-3">
             {/* Tree Link */}
-            <button
-              data-tour="mob-nav-focus-tree"
-              onClick={() => navigate('/analytics')}
-              className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${location.pathname === '/analytics'
-                ? 'text-[#7be08d] bg-[#7be08d]/10'
-                : 'text-[var(--text-main)] hover:text-[#7be08d] hover:bg-[#7be08d]/10'
-                }`}
-            >
-              <TreeDeciduous size={20} className={location.pathname === '/analytics' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
-            </button>
+            <div className="relative">
+              {showTreeRipple && (
+                <span className="absolute top-10 right-0 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none z-20">
+                  See your tree 🌳
+                </span>
+              )}
+              <button
+                data-tour="mob-nav-focus-tree"
+                onClick={() => { dismissTreeRipple(); navigate('/analytics'); }}
+                className={`w-9 h-9 flex items-center justify-center rounded-full transition-colors ${location.pathname === '/analytics'
+                  ? 'text-[#7be08d] bg-[#7be08d]/10'
+                  : 'text-[var(--text-main)] hover:text-[#7be08d] hover:bg-[#7be08d]/10'
+                  } ${showTreeRipple ? 'newcomer-ripple-green' : ''}`}
+              >
+                <TreeDeciduous size={20} className={location.pathname === '/analytics' ? 'stroke-[2.5px]' : 'stroke-[1.5px]'} />
+              </button>
+            </div>
 
             {/* Mobile Notifications */}
             <div className="relative" data-notif-menu>
@@ -1986,14 +1993,9 @@ export default function Layout() {
             if (item.icon === 'PLUS_BUTTON') {
               return (
                 <div key="create-btn" className="relative -top-7 flex justify-center w-[72px] shrink-0">
-                  {showTreeRipple && (
-                    <span className="absolute bottom-[60px] left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-emerald-400 bg-emerald-900/80 px-2 py-0.5 rounded-full animate-pulse pointer-events-none z-20">
-                      See your tree 🌳
-                    </span>
-                  )}
                   <button
-                    onClick={() => { dismissTreeRipple(); navigate('/tasks', { state: { openCreate: true } }); }}
-                    className={`relative w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-all duration-300 hover:scale-105 active:scale-95 z-10 ${showTreeRipple ? 'newcomer-ripple-green' : ''} ${location.pathname === '/analytics' ? 'bg-[#3e8a4a] shadow-[0_8px_20px_rgba(62,138,74,0.45)]' : 'bg-[var(--accent-base)] shadow-[0_8px_20px_rgba(79,70,229,0.45)]'}`}
+                    onClick={() => navigate('/tasks', { state: { openCreate: true } })}
+                    className={`relative w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-all duration-300 hover:scale-105 active:scale-95 z-10 ${location.pathname === '/analytics' ? 'bg-[#3e8a4a] shadow-[0_8px_20px_rgba(62,138,74,0.45)]' : 'bg-[var(--accent-base)] shadow-[0_8px_20px_rgba(79,70,229,0.45)]'}`}
                   >
                     <span className="text-2xl font-light leading-none">+</span>
                   </button>
