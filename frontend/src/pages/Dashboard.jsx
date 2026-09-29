@@ -227,7 +227,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-            ) : (
+            ) : tasks.length === 0 ? (
               <div data-tour="ai-recommendation" className="group bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white rounded-2xl p-5 sm:p-7 shadow-[0_0_40px_rgba(99,102,241,0.15)] border border-indigo-500/30 relative overflow-hidden transition-all duration-500">
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
@@ -259,6 +259,22 @@ export default function Dashboard() {
                       + Create First Task <ArrowRight size={14} />
                     </button>
                   </div>
+                </div>
+              </div>
+            ) : (
+              <div data-tour="ai-recommendation" className="bg-gradient-to-br from-emerald-900/60 via-teal-900/40 to-slate-900 text-white rounded-2xl p-5 sm:p-7 shadow-[0_0_40px_rgba(16,185,129,0.1)] border border-emerald-500/20 relative overflow-hidden">
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl"></div>
+                <div className="relative z-10 flex flex-col items-center text-center py-4">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mb-4">
+                    <CheckCircle2 size={32} className="text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white mb-2">All Caught Up! 🎉</h3>
+                  <p className="text-emerald-100/70 text-sm mb-5 leading-relaxed max-w-md">
+                    You've completed all your tasks. Add new ones to keep your AI recommendation engine running.
+                  </p>
+                  <button onClick={() => navigate('/tasks')} className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all flex items-center gap-2">
+                    + Add New Tasks <ArrowRight size={14} />
+                  </button>
                 </div>
               </div>
             )}
