@@ -952,10 +952,10 @@ export default function Layout() {
   }
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex">
+    <div className="fixed inset-0 overflow-hidden bg-[var(--bg-app)] text-[var(--text-main)] flex pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
 
       {/* ── Toast Stack & Active Alarm (Dynamic Island Style) ─────────────────────────── */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-2 w-[92vw] max-w-[420px] pointer-events-none">
+      <div className="fixed top-[calc(0.75rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-[99999] flex flex-col items-center gap-2 w-[92vw] max-w-[420px] pointer-events-none">
 
         {/* Dynamic Island Active Ringtone Alarm Pill */}
         {activeAlarm && (

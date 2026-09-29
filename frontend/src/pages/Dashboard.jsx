@@ -187,7 +187,7 @@ export default function Dashboard() {
 
                 <div className="relative z-10 flex-1">
                   {/* Top Badges */}
-                  <div className="flex flex-col items-start gap-2.5 mb-5 sm:mb-5">
+                  <div className="flex flex-wrap items-center gap-2.5 mb-4 sm:mb-6">
                     <span className="flex items-center gap-2 border border-blue-400/50 text-blue-300 font-bold text-[10px] tracking-widest uppercase px-3.5 py-1.5 rounded-full shadow-[0_0_12px_rgba(59,130,246,0.1)] bg-blue-500/10">
                       <Zap size={13} fill="currentColor" /> AI RECOMMENDATION
                     </span>
@@ -197,7 +197,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Main Content */}
-                  <h2 className="text-white text-xl sm:text-2xl font-bold mb-2">{recTask.name !== 'Rest & Recharge' ? recTask.name : ''}</h2>
+                  <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-3">{recTask.name}</h2>
                   <p className="text-indigo-50/90 text-[14px] sm:text-[16px] leading-relaxed font-medium mb-5 sm:mb-6 max-w-2xl">
                     {recTask.reason_detail || "TaskPulse has identified the perfect task for your current context and energy levels. Dive in now to maximize your productivity."}
                   </p>
@@ -207,20 +207,22 @@ export default function Dashboard() {
                 <div className="relative z-10 mt-auto">
                   <hr className="border-t border-white/20 mb-4 sm:mb-4" />
                   
-                  <div className="flex gap-3 w-full">
-                    <button
-                      onClick={() => updateTask(recTask.task_id, { status: 'completed' })}
-                      className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium text-[13px] sm:text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors duration-200"
-                    >
-                      <CheckCircle2 size={16} className="text-emerald-400" /> Done
-                    </button>
-                    <button
-                      onClick={() => setIsFocusModeOpen(true)}
-                      className="flex-[1.5] bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[13px] sm:text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(79,70,229,0.4)] transition-all duration-200"
-                    >
-                      <span>Start Focus</span> <Play fill="currentColor" size={13} />
-                    </button>
-                  </div>
+                  {recTask.name !== 'Rest & Recharge' && (
+                    <div className="flex gap-3 w-full">
+                      <button
+                        onClick={() => updateTask(recTask.task_id, { status: 'completed' })}
+                        className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 text-white font-medium text-[13px] sm:text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors duration-200"
+                      >
+                        <CheckCircle2 size={16} className="text-emerald-400" /> Done
+                      </button>
+                      <button
+                        onClick={() => setIsFocusModeOpen(true)}
+                        className="flex-[1.5] bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[13px] sm:text-sm py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(79,70,229,0.4)] transition-all duration-200"
+                      >
+                        <span>Start Focus</span> <Play fill="currentColor" size={13} />
+                      </button>
+                    </div>
+                  )}
 
                   <p className="text-center text-indigo-200/50 text-[10px] sm:text-[11px] mt-4 sm:mt-4 font-medium tracking-wide">
                     Adaptive schedule dynamically tuned for maximum productivity

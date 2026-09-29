@@ -127,11 +127,14 @@ export default function ChatButton() {
           fixed
           bottom-0 right-0
           w-full h-[100dvh]
+          pt-[env(safe-area-inset-top)]
+          pb-[env(safe-area-inset-bottom)]
+          md:pt-0 md:pb-0
           md:bottom-24 md:right-6
           md:w-[420px]
           md:h-[600px]
           md:max-h-[calc(100vh-8rem)]
-          bg-white
+          bg-[var(--bg-panel)]
           shadow-[0_20px_60px_rgba(0,0,0,0.3)]
           border
           border-[var(--border-subtle)]

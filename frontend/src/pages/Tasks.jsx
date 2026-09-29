@@ -45,7 +45,9 @@ export default function Tasks() {
       window.history.replaceState({}, document.title);
       
       // Smooth scroll to top where form is
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => {
+        document.getElementById('tasks-top')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }
   }, [location.state]);
 
@@ -123,7 +125,7 @@ export default function Tasks() {
   if (loadingTasks && tasks.length === 0) return <div className="p-10 text-center text-[var(--text-muted)]">Loading tasks...</div>;
 
   return (
-    <div className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
+    <div id="tasks-top" className="bg-[var(--bg-app)] pb-24 lg:pb-12 pt-4 lg:pt-8 min-h-full">
       <div className="max-w-7xl mx-auto xl:mx-0 px-5 sm:px-8 lg:px-12">
 
         <div data-tour="tasks-header" className="flex items-center justify-between mb-6 scroll-mt-24">
@@ -183,6 +185,40 @@ export default function Tasks() {
                   <option value="5">Critical</option>
                 </select>
               </div>
+
+              {taskType === 'flexible' && (
+                <>
+                  <div className="px-4 py-3 flex flex-col gap-1 border-b border-[var(--border-subtle)]">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Earliest Start Time</label>
+                    <input
+                      type="datetime-local"
+                      value={earliestStart}
+                      onChange={e => {
+                        setEarliestStart(e.target.value);
+                        if (new Date(localInputToIST(e.target.value)) >= new Date(localInputToIST(deadline))) {
+                          const earliestStartDate = new Date(localInputToIST(e.target.value));
+                          const newTimestamp = earliestStartDate.getTime() + parseInt(duration) * 60000 + 3600000;
+                          const newDateISTISO = new Date(newTimestamp).toISOString();
+                          const newDeadlineLocal = newDateISTISO.slice(0, 16);
+                          setDeadline(newDeadlineLocal);
+                        }
+                      }}
+                      required
+                      className="w-full bg-transparent text-[15px] text-[var(--text-main)] outline-none"
+                    />
+                  </div>
+                  <div className="px-4 py-3 flex flex-col gap-1 border-b border-[var(--border-subtle)]">
+                    <label className="text-[11px] font-bold text-[var(--text-muted)] uppercase">Deadline</label>
+                    <input
+                      type="datetime-local"
+                      value={deadline}
+                      onChange={e => setDeadline(e.target.value)}
+                      required
+                      className="w-full bg-transparent text-[15px] text-[var(--text-main)] outline-none"
+                    />
+                  </div>
+                </>
+              )}
 
               {taskType === 'fixed' && (
                 <div className="px-4 py-3 flex flex-col gap-1 border-b border-[var(--border-subtle)]">
