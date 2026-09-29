@@ -1,5 +1,5 @@
 {
-  "nativeVersion": "1.0.49",
+  "nativeVersion": "1.0.50",
   "apkUrl": "https://github.com/CodeByAfroj/Ai_Based_Smart_Scheduling_Engine/releases/latest/download/app-debug.apk",
-  "releaseNotes": "Fixed AI recommendations for fixed tasks, rescheduling now places fixed tasks at exact chosen times, resolved click-blocking overlay on overdue panel, and improved UI scaling on large screens."
+  "releaseNotes": "Fix: Mobile voice chat now waits until you finish speaking before sending the message."
 }

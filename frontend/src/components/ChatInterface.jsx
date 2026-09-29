@@ -898,30 +898,22 @@ export default function ChatInterface({ isChatOpen, openChat, closeChat }) {
         setIsListening(true);
         
         await NativeSpeech.removeAllListeners();
-        await NativeSpeech.addListener('partialResults', (data) => {
-           if (data.matches && data.matches.length > 0) {
-              const transcript = data.matches[0];
-              setIsListening(false);
-              cancelSpeech();
-              handleVoiceInput(transcript);
-              NativeSpeech.stop();
-              NativeSpeech.removeAllListeners();
-           }
-        });
         
         const result = await NativeSpeech.start({
           language: "en-US",
           maxResults: 1,
-          prompt: "Say something",
-          partialResults: true,
+          prompt: "Listening...",
+          partialResults: false, // Wait until the user finishes speaking
           popup: false,
         });
         
-        // Fallback if partialResults event doesn't fire but start() resolves
+        // When start() resolves, the user has finished speaking
         if (result && result.matches && result.matches.length > 0) {
           setIsListening(false);
           cancelSpeech();
           handleVoiceInput(result.matches[0]);
+        } else {
+          setIsListening(false);
         }
       } catch (err) {
         console.error('Native speech error:', err);
