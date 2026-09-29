@@ -375,7 +375,12 @@ export default function Layout() {
     const now = Date.now();
     const newStart = new Date(now + 15 * 60 * 1000).toISOString();
     const newDeadline = new Date(now + hours * 60 * 60 * 1000).toISOString();
-    await updateTask(task.id, { earliest_start: newStart, deadline: newDeadline, status: 'pending' });
+    await updateTask(task.id, { earliest_start: newStart, deadline: newDeadline, status: 'pending', scheduled_start: null, scheduled_end: null });
+    
+    // Trigger solver to apply new constraints
+    await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    if (fetchTasks) await fetchTasks(true);
+
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
     pushToast({ title: 'Pushed +2 Hours', message: `"${task.name}" start window extended today.`, urgent: false });
@@ -391,8 +396,15 @@ export default function Layout() {
     await updateTask(task.id, {
       earliest_start: tomorrow.toISOString(),
       deadline: tomorrowEnd.toISOString(),
-      status: 'pending'
+      status: 'pending',
+      scheduled_start: null,
+      scheduled_end: null
     });
+    
+    // Trigger solver to apply new constraints
+    await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    if (fetchTasks) await fetchTasks(true);
+
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
     pushToast({ title: 'Tomorrow Morning', message: `"${task.name}" scheduled for 9:00 AM tomorrow.`, urgent: false });
@@ -407,8 +419,15 @@ export default function Layout() {
     await updateTask(task.id, {
       earliest_start: earliestStart,
       deadline: targetDate.toISOString(),
-      status: 'pending'
+      status: 'pending',
+      scheduled_start: null,
+      scheduled_end: null
     });
+    
+    // Trigger solver to apply new constraints
+    await fetch(`${API_BASE}/reschedule`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ tasks: [], fixed_events: [], reference_time: new Date().toISOString() }) });
+    if (fetchTasks) await fetchTasks(true);
+
     dismissOverdueTask(task.id);
     setActiveRescheduleTaskId(null);
     pushToast({ title: 'Custom Rescheduled', message: `"${task.name}" deadline updated.`, urgent: false });

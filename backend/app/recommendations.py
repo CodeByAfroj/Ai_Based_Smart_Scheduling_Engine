@@ -94,7 +94,51 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
     else:
         energy_level = "🌙 Quiet / Rest Hours"
 
-    # SLEEP OVERRIDE: If outside working and peak hours, do not recommend a task.
+    # 2. Fetch tasks
+    cursor = db["tasks"].find({"user_id": user_id, "status": {"$in": ["pending", "scheduled"]}})
+    db_tasks = await cursor.to_list(length=100)
+
+    # 2.5 Check if there is an active FIXED task happening right now
+    active_fixed = None
+    from datetime import timedelta
+    for t in db_tasks:
+        if t.get("fixed"):
+            start_str = t.get("earliest_start") or t.get("scheduled_start")
+            if start_str:
+                try:
+                    s_dt = datetime.fromisoformat(str(start_str))
+                    if s_dt.tzinfo is None:
+                        s_dt = s_dt.replace(tzinfo=IST)
+                    e_dt = s_dt + timedelta(minutes=t.get("duration_minutes", 60))
+                    if s_dt <= curr <= e_dt:
+                        active_fixed = t
+                        break
+                except Exception:
+                    pass
+    
+    # If there is an active fixed task, it bypasses sleep override and becomes the top recommendation
+    if active_fixed:
+        t_id = str(active_fixed["_id"])
+        top_task = TaskRecommendation(
+            task_id=t_id,
+            name=active_fixed.get("name", "Fixed Task"),
+            duration_minutes=active_fixed.get("duration_minutes", 30),
+            priority=active_fixed.get("priority", 1),
+            score=1000.0,
+            reason_badge="🔒 Active Fixed Meeting",
+            reason_detail="This fixed event is happening right now. It takes priority over flexible scheduling.",
+            recommended_time_slot="Right Now"
+        )
+        return RecommendationResponse(
+            user_status="Active Event",
+            current_energy_level=energy_level,
+            recommended_next_task=top_task,
+            all_ranked_recommendations=[top_task],
+            break_recommended=False,
+            message="You have a scheduled fixed event currently taking place."
+        )
+
+    # SLEEP OVERRIDE: If outside working and peak hours, do not recommend a flexible task.
     if not is_work_time and not is_peak_time:
         prompt = f"The user is a {profession}. It is their designated sleep/rest time. Generate a short 1-2 sentence personalized message advising them to stop their current activity (tailor the action to their specific profession - e.g. a student should close their books, an engineer should step away from the screen) and get some rest. Briefly state the health or cognitive benefit for their specific role. Be firm but warm. No quotes or introductory text."
         sleep_msg = call_background_llm_with_failover([{"role": "user", "content": prompt}], timeout=25.0)
@@ -119,12 +163,7 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
             message="It is currently your rest window."
         )
 
-
-    # 2. Fetch tasks. Recommendations apply to AI Flexible tasks (non-fixed).
-    cursor = db["tasks"].find({"user_id": user_id, "status": {"$in": ["pending", "scheduled"]}})
-    db_tasks = await cursor.to_list(length=100)
-    
-    # Filter only AI Flexible tasks for dynamic AI recommendations (fixed events have locked schedules)
+    # Filter only AI Flexible tasks for dynamic AI recommendations
     flexible_tasks = [t for t in db_tasks if not t.get("fixed", False)]
     
     # If no flexible tasks exist, fall back to all tasks but handle fixed display properly
