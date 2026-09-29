@@ -138,8 +138,49 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
             message="You have a scheduled fixed event currently taking place."
         )
 
-    # SLEEP OVERRIDE: If outside working and peak hours, do not recommend a flexible task.
+    # SLEEP OVERRIDE: If outside working and peak hours, check for pending fixed tasks first.
+    # Fixed tasks ALWAYS get recommended regardless of time of day — they are time-bound commitments.
     if not is_work_time and not is_peak_time:
+        # Check for any pending/scheduled fixed tasks before defaulting to sleep
+        pending_fixed = [t for t in db_tasks if t.get("fixed") and t.get("status") in ("pending", "scheduled")]
+        if pending_fixed:
+            # Sort by priority (descending) then by earliest_start (ascending/most urgent first)
+            pending_fixed.sort(key=lambda t: (-t.get("priority", 1), str(t.get("earliest_start", ""))))
+            best_fixed = pending_fixed[0]
+            f_id = str(best_fixed["_id"])
+            fixed_rec = TaskRecommendation(
+                task_id=f_id,
+                name=best_fixed.get("name", "Fixed Task"),
+                duration_minutes=best_fixed.get("duration_minutes", 30),
+                priority=best_fixed.get("priority", 1),
+                score=900.0,
+                reason_badge="🔒 Pending Fixed Task",
+                reason_detail=f"You have a fixed task \"{best_fixed.get('name', 'Task')}\" that needs attention. Fixed commitments take priority over rest periods.",
+                recommended_time_slot="Needs Attention"
+            )
+            all_fixed_recs = []
+            for ft in pending_fixed:
+                ft_id = str(ft["_id"])
+                all_fixed_recs.append(TaskRecommendation(
+                    task_id=ft_id,
+                    name=ft.get("name", "Fixed Task"),
+                    duration_minutes=ft.get("duration_minutes", 30),
+                    priority=ft.get("priority", 1),
+                    score=900.0 - len(all_fixed_recs),
+                    reason_badge="🔒 Fixed Task",
+                    reason_detail=f"Fixed task requiring attention.",
+                    recommended_time_slot="Needs Attention"
+                ))
+            return RecommendationResponse(
+                user_status="Fixed Tasks Pending",
+                current_energy_level=energy_level,
+                recommended_next_task=fixed_rec,
+                all_ranked_recommendations=all_fixed_recs,
+                break_recommended=False,
+                message=f"You have {len(pending_fixed)} fixed task(s) pending. Fixed commitments override rest periods."
+            )
+
+        # No fixed tasks pending — show sleep recommendation
         prompt = f"The user is a {profession}. It is their designated sleep/rest time. Generate a short 1-2 sentence personalized message advising them to stop their current activity (tailor the action to their specific profession - e.g. a student should close their books, an engineer should step away from the screen) and get some rest. Briefly state the health or cognitive benefit for their specific role. Be firm but warm. No quotes or introductory text."
         sleep_msg = call_background_llm_with_failover([{"role": "user", "content": prompt}], timeout=25.0)
         
