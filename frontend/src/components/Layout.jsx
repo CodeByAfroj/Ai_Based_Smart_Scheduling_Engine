@@ -232,10 +232,17 @@ export default function Layout() {
     const seenTree = localStorage.getItem('tp_onboard_tree_seen');
     const totalTasks = tasks.length;
     const completedCount = tasks.filter(t => t.status === 'completed').length;
-    // Hint 1: created exactly 1 task — nudge toward Schedule
-    setShowScheduleRipple(totalTasks === 1 && !seenSchedule);
-    // Hint 2: completed first task and hasn't seen tree hint yet
-    setShowTreeRipple(completedCount >= 1 && totalTasks <= 2 && !seenTree);
+
+    // Hint 1: user created their very first task but hasn't completed it yet
+    // → nudge them toward the Schedule to see it scheduled
+    const hasActivePendingFirst = totalTasks === 1 && completedCount === 0;
+    setShowScheduleRipple(hasActivePendingFirst && !seenSchedule);
+
+    // Hint 2: user just completed their first task (and hint 1 is done)
+    // → nudge them toward My Focus Tree to see their progress
+    // Only show after schedule hint is dismissed or not needed
+    const justCompletedFirst = completedCount >= 1 && totalTasks <= 2 && (seenSchedule || !hasActivePendingFirst);
+    setShowTreeRipple(justCompletedFirst && !seenTree);
   }, [tasks]);
 
   const dismissScheduleRipple = () => {
