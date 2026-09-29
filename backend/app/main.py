@@ -425,12 +425,49 @@ async def auto_shift(
     from .models import WorkingHours
     from .database import get_user_collection
     from .notifications import notify_user
+    from bson.objectid import ObjectId
+    from datetime import datetime, timedelta
     
+    user_coll = get_user_collection()
+    user_doc = user_coll.find_one({"_id": ObjectId(user_id)})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    settings = user_doc.get("settings", {})
+    work_start_str = settings.get("work_start", "09:00 AM")
+    work_end_str = settings.get("work_end", "06:00 PM")
+    
+    try:
+        start_t = datetime.strptime(work_start_str, "%I:%M %p").time()
+        end_t = datetime.strptime(work_end_str, "%I:%M %p").time()
+        start_hour = start_t.hour
+        end_hour = end_t.hour
+    except Exception:
+        start_t = datetime.strptime("09:00 AM", "%I:%M %p").time()
+        end_t = datetime.strptime("06:00 PM", "%I:%M %p").time()
+        start_hour = 9
+        end_hour = 18
+
+    curr = now_ist().time()
+    
+    if start_t <= end_t:
+        is_working_hours = start_t <= curr <= end_t
+    else:
+        is_working_hours = curr >= start_t or curr <= end_t
+
+    if not is_working_hours:
+        return ScheduleResponse(
+            status="IGNORED",
+            solve_time_ms=0,
+            tasks=[],
+            message="Outside working hours. No shift performed."
+        )
+
     request = ScheduleRequest(
         tasks=[],
         fixed_events=[],
         reference_time=now_ist(),
-        working_hours=WorkingHours(start_hour=9, end_hour=18)
+        working_hours=WorkingHours(start_hour=start_hour, end_hour=end_hour)
     )
     
     # Apply a 30-minute busy signal block to force shifting
