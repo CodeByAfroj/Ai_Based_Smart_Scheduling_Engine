@@ -1,6 +1,6 @@
 # TaskPulse 🌳
 
-TaskPulse is an intelligent, autonomous scheduling assistant designed to eliminate decision fatigue and enforce deep work through gamification and AI-driven automation. 
+TaskPulse is an intelligent, autonomous scheduling assistant designed to eliminate decision fatigue and enforce deep work through gamification and AI-driven automation.
 
 ## 🚨 The Problem
 Modern professionals suffer from **decision fatigue**, constant **context switching**, and the chaos of manually managing overflowing calendars. When a single deadline is missed or a meeting runs late, the entire day's schedule breaks, forcing users to manually drag and drop tasks, leading to anxiety and lost productivity.
