@@ -98,8 +98,9 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
     cursor = db["tasks"].find({"user_id": user_id, "status": {"$in": ["pending", "scheduled"]}})
     db_tasks = await cursor.to_list(length=100)
 
-    # 2.5 Check if there is an active FIXED task happening right now
+    # 2.5 Check if there is an active or expired FIXED task happening right now
     active_fixed = None
+    expired_fixed = None
     from datetime import timedelta
     for t in db_tasks:
         if t.get("fixed"):
@@ -113,6 +114,8 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
                     if s_dt <= curr <= e_dt:
                         active_fixed = t
                         break
+                    elif curr > e_dt and not expired_fixed:
+                        expired_fixed = t
                 except Exception:
                     pass
     
@@ -136,6 +139,27 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
             all_ranked_recommendations=[top_task],
             break_recommended=False,
             message="You have a scheduled fixed event currently taking place."
+        )
+
+    if expired_fixed:
+        t_id = str(expired_fixed["_id"])
+        top_task = TaskRecommendation(
+            task_id=t_id,
+            name=expired_fixed.get("name", "Fixed Task"),
+            duration_minutes=expired_fixed.get("duration_minutes", 30),
+            priority=expired_fixed.get("priority", 1),
+            score=2000.0,
+            reason_badge="⚠️ Completion Review Required",
+            reason_detail=f"The scheduled time for '{expired_fixed.get('name', 'this task')}' has passed. Did you complete it? Please mark it as done.",
+            recommended_time_slot="Past Due"
+        )
+        return RecommendationResponse(
+            user_status="Task Review Needed",
+            current_energy_level=energy_level,
+            recommended_next_task=top_task,
+            all_ranked_recommendations=[top_task],
+            break_recommended=False,
+            message=f"Please confirm if you completed '{expired_fixed.get('name', 'your fixed task')}'."
         )
 
     # SLEEP OVERRIDE: If outside working and peak hours, check for pending fixed tasks first.
