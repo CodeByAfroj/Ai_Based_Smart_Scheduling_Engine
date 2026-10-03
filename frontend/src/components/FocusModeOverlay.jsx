@@ -6,6 +6,7 @@ const taskSessions = {};
 export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecommended = false }) {
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(true);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
   const startTimeRef = useRef(null);
   
   useEffect(() => {
@@ -38,8 +39,20 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
     return () => clearInterval(interval);
   }, [isActive, seconds, isOpen]);
 
-  const handleClose = async () => {
+  const handleCloseClick = () => {
+    const durationMinutes = task?.duration_minutes || 0;
+    const requiredSeconds = durationMinutes > 0 ? (durationMinutes * 60) * 0.9 : Infinity;
+    if (durationMinutes > 0 && seconds >= requiredSeconds) {
+      setIsActive(false);
+      setShowConfirmClose(true);
+    } else {
+      processClose(false);
+    }
+  };
+
+  const processClose = async (markComplete) => {
     // Record session before closing
+    setShowConfirmClose(false);
     setIsActive(false);
     const taskKey = task && (task.task_id ?? task.id);
     if (taskKey) {
@@ -71,13 +84,36 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
         } else {
           console.error("[Focus Mode] Failed to save. Server responded with status:", response.status);
         }
+
+        let didComplete = false;
+
+        if (taskKey && markComplete) {
+          console.log(`[Focus Mode] Marking task as complete.`);
+          try {
+            const completeResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/tasks/${taskKey}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ status: 'completed' })
+            });
+            if (completeResponse.ok) {
+              didComplete = true;
+            }
+          } catch (err) {
+            console.error('[Focus Mode] Failed to auto-complete task:', err);
+          }
+        }
+        onClose(didComplete);
+        return;
       } else {
         console.log("[Focus Mode] Session was 0 seconds. Not saving to backend.");
       }
     } catch (err) {
       console.error('[Focus Mode] Failed to record focus session:', err);
     }
-    onClose();
+    onClose(false);
   };
 
   if (!isOpen) return null;
@@ -105,7 +141,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
             <span className="text-sm font-semibold tracking-wide uppercase">Deep Focus</span>
           </div>
           <button 
-            onClick={handleClose}
+            onClick={handleCloseClick}
             className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
           >
             <X size={20} />
@@ -136,6 +172,38 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
             {isActive ? "Stay present. Stay focused." : "Timer paused."}
           </p>
         </div>
+
+        {/* Confirmation Modal */}
+        {showConfirmClose && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6">
+            <div className="bg-[#111c16] border border-emerald-900/50 rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col items-center text-center">
+              <h4 className="text-white text-lg font-medium mb-2">Great Progress!</h4>
+              <p className="text-emerald-100/70 text-sm mb-6">
+                You've completed over 90% of the scheduled time for this task. Would you like to mark it as complete?
+              </p>
+              <div className="flex flex-col gap-3 w-full">
+                <button 
+                  onClick={() => processClose(true)}
+                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg transition-colors"
+                >
+                  Yes, Mark Complete
+                </button>
+                <button 
+                  onClick={() => processClose(false)}
+                  className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 font-medium transition-colors"
+                >
+                  No, Just Close
+                </button>
+                <button 
+                  onClick={() => { setShowConfirmClose(false); setIsActive(true); }}
+                  className="w-full py-2 rounded-xl text-gray-500 hover:text-gray-300 font-medium text-sm transition-colors mt-1"
+                >
+                  Cancel (Keep focusing)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

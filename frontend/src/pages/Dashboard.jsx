@@ -501,7 +501,12 @@ export default function Dashboard() {
 
       <FocusModeOverlay 
         isOpen={isFocusModeOpen} 
-        onClose={() => setIsFocusModeOpen(false)} 
+        onClose={(didComplete) => {
+          setIsFocusModeOpen(false);
+          if (didComplete) {
+            fetchRecommendation(true);
+          }
+        }} 
         task={recTask || null}
         isRecommended={true}
       />
