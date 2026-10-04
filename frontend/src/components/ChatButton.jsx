@@ -114,8 +114,8 @@ export default function ChatButton() {
         title={isChatOpen ? 'Close Assistant' : 'Open Assistant (Say "Hey TaskPulse")'}
         aria-label={isChatOpen ? 'Close Assistant' : 'Open Assistant'}
       >
-        <Zap 
-          size={22} 
+        <Zap
+          size={22}
           className="transition-all duration-300"
         />
       </button>
@@ -146,8 +146,8 @@ export default function ChatButton() {
           duration-300
           ease-[cubic-bezier(0.175,0.885,0.32,1.15)]
           transform-gpu will-change-transform
-          ${isChatOpen 
-            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' 
+          ${isChatOpen
+            ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
             : 'opacity-0 translate-y-10 scale-95 pointer-events-none'}
         `}
       >

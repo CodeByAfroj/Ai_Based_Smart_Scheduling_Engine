@@ -414,19 +414,38 @@ body {
 
 /* ── Newcomer onboarding ripple hint ───────────────────────────────────── */
 @keyframes newcomer-ripple {
-  0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5); }
-  70%  { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
 }
+
 @keyframes newcomer-ripple-green {
-  0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
-  70%  { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }
+
 .newcomer-ripple {
   animation: newcomer-ripple 2s ease-out infinite;
   border-radius: 9999px;
 }
+
 .newcomer-ripple-green {
   animation: newcomer-ripple-green 2s ease-out infinite;
   border-radius: 9999px;

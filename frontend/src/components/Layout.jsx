@@ -34,13 +34,13 @@ import { syncTaskState, isTWA } from '../utils/nativeBridge';
 
 /* ── Tree level constants (same as TaskTreeApp) ── */
 const TREE_LEVELS = [
-  { xp: 0,    name: 'Seed',           emoji: '🌱' },
-  { xp: 30,   name: 'Sprout',         emoji: '🌱' },
-  { xp: 100,  name: 'Sapling',        emoji: '🌿' },
-  { xp: 250,  name: 'Young Tree',     emoji: '🌳' },
-  { xp: 500,  name: 'Thriving Tree',  emoji: '🌳' },
-  { xp: 1000, name: 'Mighty Tree',    emoji: '🌲' },
-  { xp: 2000, name: 'Ancient Tree',   emoji: '🌲' },
+  { xp: 0, name: 'Seed', emoji: '🌱' },
+  { xp: 30, name: 'Sprout', emoji: '🌱' },
+  { xp: 100, name: 'Sapling', emoji: '🌿' },
+  { xp: 250, name: 'Young Tree', emoji: '🌳' },
+  { xp: 500, name: 'Thriving Tree', emoji: '🌳' },
+  { xp: 1000, name: 'Mighty Tree', emoji: '🌲' },
+  { xp: 2000, name: 'Ancient Tree', emoji: '🌲' },
   { xp: 3500, name: 'Enchanted Tree', emoji: '✨' },
 ];
 

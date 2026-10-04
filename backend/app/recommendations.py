@@ -141,32 +141,30 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
             message="You have a scheduled fixed event currently taking place."
         )
 
-    if expired_fixed:
-        t_id = str(expired_fixed["_id"])
-        top_task = TaskRecommendation(
-            task_id=t_id,
-            name=expired_fixed.get("name", "Fixed Task"),
-            duration_minutes=expired_fixed.get("duration_minutes", 30),
-            priority=expired_fixed.get("priority", 1),
-            score=2000.0,
-            reason_badge="⚠️ Completion Review Required",
-            reason_detail=f"The scheduled time for '{expired_fixed.get('name', 'this task')}' has passed. Did you complete it? Please mark it as done.",
-            recommended_time_slot="Past Due"
-        )
-        return RecommendationResponse(
-            user_status="Task Review Needed",
-            current_energy_level=energy_level,
-            recommended_next_task=top_task,
-            all_ranked_recommendations=[top_task],
-            break_recommended=False,
-            message=f"Please confirm if you completed '{expired_fixed.get('name', 'your fixed task')}'."
-        )
-
     # SLEEP OVERRIDE: If outside working and peak hours, check for pending fixed tasks first.
     # Fixed tasks ALWAYS get recommended regardless of time of day — they are time-bound commitments.
     if not is_work_time and not is_peak_time:
-        # Check for any pending/scheduled fixed tasks before defaulting to sleep
-        pending_fixed = [t for t in db_tasks if t.get("fixed") and t.get("status") in ("pending", "scheduled")]
+        # Check for any pending/scheduled fixed tasks before defaulting to sleep, but IGNORE expired ones.
+        pending_fixed = []
+        for t in db_tasks:
+            if t.get("fixed") and t.get("status") in ("pending", "scheduled"):
+                # Only include if not expired
+                s_str = t.get("earliest_start") or t.get("scheduled_start")
+                is_expired = False
+                if s_str:
+                    try:
+                        s_dt = datetime.fromisoformat(str(s_str))
+                        if s_dt.tzinfo is None:
+                            s_dt = s_dt.replace(tzinfo=IST)
+                        from datetime import timedelta
+                        e_dt = s_dt + timedelta(minutes=t.get("duration_minutes", 60))
+                        if curr > e_dt:
+                            is_expired = True
+                    except Exception:
+                        pass
+                if not is_expired:
+                    pending_fixed.append(t)
+        
         if pending_fixed:
             # Sort by priority (descending) then by earliest_start (ascending/most urgent first)
             pending_fixed.sort(key=lambda t: (-t.get("priority", 1), str(t.get("earliest_start", ""))))
@@ -268,22 +266,24 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
         
         if fixed:
             energy_score = 0.0
+            badge = "🔒 Fixed Commitment"
+            detail = f"I reserved this slot for '{name}' because it's a fixed event scheduled at {scheduled_start}."
         elif is_peak_time and is_deep_work:
             energy_score += 40.0
-            badge = "⚡ Peak Focus Slot"
-            detail = f"Your {chronotype} energy window is active. Ideal for high-cognition tasks like '{name}'."
+            badge = "⚡ Peak Focus Match"
+            detail = f"I chose '{name}' for right now because your {chronotype} energy peaks in this window, giving you maximum brainpower for heavy work."
         elif is_peak_time and not is_deep_work:
             energy_score += 15.0
             badge = "🔥 High Energy Window"
-            detail = f"High focus time. Great opportunity to finish '{name}'."
+            detail = f"I placed '{name}' now because your energy is high, allowing you to knock this out quickly before your afternoon slump."
         elif not is_peak_time and is_light_task:
             energy_score += 35.0
             badge = "☕ Perfect Light Task"
-            detail = f"Outside peak focus hours—ideal slot for light administrative work."
+            detail = f"I scheduled '{name}' during this lower-energy window so you can make progress on admin work without burning yourself out."
         elif not is_work_time:
             energy_score -= 30.0
-            badge = "🌙 Rest Hours Recommendation"
-            detail = "Scheduled during your non-active wind-down window."
+            badge = "🌙 Wind-Down Time"
+            detail = f"I moved heavy work to tomorrow and kept light items for now so you can protect your rest and avoid burnout."
             
         # Role & Profession Affinity
         role_score = 0.0
@@ -323,7 +323,7 @@ async def get_next_task_recommendation(user_id: str = Depends(get_current_user_i
     
     # LLM PERSONALIZATION: Generate contextual reasoning for the top task
     if top_task and is_work_time:
-        prompt = f"The user is a {profession} ({chronotype}, {work_style} work style). The AI scheduling engine has recommended they do the task '{top_task.name}' for {top_task.duration_minutes} minutes right now. Generate a highly personalized, encouraging 1-2 sentence reason why doing this task right now is great for them, focusing on benefits. Keep it punchy. No quotes or introductory text."
+        prompt = f"The user is a {profession} ({chronotype}, {work_style} work style). The AI engine scheduled the task '{top_task.name}' ({top_task.duration_minutes} mins) right now. Write a 1-2 sentence plain-English explanation from the AI's perspective starting with 'I scheduled...' or 'I chose...' explaining WHY this time slot and task were chosen for their brain/schedule. Make it feel human, transparent, and intelligent. No quotes or introductory text."
         custom_reason = call_ollama_llm([{"role": "user", "content": prompt}], timeout=25.0)
         if custom_reason:
             top_task.reason_detail = custom_reason.strip().replace('"', '')

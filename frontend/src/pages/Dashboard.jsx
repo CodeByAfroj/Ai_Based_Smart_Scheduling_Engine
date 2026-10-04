@@ -197,16 +197,24 @@ export default function Dashboard() {
                   </div>
 
                   {/* Main Content */}
-                  <h2 className="text-white text-2xl sm:text-3xl font-extrabold mb-3">{recTask.name}</h2>
-                  <p className="text-indigo-50/90 text-[14px] sm:text-[15px] leading-relaxed font-medium mb-5 sm:mb-6 max-w-2xl">
-                    {recTask.reason_detail || "TaskPulse has identified the perfect task for your current context and energy levels. Dive in now to maximize your productivity."}
-                  </p>
+                  <h2 className="text-white text-2xl sm:text-3xl font-extrabold mb-4">{recTask.name}</h2>
+
+                  {/* Explainable AI Bubble */}
+                  <div className="bg-indigo-950/60 border border-indigo-400/30 rounded-xl p-4 mb-5 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+                    <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs uppercase tracking-wider mb-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      AI Scheduling Decision
+                    </div>
+                    <p className="text-indigo-100 text-[14px] leading-relaxed font-medium">
+                      "{recTask.reason_detail || "I scheduled this task for right now because your focus energy is high and this aligns with your prime working window."}"
+                    </p>
+                  </div>
                 </div>
 
                 {/* Bottom Actions */}
                 <div className="relative z-10 mt-auto">
                   <hr className="border-t border-white/20 mb-4 sm:mb-4" />
-                  
+
                   {recTask.name !== 'Rest & Recharge' && (
                     <div className="flex gap-3 w-full">
                       <button
@@ -312,45 +320,40 @@ export default function Dashboard() {
                       <div key={task.id} className="relative flex items-stretch gap-4 group">
                         {/* Vertical Line Connector */}
                         {i < todayTasks.length - 1 && (
-                          <div className={`absolute left-[11px] top-8 bottom-[-16px] w-[2px] rounded-full transition-colors ${
-                            isCompleted ? 'bg-green-500/40' :
+                          <div className={`absolute left-[11px] top-8 bottom-[-16px] w-[2px] rounded-full transition-colors ${isCompleted ? 'bg-green-500/40' :
                             isPast ? 'bg-slate-200 dark:bg-slate-700/50' :
-                            'bg-slate-200 dark:bg-slate-700/50 group-hover:bg-[var(--border-subtle)]'
-                          }`} />
+                              'bg-slate-200 dark:bg-slate-700/50 group-hover:bg-[var(--border-subtle)]'
+                            }`} />
                         )}
-                        
+
                         {/* Timeline Dot (Fixed Width Container for Alignment) */}
                         <div className="flex flex-col items-center pt-4 w-6 shrink-0 relative z-10">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center border-[2px] transition-all duration-300 bg-[var(--bg-panel)] ${
-                            isActive ? 'border-[var(--accent-base)] shadow-[0_0_10px_var(--accent-base)] scale-110' :
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center border-[2px] transition-all duration-300 bg-[var(--bg-panel)] ${isActive ? 'border-[var(--accent-base)] shadow-[0_0_10px_var(--accent-base)] scale-110' :
                             isCompleted ? 'border-green-500 bg-green-500' :
-                            isPast ? 'border-slate-300 dark:border-slate-600' :
-                            'border-slate-300 dark:border-slate-600 group-hover:border-[var(--accent-base)]'
-                          }`}>
+                              isPast ? 'border-slate-300 dark:border-slate-600' :
+                                'border-slate-300 dark:border-slate-600 group-hover:border-[var(--accent-base)]'
+                            }`}>
                             {isActive && <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent-base)] animate-pulse" />}
                             {isCompleted && <CheckCircle2 size={12} className="text-white" />}
                           </div>
                         </div>
 
                         {/* Task Card (Consistent Sizing and Padding) */}
-                        <div className={`flex-1 min-w-0 p-4 rounded-xl border transition-all duration-300 ${
-                          isActive ? 'bg-[var(--accent-light)] border-[var(--accent-base)]/30 shadow-sm' :
+                        <div className={`flex-1 min-w-0 p-4 rounded-xl border transition-all duration-300 ${isActive ? 'bg-[var(--accent-light)] border-[var(--accent-base)]/30 shadow-sm' :
                           isCompleted ? 'bg-[var(--bg-app)]/50 border-transparent opacity-60' :
-                          'bg-[var(--bg-app)] border-[var(--border-subtle)] hover:shadow-sm'
-                        }`}>
-                          <p className={`text-[11px] font-black tracking-widest uppercase mb-1.5 transition-colors ${
-                            isActive ? 'text-[var(--accent-base)]' :
-                            isCompleted ? 'text-green-500' :
-                            isPast ? 'text-[var(--text-muted)]' :
-                            'text-[var(--text-muted)]'
+                            'bg-[var(--bg-app)] border-[var(--border-subtle)] hover:shadow-sm'
                           }`}>
+                          <p className={`text-[11px] font-black tracking-widest uppercase mb-1.5 transition-colors ${isActive ? 'text-[var(--accent-base)]' :
+                            isCompleted ? 'text-green-500' :
+                              isPast ? 'text-[var(--text-muted)]' :
+                                'text-[var(--text-muted)]'
+                            }`}>
                             {start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })} – {end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' })}
                           </p>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`text-sm font-bold truncate transition-colors ${
-                              isPast ? 'text-[var(--text-muted)] line-through decoration-[var(--text-muted)]/40' :
+                            <p className={`text-sm font-bold truncate transition-colors ${isPast ? 'text-[var(--text-muted)] line-through decoration-[var(--text-muted)]/40' :
                               'text-[var(--text-main)]'
-                            }`}>
+                              }`}>
                               {task.name}
                             </p>
                             {isCompleted && (
@@ -499,14 +502,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <FocusModeOverlay 
-        isOpen={isFocusModeOpen} 
+      <FocusModeOverlay
+        isOpen={isFocusModeOpen}
         onClose={(didComplete) => {
           setIsFocusModeOpen(false);
           if (didComplete) {
             fetchRecommendation(true);
           }
-        }} 
+        }}
         task={recTask || null}
         isRecommended={true}
       />

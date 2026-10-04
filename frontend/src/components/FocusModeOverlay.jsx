@@ -8,7 +8,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
   const [isActive, setIsActive] = useState(true);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
   const startTimeRef = useRef(null);
-  
+
   useEffect(() => {
     if (isOpen) {
       const taskKey = task && (task.task_id ?? task.id);
@@ -21,7 +21,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -63,7 +63,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
       const token = localStorage.getItem('access_token');
       if (!token) {
         console.warn("[Focus Mode] No auth token found. Cannot save session.");
-      } else if (seconds > 0) { 
+      } else if (seconds > 0) {
         console.log(`[Focus Mode] Sending POST request to save session of ${seconds}s...`);
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/tasks/focus-session`, {
           method: 'POST',
@@ -78,7 +78,7 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
             is_recommended: isRecommended
           })
         });
-        
+
         if (response.ok) {
           console.log("[Focus Mode] Successfully saved focus session to backend!");
         } else {
@@ -133,14 +133,14 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
       <div className="w-full h-full lg:w-[400px] lg:h-[700px] lg:max-h-[90vh] bg-[#0c1410] lg:rounded-3xl lg:border border-[#1f3b2a] shadow-2xl flex flex-col relative overflow-hidden transition-all">
         {/* Subtle background glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-6 relative z-10">
           <div className="flex items-center gap-2 text-emerald-400">
             <TreeDeciduous size={20} />
             <span className="text-sm font-semibold tracking-wide uppercase">Deep Focus</span>
           </div>
-          <button 
+          <button
             onClick={handleCloseClick}
             className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
           >
@@ -161,13 +161,13 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
             {formatTime(seconds)}
           </div>
 
-          <button 
+          <button
             onClick={() => setIsActive(!isActive)}
             className="w-20 h-20 rounded-full bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center text-white shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_40px_rgba(16,185,129,0.5)] transition-all transform hover:scale-105 active:scale-95"
           >
             {isActive ? <Pause size={32} className="fill-current" /> : <Play size={32} className="fill-current ml-1" />}
           </button>
-          
+
           <p className="mt-8 text-sm text-gray-500 font-medium tracking-wide">
             {isActive ? "Stay present. Stay focused." : "Timer paused."}
           </p>
@@ -182,19 +182,19 @@ export default function FocusModeOverlay({ isOpen, onClose, task = null, isRecom
                 You've completed over 90% of the scheduled time for this task. Would you like to mark it as complete?
               </p>
               <div className="flex flex-col gap-3 w-full">
-                <button 
+                <button
                   onClick={() => processClose(true)}
                   className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg transition-colors"
                 >
                   Yes, Mark Complete
                 </button>
-                <button 
+                <button
                   onClick={() => processClose(false)}
                   className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/90 font-medium transition-colors"
                 >
                   No, Just Close
                 </button>
-                <button 
+                <button
                   onClick={() => { setShowConfirmClose(false); setIsActive(true); }}
                   className="w-full py-2 rounded-xl text-gray-500 hover:text-gray-300 font-medium text-sm transition-colors mt-1"
                 >
